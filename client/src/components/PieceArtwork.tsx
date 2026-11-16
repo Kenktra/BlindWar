@@ -147,7 +147,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
     theme ?? themeCtx?.boardTheme ?? getThemeDefinition(DEFAULT_THEME_ID);
 
   const safeKind = normalizePieceArtKind(character);
-  const assetDescriptor = resolvePieceThemeAsset(effectiveTheme.id, safeKind);
+  const assetDescriptor = resolvePieceThemeAsset(effectiveTheme, safeKind);
   const resolvedPalette = resolveMedallionPalette(
     owner,
     effectiveTheme,

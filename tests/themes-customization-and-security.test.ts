@@ -15,6 +15,7 @@ import {
   SETTINGS_HELP_ITEMS,
   THEME_LIST,
   computeProfileCosmetics,
+  createCustomThemePiecePalettes,
   getBoardSquareSlot,
   getHexRelativeLuminance,
   getThemeDefinition,
@@ -24,6 +25,8 @@ import {
   resolveThemeUiForColorMode,
   sanitizeDisplayName,
   sanitizeUserPreferences,
+  verifyThemePieceContrastAcrossSquareStates,
+  type BlindWarThemeDefinition,
   type Coord,
   type ThemeId,
 } from '../shared/src/index.js';
@@ -272,6 +275,58 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       );
       expect(previewHtml).toContain('data-piece-camp="red"');
       expect(previewHtml).toContain('data-piece-camp="black"');
+    });
+
+    it('guarantees strong contrast across light, dark, selected, moveValid, and attackValid square states for all 6 themes and any future custom theme', () => {
+      for (const theme of THEME_LIST) {
+        const reports = verifyThemePieceContrastAcrossSquareStates(theme);
+        expect(reports).toHaveLength(16); // 2 slots * 4 states * 2 camps
+        for (const r of reports) {
+          expect(r.effectiveVisibilityContrast).toBeGreaterThanOrEqual(4.0);
+        }
+      }
+
+      // Dynamic future theme defined solely from color tokens works automatically across all 13 pieces
+      const customPalettes = createCustomThemePiecePalettes({
+        lightCampTop: '#FFF7ED',
+        lightCampBottom: '#FED7AA',
+        lightCampAccent: '#9A3412',
+        lightCampStroke: '#1C1917',
+        darkCampTop: '#312E81',
+        darkCampBottom: '#1E1B4B',
+        darkCampAccent: '#A5B4FC',
+        darkCampStroke: '#E0E7FF',
+      });
+      const futureTheme: BlindWarThemeDefinition = {
+        ...BLIND_WAR_THEMES.rouge_et_noir,
+        name: 'Futur Émeraude & Saphir',
+        board: {
+          ...BLIND_WAR_THEMES.rouge_et_noir.board,
+          squareA: '#D1FAE5',
+          squareB: '#064E3B',
+          ...customPalettes,
+        },
+      };
+
+      const futureDesc = resolvePieceThemeAsset(futureTheme, 'traqueur');
+      expect(futureDesc.transparentBackground).toBe(true);
+      expect(futureDesc.palettes.light.bgTop).toBe('#FFF7ED');
+
+      const futureSvg = renderToStaticMarkup(
+        React.createElement(PieceArtwork, {
+          character: 'traqueur',
+          owner: 'red',
+          coord: { row: 0, col: 1 },
+          theme: futureTheme,
+        }),
+      );
+      expect(futureSvg).toContain('#FFF7ED');
+      expect(futureSvg).toContain('data-transparent-bg="true"');
+
+      const futureReports = verifyThemePieceContrastAcrossSquareStates(futureTheme);
+      for (const r of futureReports) {
+        expect(r.effectiveVisibilityContrast).toBeGreaterThanOrEqual(4.0);
+      }
     });
   });
 

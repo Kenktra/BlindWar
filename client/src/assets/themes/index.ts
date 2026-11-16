@@ -2,6 +2,7 @@ import {
   BLIND_WAR_THEMES,
   THEME_LIST,
   getThemeDefinition,
+  type BlindWarThemeDefinition,
   type PieceMedallionPalette,
   type ThemeId,
 } from '../../../../shared/src/index.js';
@@ -74,12 +75,32 @@ export const THEME_ASSET_PACKS: Readonly<Record<ThemeId, ThemeAssetPack>> = Obje
   THEME_LIST.map((t) => [t.id, buildThemeAssetPack(t.id)]),
 ) as Readonly<Record<ThemeId, ThemeAssetPack>>;
 
-/** Resolve the full transparent-background theme asset descriptor for any piece and theme. */
+/**
+ * Resolve the transparent-background theme asset descriptor for any built-in or future custom theme
+ * without duplicating any vector artwork.
+ */
 export function resolvePieceThemeAsset(
-  themeId: ThemeId | string | null | undefined,
+  themeOrId: BlindWarThemeDefinition | ThemeId | string | null | undefined,
   pieceKind: PieceArtKind,
 ): PieceThemeAssetDescriptor {
-  const safeTheme = getThemeDefinition(themeId);
+  if (typeof themeOrId === 'object' && themeOrId !== null && 'board' in themeOrId) {
+    const customTheme = themeOrId;
+    const styleMeta = STYLE_META_BY_THEME_ID[customTheme.id] ?? CLASSIC_ASSET_PACK_STYLE;
+    return {
+      themeId: customTheme.id,
+      pieceKind,
+      assetId: `${customTheme.id}/${styleMeta.styleVariant}/${pieceKind}`,
+      styleVariant: styleMeta.styleVariant,
+      outlineWidth: styleMeta.outlineWidth,
+      transparentBackground: true,
+      palettes: {
+        light: customTheme.board.campRed,
+        dark: customTheme.board.campBlack,
+        neutral: customTheme.board.pieceNeutral,
+      },
+    };
+  }
+  const safeTheme = getThemeDefinition(themeOrId);
   const pack = THEME_ASSET_PACKS[safeTheme.id] ?? THEME_ASSET_PACKS.rouge_et_noir;
   return pack.pieces[pieceKind] ?? pack.pieces.secret;
 }

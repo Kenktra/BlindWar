@@ -690,7 +690,7 @@ export const RULE_SECTIONS: readonly RuleSection[] = [
       `Composition officielle (${ARMY_TOTAL_PIECES} pièces) : 1 Roi, 1 Reine, 1 Colosse, ${ARMY_COMPOSITION.cavalier} Cavaliers, ${ARMY_COMPOSITION.berserker} Berserker, ${ARMY_COMPOSITION.assassin} Assassins, ${ARMY_COMPOSITION.guetteur_h} Guetteurs H, ${ARMY_COMPOSITION.guetteur_d} Guetteurs D, ${ARMY_COMPOSITION.traqueur} Traqueur, ${ARMY_COMPOSITION.executeur} Exécuteur, ${ARMY_COMPOSITION.arbaletrier} Arbalétrier, ${ARMY_COMPOSITION.soldat} Soldats.`,
       'Placement libre sur vos 3 premières rangées en 90 s (complétion automatique si temps écoulé) ; pendule de 10 minutes par joueur.',
       'Reine, Colosse, Traqueur, Exécuteur et Arbalétrier sont chacun limités strictement à 1 exemplaire vivant maximum sur le plateau (y compris après Promotion ou Résurrection).',
-      'Apparence personnalisable : par défaut en Rouge et Noir (#B51F2B / #171717), tout pion adopte la variante opposée à la couleur de la case occupée (case couleur 1 → pion couleur 2, case couleur 2 → pion couleur 1) sans jamais modifier son camp ni révéler son identité.',
+      'Apparence personnalisable : par défaut en Rouge et Noir, chaque camp conserve une palette claire ou sombre nettement différenciée sur fond 100 % transparent et automatiquement adaptée au thème sélectionné, sans jamais révéler d’identité cachée.',
     ],
   },
   {
@@ -904,9 +904,9 @@ export const FAQ_ITEMS: readonly FaqEntry[] = [
   {
     id: 'faq-piece-colors',
     category: 'themes_profil',
-    question: 'Pourquoi la couleur d’un pion change-t-elle selon la case où il se trouve ?',
+    question: 'Comment s’adaptent les couleurs des pièces selon le thème choisi ?',
     answer:
-      'La couleur visuelle d’un médaillon s’adapte automatiquement à la couleur opposée de sa case selon votre thème (ex. case rouge → pion noir en Rouge et Noir). Vos pièces et les pièces adverses restent distinguées par l’étiquette « ADV » sur les pions ennemis, sans jamais révéler d’identité cachée.',
+      'Chaque thème applique automatiquement une palette harmonieuse claire pour un camp et foncée/contrastée pour l’autre sur un fond 100 % transparent, afin que chaque silhouette reste immédiatement lisible sur les cases claires, foncées, sélectionnées ou visées sans jamais changer de camp.',
   },
   {
     id: 'faq-themes-sync',

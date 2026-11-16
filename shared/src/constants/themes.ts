@@ -200,22 +200,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#18181b',
       },
       campRed: {
-        bgTop: '#FAF3E7',
-        bgBottom: '#D8C7AE',
+        bgTop: '#FCF5E8',
+        bgBottom: '#E0D0B8',
         rimOuter: '#9A2E38',
         rimInner: '#FFFBF2',
-        glyphMain: '#FAF3E7',
-        glyphAccent: '#A6343F',
-        glyphStroke: '#1E1414',
+        glyphMain: '#FCF5E8',
+        glyphAccent: '#9A303B',
+        glyphStroke: '#140D0E',
       },
       campBlack: {
-        bgTop: '#525B6B',
-        bgBottom: '#292F3B',
-        rimOuter: '#CBD5E1',
-        rimInner: '#E2E8F0',
-        glyphMain: '#F1F5F9',
-        glyphAccent: '#E2B96F',
-        glyphStroke: '#CBD5E1',
+        bgTop: '#212630',
+        bgBottom: '#11141B',
+        rimOuter: '#F1F5F9',
+        rimInner: '#FFFFFF',
+        glyphMain: '#F8FAFC',
+        glyphAccent: '#E5BD72',
+        glyphStroke: '#F8FAFC',
       },
       allyBadgeBg: 'rgba(15, 23, 42, 0.86)',
       allyBadgeText: '#fde68a',
@@ -325,22 +325,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#24160b',
       },
       campRed: {
-        bgTop: '#C95A52',
-        bgBottom: '#7E2827',
-        rimOuter: '#EAD3A8',
-        rimInner: '#FFF7E8',
-        glyphMain: '#FDF3E1',
-        glyphAccent: '#FCE7BA',
-        glyphStroke: '#220E0E',
+        bgTop: '#FFFBF0',
+        bgBottom: '#E4D0AB',
+        rimOuter: '#9E6B3B',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FFFBF0',
+        glyphAccent: '#823D1B',
+        glyphStroke: '#1A0E06',
       },
       campBlack: {
-        bgTop: '#4A4441',
-        bgBottom: '#211D1B',
-        rimOuter: '#D9C096',
-        rimInner: '#F7EBD5',
-        glyphMain: '#F5EAD6',
-        glyphAccent: '#E2BA72',
-        glyphStroke: '#120F0E',
+        bgTop: '#1C1410',
+        bgBottom: '#100B09',
+        rimOuter: '#FFFDF8',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FAF0DC',
+        glyphAccent: '#E4BA72',
+        glyphStroke: '#FFFDF8',
       },
       allyBadgeBg: 'rgba(30, 21, 14, 0.9)',
       allyBadgeText: '#fde68a',
@@ -450,22 +450,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#1b2612',
       },
       campRed: {
-        bgTop: '#CF6358',
-        bgBottom: '#8A302C',
-        rimOuter: '#EEEED2',
-        rimInner: '#FAFBE8',
-        glyphMain: '#FBFCEB',
-        glyphAccent: '#F8EAC0',
-        glyphStroke: '#230F0E',
+        bgTop: '#FCFBF0',
+        bgBottom: '#E0DFBC',
+        rimOuter: '#46692A',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FCFBF0',
+        glyphAccent: '#395A22',
+        glyphStroke: '#121C0B',
       },
       campBlack: {
-        bgTop: '#414A4B',
-        bgBottom: '#1D2325',
-        rimOuter: '#CBD5C0',
-        rimInner: '#F1F5EC',
+        bgTop: '#1F2B20',
+        bgBottom: '#101711',
+        rimOuter: '#F6F7E8',
+        rimInner: '#FFFFFF',
         glyphMain: '#F2F6EE',
-        glyphAccent: '#DFC77B',
-        glyphStroke: '#0E1213',
+        glyphAccent: '#E5CA70',
+        glyphStroke: '#F6F7E8',
       },
       allyBadgeBg: 'rgba(22, 33, 18, 0.88)',
       allyBadgeText: '#EEEED2',
@@ -575,22 +575,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#09090b',
       },
       campRed: {
-        bgTop: '#CE625E',
-        bgBottom: '#8A3133',
-        rimOuter: '#E4E4E7',
-        rimInner: '#FAFAFA',
-        glyphMain: '#FAF7F5',
-        glyphAccent: '#FCE9DB',
-        glyphStroke: '#210F10',
+        bgTop: '#FFFFFF',
+        bgBottom: '#E0E3EB',
+        rimOuter: '#3F4452',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FFFFFF',
+        glyphAccent: '#3F4452',
+        glyphStroke: '#141418',
       },
       campBlack: {
-        bgTop: '#565C68',
-        bgBottom: '#292D36',
-        rimOuter: '#B8BFC9',
-        rimInner: '#E4E7EC',
+        bgTop: '#343944',
+        bgBottom: '#14171D',
+        rimOuter: '#E5E7EB',
+        rimInner: '#F8FAFC',
         glyphMain: '#F4F4F5',
-        glyphAccent: '#E2E8F0',
-        glyphStroke: '#9EA6B4',
+        glyphAccent: '#F4F4F5',
+        glyphStroke: '#E5E7EB',
       },
       allyBadgeBg: 'rgba(15, 15, 18, 0.9)',
       allyBadgeText: '#fafafa',
@@ -700,22 +700,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#0c1f36',
       },
       campRed: {
-        bgTop: '#CF685D',
-        bgBottom: '#8C352F',
-        rimOuter: '#DCE3EC',
-        rimInner: '#F8FAFC',
-        glyphMain: '#FCF7F2',
-        glyphAccent: '#F9E6CE',
-        glyphStroke: '#24100E',
+        bgTop: '#F8FBFF',
+        bgBottom: '#CFE2F6',
+        rimOuter: '#235894',
+        rimInner: '#FFFFFF',
+        glyphMain: '#F8FBFF',
+        glyphAccent: '#235894',
+        glyphStroke: '#0B1A30',
       },
       campBlack: {
-        bgTop: '#455064',
-        bgBottom: '#1D2533',
-        rimOuter: '#C8D4E3',
-        rimInner: '#F1F5F9',
+        bgTop: '#152033',
+        bgBottom: '#0B121E',
+        rimOuter: '#FFFFFF',
+        rimInner: '#FFFFFF',
         glyphMain: '#F1F5F9',
-        glyphAccent: '#BBD0EB',
-        glyphStroke: '#AEBDD1',
+        glyphAccent: '#A6C9F0',
+        glyphStroke: '#FFFFFF',
       },
       allyBadgeBg: 'rgba(11, 22, 38, 0.88)',
       allyBadgeText: '#dbeafe',
@@ -823,22 +823,22 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphStroke: '#18110c',
       },
       campRed: {
-        bgTop: '#FAF0E0',
-        bgBottom: '#D6BFA0',
+        bgTop: '#FCF4E6',
+        bgBottom: '#DBC4A2',
         rimOuter: '#9A4036',
-        rimInner: '#FFFBF2',
-        glyphMain: '#FAF0E0',
-        glyphAccent: '#A6413B',
-        glyphStroke: '#261610',
+        rimInner: '#FFFDF7',
+        glyphMain: '#FCF4E6',
+        glyphAccent: '#964522',
+        glyphStroke: '#170D08',
       },
       campBlack: {
-        bgTop: '#4E4744',
-        bgBottom: '#262220',
-        rimOuter: '#D9BA82',
-        rimInner: '#F7E7C4',
+        bgTop: '#251F1D',
+        bgBottom: '#13100E',
+        rimOuter: '#FAF0DC',
+        rimInner: '#FFFFFF',
         glyphMain: '#F7EDE0',
-        glyphAccent: '#EAC277',
-        glyphStroke: '#C8B8A2',
+        glyphAccent: '#EBC375',
+        glyphStroke: '#FAF0DC',
       },
       allyBadgeBg: 'rgba(22, 16, 13, 0.88)',
       allyBadgeText: '#fde68a',
@@ -1132,4 +1132,167 @@ export function getHexRelativeLuminance(hex: string): number {
 /** Return true when a board square hex is dark enough to benefit from a luminous contour lift. */
 export function isDarkBoardColor(hex: string): boolean {
   return getHexRelativeLuminance(hex) < 0.16;
+}
+
+function parseHexRgb(hex: string): [number, number, number] {
+  const cleaned = hex.trim().replace('#', '');
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : cleaned.slice(0, 6);
+  if (full.length !== 6) return [128, 128, 128];
+  return [
+    parseInt(full.slice(0, 2), 16),
+    parseInt(full.slice(2, 4), 16),
+    parseInt(full.slice(4, 6), 16),
+  ];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  const clamp = (n: number) => Math.max(0, Math.min(255, Math.round(n)));
+  return (
+    '#' +
+    [clamp(r), clamp(g), clamp(b)]
+      .map((n) => n.toString(16).padStart(2, '0'))
+      .join('')
+  );
+}
+
+/** Blend an `rgba(r, g, b, a)` or `#RRGGBB` overlay color over a base hex square color. */
+export function blendOverlayOverHex(baseHex: string, overlayColor: string): string {
+  const baseRgb = parseHexRgb(baseHex);
+  const rgbaMatch = overlayColor
+    .trim()
+    .match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i);
+  if (rgbaMatch) {
+    const r = Number(rgbaMatch[1]);
+    const g = Number(rgbaMatch[2]);
+    const b = Number(rgbaMatch[3]);
+    const a = rgbaMatch[4] !== undefined ? Math.max(0, Math.min(1, Number(rgbaMatch[4]))) : 1;
+    return rgbToHex(
+      baseRgb[0] * (1 - a) + r * a,
+      baseRgb[1] * (1 - a) + g * a,
+      baseRgb[2] * (1 - a) + b * a,
+    );
+  }
+  if (overlayColor.trim().startsWith('#')) {
+    return overlayColor.trim();
+  }
+  return baseHex;
+}
+
+/** Compute WCAG contrast ratio (>= 1.0) between two `#RRGGBB` colors. */
+export function getContrastRatioBetweenHex(hexA: string, hexB: string): number {
+  const lumA = getHexRelativeLuminance(hexA);
+  const lumB = getHexRelativeLuminance(hexB);
+  const bright = Math.max(lumA, lumB);
+  const dark = Math.min(lumA, lumB);
+  return (bright + 0.05) / (dark + 0.05);
+}
+
+export interface CustomThemePiecePaletteSpec {
+  readonly lightCampTop: string;
+  readonly lightCampBottom: string;
+  readonly lightCampAccent: string;
+  readonly lightCampStroke?: string;
+  readonly darkCampTop: string;
+  readonly darkCampBottom: string;
+  readonly darkCampAccent: string;
+  readonly darkCampStroke?: string;
+}
+
+/**
+ * Centralized extensible helper: generating any future theme's dual-camp piece palettes requires
+ * only specifying its color palette — zero SVG asset duplication needed.
+ */
+export function createCustomThemePiecePalettes(spec: CustomThemePiecePaletteSpec): {
+  readonly campRed: PieceMedallionPalette;
+  readonly campBlack: PieceMedallionPalette;
+  readonly pieceOnA: PieceMedallionPalette;
+  readonly pieceOnB: PieceMedallionPalette;
+  readonly pieceNeutral: PieceMedallionPalette;
+} {
+  const campRed: PieceMedallionPalette = {
+    bgTop: spec.lightCampTop,
+    bgBottom: spec.lightCampBottom,
+    rimOuter: spec.lightCampAccent,
+    rimInner: '#FFFFFF',
+    glyphMain: spec.lightCampTop,
+    glyphAccent: spec.lightCampAccent,
+    glyphStroke: spec.lightCampStroke ?? '#18181B',
+  };
+  const campBlack: PieceMedallionPalette = {
+    bgTop: spec.darkCampTop,
+    bgBottom: spec.darkCampBottom,
+    rimOuter: spec.darkCampStroke ?? '#E2E8F0',
+    rimInner: '#F8FAFC',
+    glyphMain: '#F8FAFC',
+    glyphAccent: spec.darkCampAccent,
+    glyphStroke: spec.darkCampStroke ?? '#E2E8F0',
+  };
+  return {
+    campRed,
+    campBlack,
+    pieceOnA: campBlack,
+    pieceOnB: campRed,
+    pieceNeutral: campBlack,
+  };
+}
+
+export type BoardSquareVisualState = 'squareA' | 'squareB' | 'selected' | 'moveValid' | 'attackValid';
+
+export interface PieceSurfaceContrastReport {
+  readonly state: BoardSquareVisualState;
+  readonly slot: 'a' | 'b';
+  readonly owner: 'red' | 'black';
+  readonly surfaceHex: string;
+  readonly fillContrast: number;
+  readonly strokeContrast: number;
+  readonly effectiveVisibilityContrast: number;
+}
+
+/**
+ * Compute objective contrast checks across light/dark squares and selected/move/attack states
+ * for both Camp Red and Camp Black under any `BlindWarThemeDefinition`.
+ */
+export function verifyThemePieceContrastAcrossSquareStates(
+  theme: BlindWarThemeDefinition
+): readonly PieceSurfaceContrastReport[] {
+  const reports: PieceSurfaceContrastReport[] = [];
+  const slots: readonly { readonly slot: 'a' | 'b'; readonly hex: string }[] = [
+    { slot: 'a', hex: theme.board.squareA },
+    { slot: 'b', hex: theme.board.squareB },
+  ];
+
+  for (const s of slots) {
+    const surfaceEntries: readonly { readonly state: BoardSquareVisualState; readonly hex: string }[] = [
+      { state: s.slot === 'a' ? 'squareA' : 'squareB', hex: s.hex },
+      { state: 'selected', hex: blendOverlayOverHex(s.hex, theme.board.interactions.selectionBg) },
+      { state: 'moveValid', hex: blendOverlayOverHex(s.hex, theme.board.interactions.moveValidBg) },
+      { state: 'attackValid', hex: blendOverlayOverHex(s.hex, theme.board.interactions.attackValidBg) },
+    ];
+
+    for (const owner of ['red', 'black'] as const) {
+      const palette = getThemedPiecePaletteForOwner(theme, owner);
+      for (const surf of surfaceEntries) {
+        const fillContrast = getContrastRatioBetweenHex(palette.bgTop, surf.hex);
+        const strokeContrast = getContrastRatioBetweenHex(palette.glyphStroke, surf.hex);
+        const effectiveVisibilityContrast = Math.max(fillContrast, strokeContrast);
+        reports.push({
+          state: surf.state,
+          slot: s.slot,
+          owner,
+          surfaceHex: surf.hex,
+          fillContrast,
+          strokeContrast,
+          effectiveVisibilityContrast,
+        });
+      }
+    }
+  }
+
+  return reports;
 }
