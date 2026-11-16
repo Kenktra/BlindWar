@@ -4,6 +4,8 @@ import {
   getBoardSquareSlot,
   getThemeDefinition,
   getThemedPiecePaletteAtCoord,
+  getThemedPiecePaletteForOwner,
+  isDarkBoardColor,
   type BlindWarThemeDefinition,
   type CharacterType,
   type Coord,
@@ -79,41 +81,6 @@ const SIZE_PX: Readonly<Record<PieceArtSize, number>> = {
   xl: 56,
 };
 
-/**
- * Exact original circular medallion palettes from pre-rework BLIND WAR artwork.
- * Kept for the default Rouge et noir theme when rendered off-board (`red`, `black`, `neutral`),
- * while themed games dynamically feed `PieceMedallionPalette` from the active theme.
- */
-const ORIGINAL_PALETTES: Readonly<Record<PieceArtOwner, PieceMedallionPalette>> = {
-  red: {
-    bgTop: '#991b1b',
-    bgBottom: '#450a0a',
-    rimOuter: '#f59e0b',
-    rimInner: '#fde68a',
-    glyphMain: '#fffbeb',
-    glyphAccent: '#fbbf24',
-    glyphStroke: '#450a0a',
-  },
-  black: {
-    bgTop: '#334155',
-    bgBottom: '#020617',
-    rimOuter: '#94a3b8',
-    rimInner: '#e2e8f0',
-    glyphMain: '#f8fafc',
-    glyphAccent: '#38bdf8',
-    glyphStroke: '#020617',
-  },
-  neutral: {
-    bgTop: '#3f3f46',
-    bgBottom: '#18181b',
-    rimOuter: '#d97706',
-    rimInner: '#fcd34d',
-    glyphMain: '#fef3c7',
-    glyphAccent: '#f59e0b',
-    glyphStroke: '#18181b',
-  },
-};
-
 export interface PieceArtworkProps {
   readonly character: PieceArtKind | string;
   readonly owner?: PieceArtOwner;
@@ -141,9 +108,6 @@ function resolveMedallionPalette(
 ): PieceMedallionPalette {
   if (explicitPalette) return explicitPalette;
 
-  if (coord) {
-    return getThemedPiecePaletteAtCoord(activeBoardTheme, coord).palette;
-  }
   if (squareSlot) {
     return squareSlot === 'a'
       ? activeBoardTheme.board.pieceOnA
@@ -153,15 +117,13 @@ function resolveMedallionPalette(
     const asset = resolvePieceThemeAsset(activeBoardTheme.id, 'roi');
     return asset.palettes[contrastVariant];
   }
-
-  // Off-board icons (rules, collection, placement reserve, profile):
-  // Default Rouge & Noir keeps the exact original palettes verbatim;
-  // other themes harmoniously tint the medallion to match their palette.
-  if (activeBoardTheme.id === DEFAULT_THEME_ID) {
-    return ORIGINAL_PALETTES[owner];
+  if (owner === 'red' || owner === 'black') {
+    return getThemedPiecePaletteForOwner(activeBoardTheme, owner);
   }
-  if (owner === 'red') return activeBoardTheme.board.pieceOnB;
-  if (owner === 'black') return activeBoardTheme.board.pieceOnA;
+  if (coord) {
+    return getThemedPiecePaletteAtCoord(activeBoardTheme, coord).palette;
+  }
+
   return activeBoardTheme.board.pieceNeutral;
 }
 
@@ -195,13 +157,27 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
     explicitPalette,
   );
   const resolvedSlot = coord ? getBoardSquareSlot(coord) : squareSlot;
+  const resolvedSquareHex =
+    resolvedSlot === 'a'
+      ? effectiveTheme.board.squareA
+      : resolvedSlot === 'b'
+        ? effectiveTheme.board.squareB
+        : null;
+  const onDarkSquare = resolvedSquareHex ? isDarkBoardColor(resolvedSquareHex) : false;
 
   return (
     <span
       className={`bw-piece-artwork-wrap bw-art-owner-${owner} bw-art-size-${size} bw-art-style-${assetDescriptor.styleVariant}${
         resolvedSlot ? ` bw-art-slot-${resolvedSlot}` : ''
+      }${
+        resolvedSquareHex
+          ? onDarkSquare
+            ? ' bw-art-on-dark-square'
+            : ' bw-art-on-light-square'
+          : ''
       } ${className}`.trim()}
       data-piece-kind={safeKind}
+      data-piece-camp={owner}
       data-piece-theme={effectiveTheme.id}
       data-asset-style={assetDescriptor.styleVariant}
       data-asset-id={assetDescriptor.assetId}
@@ -255,13 +231,23 @@ export const PieceDualVariantPreview: React.FC<{
     >
       <div className="bw-dual-variant-item">
         <span
-          className="bw-dual-variant-chip"
+          className="bw-dual-variant-chip bw-dual-variant-pair"
           style={{ backgroundColor: effectiveTheme.board.squareB }}
-          title={`Pion affiché sur case ${effectiveTheme.board.squareBLabel}`}
+          title={`Camps Rouge & Noir sur case ${effectiveTheme.board.squareBLabel}`}
         >
           <PieceArtwork
             character={safeKind}
+            owner="red"
             squareSlot="b"
+            palette={effectiveTheme.board.campRed}
+            theme={effectiveTheme}
+            size={size}
+          />
+          <PieceArtwork
+            character={safeKind}
+            owner="black"
+            squareSlot="b"
+            palette={effectiveTheme.board.campBlack}
             theme={effectiveTheme}
             size={size}
           />
@@ -274,13 +260,23 @@ export const PieceDualVariantPreview: React.FC<{
       </div>
       <div className="bw-dual-variant-item">
         <span
-          className="bw-dual-variant-chip"
+          className="bw-dual-variant-chip bw-dual-variant-pair"
           style={{ backgroundColor: effectiveTheme.board.squareA }}
-          title={`Pion affiché sur case ${effectiveTheme.board.squareALabel}`}
+          title={`Camps Rouge & Noir sur case ${effectiveTheme.board.squareALabel}`}
         >
           <PieceArtwork
             character={safeKind}
+            owner="red"
             squareSlot="a"
+            palette={effectiveTheme.board.campRed}
+            theme={effectiveTheme}
+            size={size}
+          />
+          <PieceArtwork
+            character={safeKind}
+            owner="black"
+            squareSlot="a"
+            palette={effectiveTheme.board.campBlack}
             theme={effectiveTheme}
             size={size}
           />

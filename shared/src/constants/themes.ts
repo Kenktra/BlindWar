@@ -98,6 +98,9 @@ export interface ThemeBoardPalette {
   readonly pieceOnA: PieceMedallionPalette;
   readonly pieceOnB: PieceMedallionPalette;
   readonly pieceNeutral: PieceMedallionPalette;
+  /** Harmonious, non-garish camp palettes keeping clear Rouge vs Noir identity on every square. */
+  readonly campRed: PieceMedallionPalette;
+  readonly campBlack: PieceMedallionPalette;
   readonly allyBadgeBg: string;
   readonly allyBadgeText: string;
   readonly enemyBadgeBg: string;
@@ -167,34 +170,52 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       frameBorder: '#47252d',
       coordOnA: 'rgba(255, 241, 242, 0.72)',
       coordOnB: 'rgba(226, 232, 240, 0.56)',
-      // Case rouge (#B51F2B) -> Pion Noir
+      // Case rouge (#B51F2B) -> Pion Ardoise Satinée
       pieceOnA: {
-        bgTop: '#333842',
-        bgBottom: '#090a0d',
+        bgTop: '#4e5666',
+        bgBottom: '#262b35',
         rimOuter: '#d4a34a',
         rimInner: '#fde68a',
         glyphMain: '#f8fafc',
-        glyphAccent: '#ef4444',
-        glyphStroke: '#090a0d',
+        glyphAccent: '#e2b96f',
+        glyphStroke: '#cbd5e1',
       },
-      // Case noire (#171717) -> Pion Rouge
+      // Case noire (#171717) -> Pion Ivoire Doré
       pieceOnB: {
-        bgTop: '#c82332',
-        bgBottom: '#4f0910',
-        rimOuter: '#f59e0b',
-        rimInner: '#fde68a',
-        glyphMain: '#fffbeb',
-        glyphAccent: '#fbbf24',
-        glyphStroke: '#450a0a',
+        bgTop: '#faf3e7',
+        bgBottom: '#d8c7ae',
+        rimOuter: '#9a2e38',
+        rimInner: '#fffbf2',
+        glyphMain: '#faf3e7',
+        glyphAccent: '#a6343f',
+        glyphStroke: '#1e1414',
       },
       pieceNeutral: {
-        bgTop: '#3f3f46',
-        bgBottom: '#18181b',
+        bgTop: '#525866',
+        bgBottom: '#262a33',
         rimOuter: '#d97706',
         rimInner: '#fcd34d',
         glyphMain: '#fef3c7',
-        glyphAccent: '#f59e0b',
+        glyphAccent: '#e5a94c',
         glyphStroke: '#18181b',
+      },
+      campRed: {
+        bgTop: '#FAF3E7',
+        bgBottom: '#D8C7AE',
+        rimOuter: '#9A2E38',
+        rimInner: '#FFFBF2',
+        glyphMain: '#FAF3E7',
+        glyphAccent: '#A6343F',
+        glyphStroke: '#1E1414',
+      },
+      campBlack: {
+        bgTop: '#525B6B',
+        bgBottom: '#292F3B',
+        rimOuter: '#CBD5E1',
+        rimInner: '#E2E8F0',
+        glyphMain: '#F1F5F9',
+        glyphAccent: '#E2B96F',
+        glyphStroke: '#CBD5E1',
       },
       allyBadgeBg: 'rgba(15, 23, 42, 0.86)',
       allyBadgeText: '#fde68a',
@@ -303,6 +324,24 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphAccent: '#f59e0b',
         glyphStroke: '#24160b',
       },
+      campRed: {
+        bgTop: '#C95A52',
+        bgBottom: '#7E2827',
+        rimOuter: '#EAD3A8',
+        rimInner: '#FFF7E8',
+        glyphMain: '#FDF3E1',
+        glyphAccent: '#FCE7BA',
+        glyphStroke: '#220E0E',
+      },
+      campBlack: {
+        bgTop: '#4A4441',
+        bgBottom: '#211D1B',
+        rimOuter: '#D9C096',
+        rimInner: '#F7EBD5',
+        glyphMain: '#F5EAD6',
+        glyphAccent: '#E2BA72',
+        glyphStroke: '#120F0E',
+      },
       allyBadgeBg: 'rgba(30, 21, 14, 0.9)',
       allyBadgeText: '#fde68a',
       enemyBadgeBg: 'rgba(30, 21, 14, 0.94)',
@@ -409,6 +448,24 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphMain: '#fafbe8',
         glyphAccent: '#e2cc6b',
         glyphStroke: '#1b2612',
+      },
+      campRed: {
+        bgTop: '#CF6358',
+        bgBottom: '#8A302C',
+        rimOuter: '#EEEED2',
+        rimInner: '#FAFBE8',
+        glyphMain: '#FBFCEB',
+        glyphAccent: '#F8EAC0',
+        glyphStroke: '#230F0E',
+      },
+      campBlack: {
+        bgTop: '#414A4B',
+        bgBottom: '#1D2325',
+        rimOuter: '#CBD5C0',
+        rimInner: '#F1F5EC',
+        glyphMain: '#F2F6EE',
+        glyphAccent: '#DFC77B',
+        glyphStroke: '#0E1213',
       },
       allyBadgeBg: 'rgba(22, 33, 18, 0.88)',
       allyBadgeText: '#EEEED2',
@@ -517,6 +574,24 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphAccent: '#d4d4d8',
         glyphStroke: '#09090b',
       },
+      campRed: {
+        bgTop: '#CE625E',
+        bgBottom: '#8A3133',
+        rimOuter: '#E4E4E7',
+        rimInner: '#FAFAFA',
+        glyphMain: '#FAF7F5',
+        glyphAccent: '#FCE9DB',
+        glyphStroke: '#210F10',
+      },
+      campBlack: {
+        bgTop: '#565C68',
+        bgBottom: '#292D36',
+        rimOuter: '#B8BFC9',
+        rimInner: '#E4E7EC',
+        glyphMain: '#F4F4F5',
+        glyphAccent: '#E2E8F0',
+        glyphStroke: '#9EA6B4',
+      },
       allyBadgeBg: 'rgba(15, 15, 18, 0.9)',
       allyBadgeText: '#fafafa',
       enemyBadgeBg: 'rgba(15, 15, 18, 0.94)',
@@ -624,6 +699,24 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphAccent: '#93c5fd',
         glyphStroke: '#0c1f36',
       },
+      campRed: {
+        bgTop: '#CF685D',
+        bgBottom: '#8C352F',
+        rimOuter: '#DCE3EC',
+        rimInner: '#F8FAFC',
+        glyphMain: '#FCF7F2',
+        glyphAccent: '#F9E6CE',
+        glyphStroke: '#24100E',
+      },
+      campBlack: {
+        bgTop: '#455064',
+        bgBottom: '#1D2533',
+        rimOuter: '#C8D4E3',
+        rimInner: '#F1F5F9',
+        glyphMain: '#F1F5F9',
+        glyphAccent: '#BBD0EB',
+        glyphStroke: '#AEBDD1',
+      },
       allyBadgeBg: 'rgba(11, 22, 38, 0.88)',
       allyBadgeText: '#dbeafe',
       enemyBadgeBg: 'rgba(11, 22, 38, 0.92)',
@@ -728,6 +821,24 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
         glyphMain: '#fef3c7',
         glyphAccent: '#f59e0b',
         glyphStroke: '#18110c',
+      },
+      campRed: {
+        bgTop: '#FAF0E0',
+        bgBottom: '#D6BFA0',
+        rimOuter: '#9A4036',
+        rimInner: '#FFFBF2',
+        glyphMain: '#FAF0E0',
+        glyphAccent: '#A6413B',
+        glyphStroke: '#261610',
+      },
+      campBlack: {
+        bgTop: '#4E4744',
+        bgBottom: '#262220',
+        rimOuter: '#D9BA82',
+        rimInner: '#F7E7C4',
+        glyphMain: '#F7EDE0',
+        glyphAccent: '#EAC277',
+        glyphStroke: '#C8B8A2',
       },
       allyBadgeBg: 'rgba(22, 16, 13, 0.88)',
       allyBadgeText: '#fde68a',
@@ -987,4 +1098,38 @@ export function getThemedPiecePaletteAtCoord(
     slot,
     palette: slot === 'a' ? boardTheme.board.pieceOnA : boardTheme.board.pieceOnB,
   };
+}
+
+/** Resolve the balanced camp palette (`campRed`, `campBlack`, or neutral) for a piece under `boardTheme`. */
+export function getThemedPiecePaletteForOwner(
+  boardTheme: BlindWarThemeDefinition,
+  owner: 'red' | 'black' | 'neutral'
+): PieceMedallionPalette {
+  if (owner === 'red') return boardTheme.board.campRed;
+  if (owner === 'black') return boardTheme.board.campBlack;
+  return boardTheme.board.pieceNeutral;
+}
+
+/** Compute relative sRGB luminance (0..1) from a `#RGB` or `#RRGGBB` hex string. */
+export function getHexRelativeLuminance(hex: string): number {
+  const cleaned = hex.trim().replace('#', '');
+  if (cleaned.length !== 3 && cleaned.length !== 6) return 0.5;
+  const full =
+    cleaned.length === 3
+      ? cleaned
+          .split('')
+          .map((c) => c + c)
+          .join('')
+      : cleaned;
+  const r = parseInt(full.slice(0, 2), 16) / 255;
+  const g = parseInt(full.slice(2, 4), 16) / 255;
+  const b = parseInt(full.slice(4, 6), 16) / 255;
+  const linearize = (c: number) =>
+    c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+}
+
+/** Return true when a board square hex is dark enough to benefit from a luminous contour lift. */
+export function isDarkBoardColor(hex: string): boolean {
+  return getHexRelativeLuminance(hex) < 0.16;
 }

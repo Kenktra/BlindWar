@@ -17,7 +17,7 @@ interface MiniBoardSamplePiece {
 const MINI_BOARD_PIECES: readonly MiniBoardSamplePiece[] = [
   { coord: { row: 0, col: 0 }, char: 'secret', owner: 'black' },
   { coord: { row: 0, col: 3 }, char: 'arbaletrier', owner: 'black' },
-  { coord: { row: 2, col: 1 }, char: 'cavalier', owner: 'red' },
+  { coord: { row: 2, col: 0 }, char: 'cavalier', owner: 'red' },
   { coord: { row: 3, col: 2 }, char: 'roi', owner: 'red' },
 ];
 
@@ -81,7 +81,7 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
           </strong>
           <div style={{ fontSize: '0.76rem', color: ui.textMuted }}>
             {siteTheme.subtitle} — Cases {boardTheme.board.squareALabel} /{' '}
-            {boardTheme.board.squareBLabel} • Médaillons originaux adaptatifs
+            {boardTheme.board.squareBLabel} • Pièces transparentes à contraste équilibré
           </div>
         </div>
         <div className="bw-theme-swatches" aria-label="Couleurs principales">
@@ -213,24 +213,28 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                   <span
                     style={{
                       display: 'inline-flex',
+                      gap: '2px',
                       padding: '3px',
                       borderRadius: '6px',
                       backgroundColor: boardTheme.board.squareA,
                     }}
-                    title={`${ch} (version contrastée sur case ${boardTheme.board.squareALabel})`}
+                    title={`${ch} Rouge & Noir sur case ${boardTheme.board.squareALabel}`}
                   >
-                    <PieceArtwork character={ch} squareSlot="a" theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 0 }} theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 0 }} theme={boardTheme} size="xs" />
                   </span>
                   <span
                     style={{
                       display: 'inline-flex',
+                      gap: '2px',
                       padding: '3px',
                       borderRadius: '6px',
                       backgroundColor: boardTheme.board.squareB,
                     }}
-                    title={`${ch} (version contrastée sur case ${boardTheme.board.squareBLabel})`}
+                    title={`${ch} Rouge & Noir sur case ${boardTheme.board.squareBLabel}`}
                   >
-                    <PieceArtwork character={ch} squareSlot="b" theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 1 }} theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 1 }} theme={boardTheme} size="xs" />
                   </span>
                 </React.Fragment>
               ))}

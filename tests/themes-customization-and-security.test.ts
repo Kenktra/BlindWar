@@ -16,8 +16,11 @@ import {
   THEME_LIST,
   computeProfileCosmetics,
   getBoardSquareSlot,
+  getHexRelativeLuminance,
   getThemeDefinition,
   getThemedPiecePaletteAtCoord,
+  getThemedPiecePaletteForOwner,
+  isDarkBoardColor,
   resolveThemeUiForColorMode,
   sanitizeDisplayName,
   sanitizeUserPreferences,
@@ -38,6 +41,8 @@ import {
   PieceAvatar,
   PieceDualVariantPreview,
 } from '../client/src/components/PieceArtwork.js';
+import { ThemePreviewPanel } from '../client/src/components/ThemePreviewPanel.js';
+import { DEFAULT_USER_PREFERENCES as CLIENT_DEFAULTS } from '../shared/src/index.js';
 import { ALL_PIECE_ART_KINDS } from '../client/src/assets/pieces/silhouettes.js';
 import {
   THEME_ASSET_PACKS,
@@ -185,6 +190,69 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       expect(resolvePieceThemeAsset('vert_et_beige', 'roi').styleVariant).toBe('chesscom');
       expect(resolvePieceThemeAsset('noir_et_blanc', 'roi').styleVariant).toBe('monochrome');
       expect(resolvePieceThemeAsset('bleu_et_argent', 'roi').styleVariant).toBe('blue');
+    });
+
+    it('keeps balanced contrast and distinct Camp Rouge vs Camp Noir identities on every square across all 6 themes', () => {
+      for (const theme of THEME_LIST) {
+        const redPalette = getThemedPiecePaletteForOwner(theme, 'red');
+        const blackPalette = getThemedPiecePaletteForOwner(theme, 'black');
+        expect(redPalette.bgTop).not.toBe(blackPalette.bgTop);
+        expect(getHexRelativeLuminance(redPalette.bgTop)).toBeGreaterThan(
+          getHexRelativeLuminance(blackPalette.bgBottom) + 0.12,
+        );
+
+        // Camp identity stays consistent regardless of square coordinates while surface halo adapts
+        const redSlotA = renderToStaticMarkup(
+          React.createElement(PieceArtwork, {
+            character: 'roi',
+            owner: 'red',
+            coord: { row: 0, col: 0 },
+            theme,
+          }),
+        );
+        const redSlotB = renderToStaticMarkup(
+          React.createElement(PieceArtwork, {
+            character: 'roi',
+            owner: 'red',
+            coord: { row: 0, col: 1 },
+            theme,
+          }),
+        );
+        const blackSlotB = renderToStaticMarkup(
+          React.createElement(PieceArtwork, {
+            character: 'roi',
+            owner: 'black',
+            coord: { row: 0, col: 1 },
+            theme,
+          }),
+        );
+
+        expect(redSlotA).toContain(redPalette.bgTop);
+        expect(redSlotB).toContain(redPalette.bgTop);
+        expect(blackSlotB).toContain(blackPalette.bgTop);
+        expect(blackSlotB).toContain('data-piece-camp="black"');
+        expect(redSlotA).toContain('data-piece-camp="red"');
+
+        const expectedDarkSlotA = isDarkBoardColor(theme.board.squareA);
+        expect(redSlotA.includes('bw-art-on-dark-square')).toBe(expectedDarkSlotA);
+      }
+
+      // Rouge & Noir does not reuse harsh aggressive pure crimson fill on pieces
+      const rAndNRed = BLIND_WAR_THEMES.rouge_et_noir.board.campRed;
+      expect(rAndNRed.bgTop.toLowerCase()).not.toBe('#b51f2b');
+      expect(rAndNRed.bgTop.toLowerCase()).not.toBe('#c82332');
+      expect(getHexRelativeLuminance(rAndNRed.bgTop)).toBeGreaterThan(0.7);
+
+      const previewHtml = renderToStaticMarkup(
+        React.createElement(ThemePreviewPanel, {
+          previewPrefs: CLIENT_DEFAULTS,
+          activePrefs: CLIENT_DEFAULTS,
+          onApplyDraft: () => {},
+          onResetDefaults: () => {},
+        }),
+      );
+      expect(previewHtml).toContain('data-piece-camp="red"');
+      expect(previewHtml).toContain('data-piece-camp="black"');
     });
   });
 
