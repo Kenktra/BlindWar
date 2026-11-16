@@ -6,7 +6,6 @@ import {
   CHARACTER_CATALOG,
   CHARACTER_DOSSIERS,
   CHARACTER_TYPES,
-  COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD,
   FAQ_ITEMS,
   MECHANIC_DOSSIERS,
   RULE_SECTIONS,
@@ -73,6 +72,7 @@ import {
 import { PhaserBoardCanvas } from '../board/PhaserBoardCanvas.js';
 import { selectContextualTip } from '../board/contextualTutorials.js';
 import { PieceArtwork, PieceDualVariantPreview } from '../components/PieceArtwork.js';
+import { PieceDescriptionPanel } from '../components/PieceDescriptionPanel.js';
 import {
   type UserSettings,
   dismissContextualTip,
@@ -1120,8 +1120,29 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     );
 
     // Always allow touch inspection of any piece on the board (even during opponent's turn)
+    const clickedSameInspected =
+      inspectedSquare !== null &&
+      inspectedSquare.row === coord.row &&
+      inspectedSquare.col === coord.col;
+    const isTargetingAction =
+      activeCardInUse !== null || traqueurMarkModePieceId !== null;
+
     if (clickedPiece) {
-      setInspectedSquare(coord);
+      if (
+        clickedSameInspected &&
+        !isTargetingAction &&
+        (view.phase !== 'playing' || view.turn.activePlayer !== viewerColor)
+      ) {
+        setInspectedSquare(null);
+      } else {
+        setInspectedSquare(coord);
+      }
+    } else if (
+      view.phase !== 'playing' ||
+      view.turn.activePlayer !== viewerColor ||
+      (!selectedSquare && !isTargetingAction)
+    ) {
+      setInspectedSquare(null);
     }
 
     if (view.phase !== 'playing' || view.turn.activePlayer !== viewerColor) {
@@ -1289,10 +1310,24 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
 
     setPendingMoveDisambiguation(null);
     setTraqueurMarkModePieceId(null);
+    const clickedSameSelected =
+      selectedSquare !== null &&
+      selectedSquare.row === coord.row &&
+      selectedSquare.col === coord.col;
     if (clickedPiece && clickedPiece.owner === viewerColor) {
-      setSelectedSquare(coord);
+      if (clickedSameSelected) {
+        setSelectedSquare(null);
+        setInspectedSquare(null);
+      } else {
+        setSelectedSquare(coord);
+      }
     } else {
       setSelectedSquare(null);
+      if (!clickedPiece) {
+        setInspectedSquare(null);
+      } else if (clickedSameInspected) {
+        setInspectedSquare(null);
+      }
     }
   };
 
@@ -1912,8 +1947,19 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
 
       {/* Main 3-Column Tactical Arena */}
       <div className="bw-arena-columns">
-        {/* Left Sidebar: Placement Palette OR Cards Hand & Active Effects */}
+        {/* Left Sidebar: Dynamic Piece Description Panel + Placement Palette / Cards Hand */}
         <aside className="bw-sidebar bw-sidebar-left">
+          <PieceDescriptionPanel
+            viewerColor={viewerColor}
+            phase={view.phase}
+            inspectedCoord={inspectedSquare}
+            piece={inspectedPiece}
+            placementBrushChar={selectedBrushCharacter}
+            onClearSelection={() => {
+              setSelectedSquare(null);
+              setInspectedSquare(null);
+            }}
+          />
           {view.phase === 'placement' ? (
             <div className="bw-panel">
               <h3>
@@ -2452,92 +2498,21 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             )}
           </div>
 
-          {/* Touch-Friendly Piece Inspector Strip (replaces mouse hover on mobile/tablet) */}
-          {view.phase !== 'placement' && inspectedPiece && inspectedSquare && (
-            <div className="bw-piece-inspector" role="region" aria-label="Inspecteur de pièce">
-              <div className="bw-piece-inspector-main">
-                <span className="bw-piece-inspector-symbol">
-                  <PieceArtwork
-                    character={inspectedPiece.character ?? 'secret'}
-                    owner={inspectedPiece.owner}
-                    coord={inspectedSquare}
-                    size="md"
-                  />
-                </span>
-                <div>
-                  <div className="bw-piece-inspector-title">
-                    <strong>
-                      {inspectedPiece.character !== null
-                        ? CHARACTER_DOSSIERS[inspectedPiece.character].name
-                        : 'Pièce adverse à identité secrète'}
-                    </strong>{' '}
-                    <span className="bw-piece-inspector-coord">
-                      ({coordToNotation(inspectedSquare)} •{' '}
-                      {inspectedPiece.owner === 'red' ? 'Armée Rouge 🔴' : 'Armée Noire ⚫'})
-                    </span>
-                  </div>
-                  <div className="bw-piece-inspector-sub">
-                    {inspectedPiece.character !== null ? (
-                      <>
-                        {CHARACTER_DOSSIERS[inspectedPiece.character].movementSummary} —{' '}
-                        {CHARACTER_DOSSIERS[inspectedPiece.character].specialAbility}
-                        {inspectedPiece.character === 'colosse' &&
-                          inspectedPiece.kamikazeHitsTakenVisible !== null && (
-                            <span className="bw-inspector-meta-tag">
-                              {' '}
-                              • Kamikaze subis : {inspectedPiece.kamikazeHitsTakenVisible}/
-                              {COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD}
-                            </span>
-                          )}
-                        {inspectedPiece.owner === viewerColor &&
-                          inspectedPiece.character === 'traqueur' && (
-                            <span className="bw-inspector-meta-tag">
-                              {' '}
-                              •{' '}
-                              {inspectedPiece.traqueurHasActiveMarkVisible
-                                ? inspectedPiece.traqueurPursuitReadyVisible
-                                  ? 'Poursuite (+1 case vers cible) ACTIVE'
-                                  : 'Cible marquée (Poursuite active au tour suivant)'
-                                : 'Marquage (0 action) disponible'}
-                            </span>
-                          )}
-                        {inspectedPiece.owner === viewerColor &&
-                          inspectedPiece.character === 'arbaletrier' && (
-                            <span className="bw-inspector-meta-tag">
-                              {' '}
-                              •{' '}
-                              {inspectedPiece.arbaletrierCooldownTurnsVisible &&
-                              inspectedPiece.arbaletrierCooldownTurnsVisible > 0
-                                ? `Recharge : encore ${inspectedPiece.arbaletrierCooldownTurnsVisible} tour(s) perso`
-                                : 'Tir à distance PRÊT (1 tir / 3 tours)'}
-                            </span>
-                          )}
-                      </>
-                    ) : (
-                      <>
-                        Identité masquée (§4). Utilisez un Guetteur, Espionnage ou Révélation pour
-                        l’identifier.
-                        {inspectedPiece.traqueurMarkedByViewer && (
-                          <span className="bw-inspector-meta-tag">
-                            {' '}
-                            • Cible marquée par votre Traqueur
-                          </span>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="bw-btn bw-btn-ghost bw-btn-sm"
-                onClick={() => setInspectedSquare(null)}
-                aria-label="Fermer l'inspecteur"
-              >
-                ✕
-              </button>
-            </div>
-          )}
+          {/* Mobile & Tablet Compact Piece Dossier Slot (desktop shows full dossier in left sidebar) */}
+          <div className="bw-mobile-piece-dossier-slot">
+            <PieceDescriptionPanel
+              viewerColor={viewerColor}
+              phase={view.phase}
+              inspectedCoord={inspectedSquare}
+              piece={inspectedPiece}
+              placementBrushChar={selectedBrushCharacter}
+              compact
+              onClearSelection={() => {
+                setSelectedSquare(null);
+                setInspectedSquare(null);
+              }}
+            />
+          </div>
 
           {/* Mobile Quick Placement / Quick Card Strip right below the board */}
           <div className="bw-mobile-quick-strip">

@@ -912,11 +912,11 @@ textarea {
 .bw-arena-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 320px minmax(320px, 1fr) 320px;
-  gap: 1rem;
+  grid-template-columns: 345px minmax(320px, 1fr) 310px;
+  gap: 1.05rem;
   padding: 1rem;
   align-items: start;
-  max-width: 1460px;
+  max-width: 1480px;
   width: 100%;
   margin: 0 auto;
 }
@@ -1995,6 +1995,196 @@ textarea {
   margin-top: 0.12rem;
 }
 
+/* Panneau Dossier Dynamique des Pièces (gauche échiquier + slot mobile) */
+.bw-mobile-piece-dossier-slot {
+  display: none;
+}
+
+.bw-piece-dossier-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+  padding: 0.9rem 0.95rem;
+  border-color: var(--bw-border-bright);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bw-piece-dossier-idle-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bw-piece-dossier-heading {
+  margin: 0 0 0.18rem;
+  font-size: 0.95rem;
+}
+
+.bw-piece-dossier-empty-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--bw-text-muted);
+}
+
+.bw-piece-dossier-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.bw-piece-dossier-artbox {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border-bright);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bw-piece-dossier-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.bw-piece-dossier-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.bw-piece-dossier-title {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 800;
+  color: var(--bw-text-primary);
+}
+
+.bw-piece-dossier-role {
+  margin: 0.12rem 0 0.35rem;
+  font-size: 0.79rem;
+  color: var(--bw-gold);
+  font-weight: 600;
+}
+
+.bw-piece-dossier-badges,
+.bw-piece-dossier-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+}
+
+.bw-dossier-pill {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.14rem 0.48rem;
+  border-radius: 999px;
+  background: var(--bw-bg-elevated);
+  border: 1px solid var(--bw-border);
+  color: var(--bw-text-primary);
+}
+
+.bw-dossier-pill-muted {
+  color: var(--bw-text-muted);
+}
+
+.bw-dossier-status {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.16rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid var(--bw-border);
+}
+
+.bw-status-neutral {
+  background: var(--bw-bg-panel-alt);
+  color: var(--bw-text-secondary);
+}
+
+.bw-status-info {
+  background: rgba(6, 182, 212, 0.14);
+  border-color: rgba(6, 182, 212, 0.42);
+  color: var(--bw-cyan);
+}
+
+.bw-status-ok {
+  background: rgba(16, 185, 129, 0.14);
+  border-color: rgba(16, 185, 129, 0.42);
+  color: var(--bw-green);
+}
+
+.bw-status-warn {
+  background: rgba(245, 158, 11, 0.15);
+  border-color: rgba(245, 158, 11, 0.44);
+  color: var(--bw-gold);
+}
+
+.bw-status-danger {
+  background: rgba(220, 38, 38, 0.14);
+  border-color: rgba(220, 38, 38, 0.42);
+  color: var(--bw-danger-text);
+}
+
+.bw-piece-dossier-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bw-piece-dossier-section {
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border);
+  border-radius: 8px;
+  padding: 0.48rem 0.62rem;
+}
+
+.bw-dossier-label {
+  font-size: 0.71rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--bw-text-muted);
+  margin-bottom: 0.16rem;
+}
+
+.bw-dossier-text {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.42;
+  color: var(--bw-text-secondary);
+}
+
+.bw-dossier-list {
+  margin: 0.1rem 0 0;
+  padding-left: 1rem;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--bw-text-secondary);
+}
+
+.bw-dossier-list li + li {
+  margin-top: 0.14rem;
+}
+
+.bw-btn-xs {
+  padding: 0.18rem 0.42rem;
+  font-size: 0.74rem;
+  border-radius: 6px;
+}
+
+.bw-piece-dossier-compact {
+  padding: 0.7rem 0.78rem;
+}
+
+.bw-piece-dossier-compact .bw-piece-dossier-artbox {
+  width: 42px;
+  height: 42px;
+}
+
 .bw-active-card-targeting-bar {
   display: flex;
   align-items: center;
@@ -2235,8 +2425,17 @@ textarea {
   }
 
   .bw-last-move-bar,
-  .bw-piece-inspector {
+  .bw-piece-inspector,
+  .bw-mobile-piece-dossier-slot {
     width: min(96vw, 520px);
+  }
+
+  .bw-mobile-piece-dossier-slot {
+    display: block;
+  }
+
+  .bw-last-move-bar,
+  .bw-piece-inspector {
     padding: 0.42rem 0.65rem;
   }
 
