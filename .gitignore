@@ -1,0 +1,35 @@
+# Dépendances
+node_modules/
+
+# Fichiers générés / builds / caches
+dist/
+dist-ssr/
+build/
+coverage/
+.vite/
+.vitest/
+*.tsbuildinfo
+
+# Données d'exécution et secrets locaux (jamais envoyés sur GitHub)
+data/
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.db
+*.sqlite
+*.sqlite3
+
+# Journaux et fichiers temporaires
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.bak
+
+# Système / Éditeur
+.DS_Store
+Thumbs.db

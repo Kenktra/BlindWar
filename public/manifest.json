@@ -1,0 +1,20 @@
+{
+  "name": "BLIND WAR — Stratégie Tactique 9×9",
+  "short_name": "BLIND WAR",
+  "description": "Jeu de stratégie militaire 9×9 à identités cachées, 27 pièces par armée et 16 cartes tactiques.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#090b10",
+  "theme_color": "#dc2626",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
