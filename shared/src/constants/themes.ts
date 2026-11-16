@@ -11,6 +11,7 @@ import type { Coord } from '../types/core.js';
 
 export type ThemeId =
   | 'rouge_et_noir'
+  | 'classique'
   | 'vert_et_beige'
   | 'noir_et_blanc'
   | 'bleu_et_argent'
@@ -62,6 +63,29 @@ export interface ThemeUiPalette {
   readonly phaserPulseHex: number;
 }
 
+export interface BoardInteractionPalette {
+  readonly cellBorder: string;
+  readonly cellHoverBorder: string;
+  readonly selectionBg: string;
+  readonly selectionBorder: string;
+  readonly moveValidBg: string;
+  readonly moveValidBorder: string;
+  readonly attackValidBg: string;
+  readonly attackValidBorder: string;
+  readonly jumpValidBg: string;
+  readonly jumpValidBorder: string;
+  readonly specialZoneBg: string;
+  readonly specialZoneBorder: string;
+  readonly cardTargetBg: string;
+  readonly cardTargetBorder: string;
+  readonly reconGlow: string;
+  readonly lastMoveFromBg: string;
+  readonly lastMoveToBg: string;
+  readonly lastMoveAccent: string;
+  readonly boardHudBg: string;
+  readonly boardHudBorder: string;
+}
+
 export interface ThemeBoardPalette {
   readonly squareA: string;
   readonly squareB: string;
@@ -79,6 +103,7 @@ export interface ThemeBoardPalette {
   readonly enemyBadgeBg: string;
   readonly enemyBadgeBorder: string;
   readonly enemyBadgeText: string;
+  readonly interactions: BoardInteractionPalette;
 }
 
 export interface BlindWarThemeDefinition {
@@ -176,6 +201,135 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       enemyBadgeBg: 'rgba(9, 10, 13, 0.92)',
       enemyBadgeBorder: '#ef4444',
       enemyBadgeText: '#fecaca',
+      interactions: {
+        cellBorder: 'rgba(255, 255, 255, 0.08)',
+        cellHoverBorder: 'rgba(255, 255, 255, 0.45)',
+        selectionBg: 'rgba(245, 158, 11, 0.34)',
+        selectionBorder: '#f59e0b',
+        moveValidBg: 'rgba(16, 185, 129, 0.3)',
+        moveValidBorder: '#10b981',
+        attackValidBg: 'rgba(254, 202, 202, 0.24)',
+        attackValidBorder: '#fca5a5',
+        jumpValidBg: 'rgba(245, 158, 11, 0.36)',
+        jumpValidBorder: '#fbbf24',
+        specialZoneBg: 'rgba(168, 85, 247, 0.3)',
+        specialZoneBorder: '#a855f7',
+        cardTargetBg: 'rgba(6, 182, 212, 0.24)',
+        cardTargetBorder: '#06b6d4',
+        reconGlow: 'rgba(6, 182, 212, 0.48)',
+        lastMoveFromBg: 'rgba(250, 204, 21, 0.22)',
+        lastMoveToBg: 'rgba(251, 146, 60, 0.28)',
+        lastMoveAccent: '#fbbf24',
+        boardHudBg: '#131217',
+        boardHudBorder: '#543542',
+      },
+    },
+  },
+
+  classique: {
+    id: 'classique',
+    name: 'Classique',
+    subtitle: 'Échiquier traditionnel ivoire & noyer chaleureux',
+    swatchA: '#F0D9B5',
+    swatchB: '#B58863',
+    ui: {
+      bgDeep: '#120f0c',
+      bgRadialGlow: '#2b2118',
+      bgNavbar: 'rgba(24, 19, 15, 0.95)',
+      bgPanel: '#1b1612',
+      bgPanelAlt: '#241e18',
+      bgElevated: '#322921',
+      border: '#47392d',
+      borderBright: '#6e5742',
+      accent: '#c0843d',
+      accentBright: '#e3a85b',
+      accentSoftBg: 'rgba(192, 132, 61, 0.22)',
+      accentGlow: 'rgba(227, 168, 91, 0.38)',
+      accentBadgeText: '#fde68a',
+      btnPrimaryStart: '#b57b38',
+      btnPrimaryEnd: '#855520',
+      btnPrimaryHoverStart: '#cb8d44',
+      btnPrimaryHoverEnd: '#9a6427',
+      btnPrimaryText: '#fffbeb',
+      btnPrimaryBorder: '#e3a85b',
+      textPrimary: '#fdf8f0',
+      textSecondary: '#e5d8c5',
+      textMuted: '#b5a38d',
+      notifBg: 'rgba(29, 23, 18, 0.96)',
+      notifBorder: '#c0843d',
+      notifAccent: '#fde68a',
+      gold: '#f59e0b',
+      green: '#22c55e',
+      cyan: '#38bdf8',
+      dangerText: '#fecaca',
+      dangerBorder: '#ef4444',
+      phaserPulseHex: 0xc0843d,
+    },
+    board: {
+      squareA: '#F0D9B5',
+      squareB: '#B58863',
+      squareALabel: 'Ivoire',
+      squareBLabel: 'Noyer',
+      frameBg: '#231912',
+      frameBorder: '#6e5037',
+      coordOnA: 'rgba(84, 52, 26, 0.85)',
+      coordOnB: 'rgba(255, 245, 228, 0.88)',
+      // Case ivoire -> Pion Bois Foncé
+      pieceOnA: {
+        bgTop: '#4e3523',
+        bgBottom: '#26180e',
+        rimOuter: '#96683c',
+        rimInner: '#f0d9b5',
+        glyphMain: '#fff7e8',
+        glyphAccent: '#e3a85b',
+        glyphStroke: '#1a0f08',
+      },
+      // Case noyer -> Pion Ivoire Doré
+      pieceOnB: {
+        bgTop: '#fff7e6',
+        bgBottom: '#d9be94',
+        rimOuter: '#6e4926',
+        rimInner: '#ffffff',
+        glyphMain: '#382312',
+        glyphAccent: '#8c5627',
+        glyphStroke: '#1c1007',
+      },
+      pieceNeutral: {
+        bgTop: '#704d31',
+        bgBottom: '#3c2717',
+        rimOuter: '#e0c093',
+        rimInner: '#fff7e8',
+        glyphMain: '#fffaf0',
+        glyphAccent: '#f59e0b',
+        glyphStroke: '#24160b',
+      },
+      allyBadgeBg: 'rgba(30, 21, 14, 0.9)',
+      allyBadgeText: '#fde68a',
+      enemyBadgeBg: 'rgba(30, 21, 14, 0.94)',
+      enemyBadgeBorder: '#f59e0b',
+      enemyBadgeText: '#fef3c7',
+      interactions: {
+        cellBorder: 'rgba(88, 57, 29, 0.25)',
+        cellHoverBorder: 'rgba(255, 248, 232, 0.65)',
+        selectionBg: 'rgba(217, 119, 6, 0.36)',
+        selectionBorder: '#f59e0b',
+        moveValidBg: 'rgba(22, 163, 74, 0.32)',
+        moveValidBorder: '#22c55e',
+        attackValidBg: 'rgba(185, 28, 28, 0.34)',
+        attackValidBorder: '#ef4444',
+        jumpValidBg: 'rgba(234, 179, 8, 0.38)',
+        jumpValidBorder: '#eab308',
+        specialZoneBg: 'rgba(126, 34, 206, 0.32)',
+        specialZoneBorder: '#a855f7',
+        cardTargetBg: 'rgba(2, 132, 199, 0.3)',
+        cardTargetBorder: '#38bdf8',
+        reconGlow: 'rgba(56, 189, 248, 0.5)',
+        lastMoveFromBg: 'rgba(251, 191, 36, 0.28)',
+        lastMoveToBg: 'rgba(245, 158, 11, 0.34)',
+        lastMoveAccent: '#f59e0b',
+        boardHudBg: '#241c15',
+        boardHudBorder: '#6e5742',
+      },
     },
   },
 
@@ -261,6 +415,28 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       enemyBadgeBg: 'rgba(22, 33, 18, 0.92)',
       enemyBadgeBorder: '#e8b948',
       enemyBadgeText: '#fef3c7',
+      interactions: {
+        cellBorder: 'rgba(34, 51, 24, 0.2)',
+        cellHoverBorder: 'rgba(255, 255, 255, 0.65)',
+        selectionBg: 'rgba(250, 204, 21, 0.42)',
+        selectionBorder: '#eab308',
+        moveValidBg: 'rgba(22, 163, 74, 0.32)',
+        moveValidBorder: '#15803d',
+        attackValidBg: 'rgba(220, 38, 38, 0.34)',
+        attackValidBorder: '#dc2626',
+        jumpValidBg: 'rgba(245, 158, 11, 0.42)',
+        jumpValidBorder: '#d97706',
+        specialZoneBg: 'rgba(147, 51, 234, 0.3)',
+        specialZoneBorder: '#9333ea',
+        cardTargetBg: 'rgba(14, 165, 233, 0.3)',
+        cardTargetBorder: '#0284c7',
+        reconGlow: 'rgba(14, 165, 233, 0.48)',
+        lastMoveFromBg: 'rgba(253, 224, 71, 0.32)',
+        lastMoveToBg: 'rgba(250, 204, 21, 0.42)',
+        lastMoveAccent: '#facc15',
+        boardHudBg: '#1c2619',
+        boardHudBorder: '#56754e',
+      },
     },
   },
 
@@ -346,6 +522,28 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       enemyBadgeBg: 'rgba(15, 15, 18, 0.94)',
       enemyBadgeBorder: '#f59e0b',
       enemyBadgeText: '#fde68a',
+      interactions: {
+        cellBorder: 'rgba(128, 128, 138, 0.25)',
+        cellHoverBorder: '#ffffff',
+        selectionBg: 'rgba(250, 204, 21, 0.35)',
+        selectionBorder: '#facc15',
+        moveValidBg: 'rgba(34, 197, 94, 0.28)',
+        moveValidBorder: '#22c55e',
+        attackValidBg: 'rgba(239, 68, 68, 0.32)',
+        attackValidBorder: '#ef4444',
+        jumpValidBg: 'rgba(245, 158, 11, 0.35)',
+        jumpValidBorder: '#f59e0b',
+        specialZoneBg: 'rgba(168, 85, 247, 0.3)',
+        specialZoneBorder: '#a855f7',
+        cardTargetBg: 'rgba(56, 189, 248, 0.28)',
+        cardTargetBorder: '#38bdf8',
+        reconGlow: 'rgba(56, 189, 248, 0.45)',
+        lastMoveFromBg: 'rgba(212, 212, 216, 0.26)',
+        lastMoveToBg: 'rgba(250, 204, 21, 0.34)',
+        lastMoveAccent: '#facc15',
+        boardHudBg: '#18181b',
+        boardHudBorder: '#52525b',
+      },
     },
   },
 
@@ -431,6 +629,28 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       enemyBadgeBg: 'rgba(11, 22, 38, 0.92)',
       enemyBadgeBorder: '#93c5fd',
       enemyBadgeText: '#f1f5f9',
+      interactions: {
+        cellBorder: 'rgba(147, 197, 253, 0.22)',
+        cellHoverBorder: '#dbeafe',
+        selectionBg: 'rgba(250, 204, 21, 0.35)',
+        selectionBorder: '#fbbf24',
+        moveValidBg: 'rgba(52, 211, 153, 0.3)',
+        moveValidBorder: '#10b981',
+        attackValidBg: 'rgba(248, 113, 113, 0.32)',
+        attackValidBorder: '#ef4444',
+        jumpValidBg: 'rgba(251, 191, 36, 0.34)',
+        jumpValidBorder: '#f59e0b',
+        specialZoneBg: 'rgba(192, 132, 252, 0.3)',
+        specialZoneBorder: '#a855f7',
+        cardTargetBg: 'rgba(56, 189, 248, 0.34)',
+        cardTargetBorder: '#38bdf8',
+        reconGlow: 'rgba(56, 189, 248, 0.55)',
+        lastMoveFromBg: 'rgba(147, 197, 253, 0.32)',
+        lastMoveToBg: 'rgba(56, 189, 248, 0.38)',
+        lastMoveAccent: '#60a5fa',
+        boardHudBg: '#122136',
+        boardHudBorder: '#4670ab',
+      },
     },
   },
 
@@ -514,12 +734,35 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       enemyBadgeBg: 'rgba(22, 16, 13, 0.92)',
       enemyBadgeBorder: '#f59e0b',
       enemyBadgeText: '#fef3c7',
+      interactions: {
+        cellBorder: 'rgba(229, 169, 76, 0.14)',
+        cellHoverBorder: '#fde68a',
+        selectionBg: 'rgba(251, 191, 36, 0.36)',
+        selectionBorder: '#fbbf24',
+        moveValidBg: 'rgba(52, 211, 153, 0.28)',
+        moveValidBorder: '#34d399',
+        attackValidBg: 'rgba(248, 113, 113, 0.32)',
+        attackValidBorder: '#f87171',
+        jumpValidBg: 'rgba(245, 158, 11, 0.38)',
+        jumpValidBorder: '#f59e0b',
+        specialZoneBg: 'rgba(168, 85, 247, 0.32)',
+        specialZoneBorder: '#c084fc',
+        cardTargetBg: 'rgba(56, 189, 248, 0.28)',
+        cardTargetBorder: '#38bdf8',
+        reconGlow: 'rgba(56, 189, 248, 0.48)',
+        lastMoveFromBg: 'rgba(251, 191, 36, 0.24)',
+        lastMoveToBg: 'rgba(229, 169, 76, 0.34)',
+        lastMoveAccent: '#fbbf24',
+        boardHudBg: '#1b1511',
+        boardHudBorder: '#664d36',
+      },
     },
   },
 };
 
 export const THEME_LIST: readonly BlindWarThemeDefinition[] = [
   BLIND_WAR_THEMES.rouge_et_noir,
+  BLIND_WAR_THEMES.classique,
   BLIND_WAR_THEMES.vert_et_beige,
   BLIND_WAR_THEMES.noir_et_blanc,
   BLIND_WAR_THEMES.bleu_et_argent,
@@ -584,6 +827,25 @@ export function resolveThemeUiForColorMode(
       gold: '#b45309',
       green: '#047857',
       cyan: '#0e7490',
+    },
+    classique: {
+      bgDeep: '#f8f4ed',
+      bgRadialGlow: '#efe3cf',
+      bgPanelAlt: '#f0e7d8',
+      bgElevated: '#e2d3bc',
+      border: '#d0bc9f',
+      borderBright: '#9c7d54',
+      accentBadgeText: '#694015',
+      btnPrimaryStart: '#9c6629',
+      btnPrimaryEnd: '#734817',
+      btnPrimaryHoverStart: '#b37833',
+      btnPrimaryHoverEnd: '#87561d',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#734817',
+      dangerText: '#991b1b',
+      gold: '#92400e',
+      green: '#15803d',
+      cyan: '#0369a1',
     },
     vert_et_beige: {
       bgDeep: '#f5f6f1',

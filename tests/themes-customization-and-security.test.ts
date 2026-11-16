@@ -145,10 +145,11 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
   });
 
   describe('2. Système centralisé des 5 thèmes, inversion sur cases & variables CSS', () => {
-    it('defines all 5 curated themes with Rouge et noir as default', () => {
+    it('defines all 6 curated themes with Rouge et noir as default and complete interaction palettes', () => {
       expect(DEFAULT_THEME_ID).toBe('rouge_et_noir');
       expect(THEME_LIST.map((t) => t.id)).toEqual([
         'rouge_et_noir',
+        'classique',
         'vert_et_beige',
         'noir_et_blanc',
         'bleu_et_argent',
@@ -157,6 +158,8 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
 
       expect(BLIND_WAR_THEMES.rouge_et_noir.board.squareA).toBe('#B51F2B');
       expect(BLIND_WAR_THEMES.rouge_et_noir.board.squareB).toBe('#171717');
+      expect(BLIND_WAR_THEMES.classique.board.squareA).toBe('#F0D9B5');
+      expect(BLIND_WAR_THEMES.classique.board.squareB).toBe('#B58863');
       expect(BLIND_WAR_THEMES.vert_et_beige.board.squareA).toBe('#769656');
       expect(BLIND_WAR_THEMES.vert_et_beige.board.squareB).toBe('#EEEED2');
       expect(BLIND_WAR_THEMES.noir_et_blanc.board.squareA).toBe('#F5F5F5');
@@ -165,6 +168,14 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       expect(BLIND_WAR_THEMES.bleu_et_argent.board.squareB).toBe('#C8D0D9');
       expect(BLIND_WAR_THEMES.ambre_et_ebene.board.squareA).toBe('#A8742A');
       expect(BLIND_WAR_THEMES.ambre_et_ebene.board.squareB).toBe('#1E1815');
+
+      for (const theme of THEME_LIST) {
+        expect(theme.board.interactions.selectionBorder).toBeTruthy();
+        expect(theme.board.interactions.moveValidBorder).toBeTruthy();
+        expect(theme.board.interactions.attackValidBorder).toBeTruthy();
+        expect(theme.board.interactions.specialZoneBorder).toBeTruthy();
+        expect(theme.board.interactions.boardHudBorder).toBeTruthy();
+      }
 
       // Unknown theme falls back gracefully
       expect(getThemeDefinition('invalid_theme_id').id).toBe('rouge_et_noir');
@@ -209,6 +220,11 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       expect(vars['--bw-accent']).toBe(BLIND_WAR_THEMES.bleu_et_argent.ui.accent);
       expect(vars['--bw-board-square-a']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.squareA);
       expect(vars['--bw-board-square-b']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.squareB);
+      expect(vars['--bw-cell-select-border']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.interactions.selectionBorder);
+      expect(vars['--bw-cell-move-border']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.interactions.moveValidBorder);
+      expect(vars['--bw-cell-attack-border']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.interactions.attackValidBorder);
+      expect(vars['--bw-cell-special-border']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.interactions.specialZoneBorder);
+      expect(vars['--bw-board-hud-bg']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.interactions.boardHudBg);
       expect(vars['--bw-anim-scale']).toBe('0.01');
 
       // Noir et blanc must enforce dark text on its bright primary CTA button

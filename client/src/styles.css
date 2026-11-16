@@ -973,7 +973,7 @@ textarea {
 
 .bw-board-cell {
   position: relative;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--bw-board-cell-border, rgba(255, 255, 255, 0.08));
   padding: 2px;
   display: flex;
   align-items: center;
@@ -1004,12 +1004,12 @@ textarea {
 }
 
 .bw-board-cell:hover {
-  border-color: rgba(255, 255, 255, 0.42);
+  border-color: var(--bw-board-cell-hover-border, rgba(255, 255, 255, 0.45));
 }
 
 .bw-cell-selected {
-  background-image: linear-gradient(rgba(245, 158, 11, 0.34), rgba(245, 158, 11, 0.34));
-  border: 2px solid var(--bw-gold) !important;
+  background-image: linear-gradient(var(--bw-cell-select-bg, rgba(245, 158, 11, 0.34)), var(--bw-cell-select-bg, rgba(245, 158, 11, 0.34)));
+  border: 2px solid var(--bw-cell-select-border, var(--bw-gold)) !important;
 }
 
 .bw-cell-placement-zone {
@@ -1017,33 +1017,33 @@ textarea {
 }
 
 .bw-cell-move-valid {
-  background-image: linear-gradient(rgba(16, 185, 129, 0.3), rgba(16, 185, 129, 0.3));
-  border: 2px solid var(--bw-green) !important;
+  background-image: linear-gradient(var(--bw-cell-move-bg, rgba(16, 185, 129, 0.3)), var(--bw-cell-move-bg, rgba(16, 185, 129, 0.3)));
+  border: 2px solid var(--bw-cell-move-border, var(--bw-green)) !important;
 }
 
 .bw-cell-attack-valid {
-  background-image: linear-gradient(rgba(254, 202, 202, 0.22), rgba(254, 202, 202, 0.22));
-  border: 2px solid #fca5a5 !important;
-  box-shadow: inset 0 0 0 1.5px rgba(254, 226, 226, 0.75);
+  background-image: linear-gradient(var(--bw-cell-attack-bg, rgba(254, 202, 202, 0.24)), var(--bw-cell-attack-bg, rgba(254, 202, 202, 0.24)));
+  border: 2px solid var(--bw-cell-attack-border, #fca5a5) !important;
+  box-shadow: inset 0 0 0 1.5px var(--bw-cell-attack-border, rgba(254, 226, 226, 0.75));
 }
 
 .bw-cell-jump-valid {
-  background-image: linear-gradient(rgba(245, 158, 11, 0.36), rgba(245, 158, 11, 0.36));
-  border: 2px solid var(--bw-gold) !important;
+  background-image: linear-gradient(var(--bw-cell-jump-bg, rgba(245, 158, 11, 0.36)), var(--bw-cell-jump-bg, rgba(245, 158, 11, 0.36)));
+  border: 2px solid var(--bw-cell-jump-border, var(--bw-gold)) !important;
 }
 
 .bw-cell-card-target {
-  box-shadow: inset 0 0 0 2px var(--bw-cyan);
-  background-image: linear-gradient(rgba(6, 182, 212, 0.24), rgba(6, 182, 212, 0.24));
+  box-shadow: inset 0 0 0 2px var(--bw-cell-card-border, var(--bw-cyan));
+  background-image: linear-gradient(var(--bw-cell-card-bg, rgba(6, 182, 212, 0.24)), var(--bw-cell-card-bg, rgba(6, 182, 212, 0.24)));
 }
 
 .bw-cell-recon {
-  box-shadow: inset 0 0 8px rgba(6, 182, 212, 0.45);
+  box-shadow: inset 0 0 8px var(--bw-cell-recon-glow, rgba(6, 182, 212, 0.45));
 }
 
 .bw-cell-espionage-pick {
-  border: 2px solid #a855f7 !important;
-  background: rgba(168, 85, 247, 0.3) !important;
+  border: 2px solid var(--bw-cell-special-border, #a855f7) !important;
+  background: var(--bw-cell-special-bg, rgba(168, 85, 247, 0.3)) !important;
 }
 
 .bw-coord-rank {
@@ -1525,7 +1525,7 @@ textarea {
  * ============================================================================ */
 
 .bw-cell-last-from {
-  background-image: linear-gradient(rgba(56, 189, 248, 0.24), rgba(56, 189, 248, 0.24));
+  background-image: linear-gradient(var(--bw-cell-last-from-bg, rgba(56, 189, 248, 0.24)), var(--bw-cell-last-from-bg, rgba(56, 189, 248, 0.24)));
   box-shadow: inset 0 0 0 2px rgba(56, 189, 248, 0.9);
 }
 
@@ -1535,8 +1535,8 @@ textarea {
 }
 
 .bw-cell-last-to {
-  background-image: linear-gradient(rgba(251, 191, 36, 0.26), rgba(251, 191, 36, 0.26));
-  box-shadow: inset 0 0 0 2.5px rgba(251, 191, 36, 0.95);
+  background-image: linear-gradient(var(--bw-cell-last-to-bg, rgba(251, 191, 36, 0.26)), var(--bw-cell-last-to-bg, rgba(251, 191, 36, 0.26)));
+  box-shadow: inset 0 0 0 2.5px var(--bw-cell-last-accent, rgba(251, 191, 36, 0.95));
 }
 
 .bw-cell-last-eliminated {
@@ -4038,4 +4038,18 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
 
 .bw-color-light .bw-profile-banner-hero .bw-muted-small {
   color: #cbd5e1;
+}
+
+.bw-color-light .bw-warning-pill {
+  background: rgba(180, 83, 9, 0.14);
+  color: #92400e;
+}
+
+.bw-color-light .bw-kill-counter-badge {
+  background: rgba(185, 28, 28, 0.12);
+  color: #991b1b;
+}
+
+.bw-color-light .bw-game-topbar {
+  border-bottom-color: var(--bw-border);
 }

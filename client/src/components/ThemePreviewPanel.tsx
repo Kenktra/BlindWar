@@ -123,16 +123,40 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
               const isSlotA = (row + col) % 2 === 0;
               const bg = isSlotA ? boardTheme.board.squareA : boardTheme.board.squareB;
               const piece = pieceByCoordKey.get(`${row},${col}`);
+              const isSelectedSample = row === 3 && col === 2;
               const isHighlightedMove = row === 2 && col === 2;
+              const isHighlightedAttack = row === 0 && col === 3;
+              const isSpecialZone = row === 1 && col === 1;
+              const { interactions } = boardTheme.board;
+              const overlayBg = isSelectedSample
+                ? interactions.selectionBg
+                : isHighlightedMove
+                  ? interactions.moveValidBg
+                  : isHighlightedAttack
+                    ? interactions.attackValidBg
+                    : isSpecialZone
+                      ? interactions.specialZoneBg
+                      : undefined;
+              const outlineStyle = isSelectedSample
+                ? `2px solid ${interactions.selectionBorder}`
+                : isHighlightedMove
+                  ? `2px solid ${interactions.moveValidBorder}`
+                  : isHighlightedAttack
+                    ? `2px solid ${interactions.attackValidBorder}`
+                    : isSpecialZone
+                      ? `2px dashed ${interactions.specialZoneBorder}`
+                      : undefined;
               return (
                 <div
                   key={`${row}-${col}`}
                   className="bw-preview-mini-cell"
                   style={{
                     backgroundColor: bg,
-                    outline: isHighlightedMove
-                      ? `2px solid ${ui.green}`
+                    backgroundImage: overlayBg
+                      ? `linear-gradient(${overlayBg}, ${overlayBg})`
                       : undefined,
+                    outline: outlineStyle,
+                    border: `1px solid ${interactions.cellBorder}`,
                   }}
                 >
                   {piece ? (
@@ -146,13 +170,23 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                   ) : isHighlightedMove ? (
                     <span
                       style={{
-                        color: ui.textPrimary,
+                        color: interactions.moveValidBorder,
                         fontWeight: 900,
-                        fontSize: '0.75rem',
-                        textShadow: '0 1px 3px rgba(0,0,0,0.85)',
+                        fontSize: '0.85rem',
+                        textShadow: '0 1px 2px rgba(0,0,0,0.65)',
                       }}
                     >
-                      {previewPrefs.showPatternMarkers ? '•' : ''}
+                      •
+                    </span>
+                  ) : isSpecialZone ? (
+                    <span
+                      style={{
+                        color: interactions.specialZoneBorder,
+                        fontWeight: 900,
+                        fontSize: '0.68rem',
+                      }}
+                    >
+                      ◎
                     </span>
                   ) : null}
                 </div>
