@@ -6,6 +6,7 @@ import {
   type Coord,
   type UserPreferences,
 } from '../../../shared/src/index.js';
+import { CardArtwork } from './CardArtwork.js';
 import { PieceArtwork } from './PieceArtwork.js';
 
 interface MiniBoardSamplePiece {
@@ -237,6 +238,22 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                     <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 1 }} theme={boardTheme} size="xs" />
                   </span>
                 </React.Fragment>
+              ))}
+            </div>
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', margin: '0.55rem 0 0.35rem' }}>
+              Assets des cartes du thème ({siteTheme.name})
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+              {(['kamikaze', 'invincibilite', 'espionnage', 'teleportation'] as const).map((cid) => (
+                <CardArtwork
+                  key={cid}
+                  card={cid}
+                  theme={siteTheme}
+                  colorMode={previewPrefs.colorMode}
+                  size="sm"
+                  framed
+                  title={cid}
+                />
               ))}
             </div>
           </div>

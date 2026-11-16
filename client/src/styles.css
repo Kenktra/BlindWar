@@ -5917,3 +5917,177 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
     flex-wrap: wrap;
   }
 }
+
+/* ============================================================================
+ * ASSETS VECTORIELS DES 16 CARTES & PANNEAU DE DESCRIPTION (§1 - §7)
+ * ============================================================================ */
+
+.bw-card-artwork-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+  flex-shrink: 0;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.bw-card-artwork-framed {
+  padding: 5px;
+  border-radius: 10px;
+  border: 1.5px solid var(--bw-border-bright);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 4px 12px rgba(0, 0, 0, 0.28);
+}
+
+.bw-card-size-xs.bw-card-artwork-framed {
+  padding: 3px;
+  border-radius: 7px;
+}
+
+.bw-card-size-sm.bw-card-artwork-framed {
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.bw-card-artwork-svg {
+  display: block;
+  background: transparent;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
+}
+
+.bw-color-light .bw-card-artwork-svg {
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.2));
+}
+
+.bw-card-title-art,
+.bw-chip-toggle-art,
+.bw-recent-card-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+
+.bw-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.bw-card-spotlight-icon,
+.bw-new-card-artwork {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Panneau complet d'aperçu et de description d'une carte */
+.bw-card-confirm-dialog {
+  width: min(94vw, 680px);
+}
+
+.bw-card-dossier-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72rem;
+}
+
+.bw-card-dossier-header {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.bw-card-dossier-artbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+  border-radius: 14px;
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border-bright);
+  flex-shrink: 0;
+}
+
+.bw-card-dossier-titles {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.bw-card-dossier-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--bw-text-primary);
+}
+
+.bw-card-dossier-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.bw-card-dossier-vis-note {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--bw-text-muted);
+}
+
+.bw-card-dossier-cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.bw-card-dossier-compact .bw-card-dossier-cols {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.bw-card-dossier-section {
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border);
+  border-radius: 9px;
+  padding: 0.58rem 0.72rem;
+}
+
+.bw-card-restriction-inline {
+  margin: 0.2rem 0 0.35rem;
+  padding: 0.3rem 0.52rem;
+  border-radius: 6px;
+  font-size: 0.77rem;
+  font-weight: 700;
+  background: rgba(245, 158, 11, 0.16);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  color: #fde68a;
+}
+
+.bw-color-light .bw-card-restriction-inline {
+  background: rgba(180, 83, 9, 0.12);
+  color: #92400e;
+}
+
+.bw-card-dossier-footer {
+  padding-top: 0.2rem;
+}
+
+.bw-learn-cards-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bw-learn-cards-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.38rem;
+}
+
+@media (max-width: 720px) {
+  .bw-card-dossier-cols {
+    grid-template-columns: 1fr;
+  }
+}

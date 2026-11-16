@@ -1,4 +1,4 @@
-import type { Coord } from '../types/core.js';
+import type { CardType, Coord } from '../types/core.js';
 
 /**
  * Centralized theme system for BLIND WAR.
@@ -1295,4 +1295,627 @@ export function verifyThemePieceContrastAcrossSquareStates(
   }
 
   return reports;
+}
+
+export type CardPaletteRole = 'offense' | 'defense' | 'recon' | 'maneuver';
+
+export interface CardArtworkPalette {
+  readonly fillTop: string;
+  readonly fillBottom: string;
+  readonly stroke: string;
+  readonly accent: string;
+  readonly secondary: string;
+  readonly frameBg: string;
+  readonly frameBorder: string;
+}
+
+export const CARD_PALETTE_ROLES: Readonly<Record<CardType, CardPaletteRole>> = {
+  kamikaze: 'offense',
+  invincibilite: 'defense',
+  block: 'defense',
+  retreat: 'maneuver',
+  revelation_temporaire: 'recon',
+  revelation_permanente: 'recon',
+  resurrection: 'maneuver',
+  brouillard: 'recon',
+  espionnage: 'recon',
+  teleportation: 'maneuver',
+  protection: 'defense',
+  recrutement: 'maneuver',
+  double_action: 'offense',
+  piege: 'offense',
+  contre_espionnage: 'defense',
+  sacrifice: 'offense',
+};
+
+export function getCardPaletteRole(card: CardType): CardPaletteRole {
+  return CARD_PALETTE_ROLES[card] ?? 'maneuver';
+}
+
+export interface CustomThemeCardPaletteSpec {
+  readonly theme: BlindWarThemeDefinition;
+  readonly colorMode?: 'dark' | 'light';
+}
+
+const BUILTIN_CARD_PALETTES: Readonly<
+  Record<ThemeId, Readonly<Record<'dark' | 'light', Readonly<Record<CardPaletteRole, CardArtworkPalette>>>>>
+> = {
+  rouge_et_noir: {
+    dark: {
+      offense: {
+        fillTop: '#dc2626',
+        fillBottom: '#7f1d1d',
+        stroke: '#fecaca',
+        accent: '#fbbf24',
+        secondary: '#18181b',
+        frameBg: 'rgba(181, 31, 43, 0.2)',
+        frameBorder: 'rgba(239, 68, 68, 0.58)',
+      },
+      defense: {
+        fillTop: '#3f3f46',
+        fillBottom: '#18181b',
+        stroke: '#f8fafc',
+        accent: '#ef4444',
+        secondary: '#fca5a5',
+        frameBg: 'rgba(39, 39, 42, 0.72)',
+        frameBorder: 'rgba(248, 250, 252, 0.36)',
+      },
+      recon: {
+        fillTop: '#b91c1c',
+        fillBottom: '#27272a',
+        stroke: '#f8fafc',
+        accent: '#f59e0b',
+        secondary: '#cbd5e1',
+        frameBg: 'rgba(127, 29, 29, 0.28)',
+        frameBorder: 'rgba(245, 158, 11, 0.5)',
+      },
+      maneuver: {
+        fillTop: '#e4e4e7',
+        fillBottom: '#a1a1aa',
+        stroke: '#09090b',
+        accent: '#dc2626',
+        secondary: '#27272a',
+        frameBg: 'rgba(228, 228, 231, 0.14)',
+        frameBorder: 'rgba(220, 38, 38, 0.55)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#dc2626',
+        fillBottom: '#991b1b',
+        stroke: '#18181b',
+        accent: '#fef08a',
+        secondary: '#fee2e2',
+        frameBg: 'rgba(220, 38, 38, 0.1)',
+        frameBorder: 'rgba(185, 28, 28, 0.45)',
+      },
+      defense: {
+        fillTop: '#27272a',
+        fillBottom: '#09090b',
+        stroke: '#18181b',
+        accent: '#ef4444',
+        secondary: '#f4f4f5',
+        frameBg: 'rgba(24, 24, 27, 0.08)',
+        frameBorder: 'rgba(24, 24, 27, 0.35)',
+      },
+      recon: {
+        fillTop: '#991b1b',
+        fillBottom: '#450a0a',
+        stroke: '#18181b',
+        accent: '#f59e0b',
+        secondary: '#fef2f2',
+        frameBg: 'rgba(153, 27, 27, 0.1)',
+        frameBorder: 'rgba(180, 83, 9, 0.45)',
+      },
+      maneuver: {
+        fillTop: '#52525b',
+        fillBottom: '#27272a',
+        stroke: '#09090b',
+        accent: '#dc2626',
+        secondary: '#e4e4e7',
+        frameBg: 'rgba(82, 82, 91, 0.1)',
+        frameBorder: 'rgba(220, 38, 38, 0.4)',
+      },
+    },
+  },
+  classique: {
+    dark: {
+      offense: {
+        fillTop: '#c2410c',
+        fillBottom: '#7c2d12',
+        stroke: '#fef3c7',
+        accent: '#fbbf24',
+        secondary: '#f0d9b5',
+        frameBg: 'rgba(194, 65, 12, 0.22)',
+        frameBorder: 'rgba(245, 158, 11, 0.55)',
+      },
+      defense: {
+        fillTop: '#b58863',
+        fillBottom: '#734f30',
+        stroke: '#fdf8f0',
+        accent: '#fbbf24',
+        secondary: '#291d14',
+        frameBg: 'rgba(181, 136, 99, 0.2)',
+        frameBorder: 'rgba(240, 217, 181, 0.48)',
+      },
+      recon: {
+        fillTop: '#f0d9b5',
+        fillBottom: '#d4b483',
+        stroke: '#2b1e16',
+        accent: '#b45309',
+        secondary: '#78350f',
+        frameBg: 'rgba(240, 217, 181, 0.14)',
+        frameBorder: 'rgba(227, 168, 91, 0.52)',
+      },
+      maneuver: {
+        fillTop: '#d97706',
+        fillBottom: '#92400e',
+        stroke: '#fdf8f0',
+        accent: '#fef3c7',
+        secondary: '#451a03',
+        frameBg: 'rgba(217, 119, 6, 0.2)',
+        frameBorder: 'rgba(251, 191, 36, 0.5)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#b91c1c',
+        fillBottom: '#7f1d1d',
+        stroke: '#291d14',
+        accent: '#f59e0b',
+        secondary: '#fef3c7',
+        frameBg: 'rgba(185, 28, 28, 0.1)',
+        frameBorder: 'rgba(185, 28, 28, 0.38)',
+      },
+      defense: {
+        fillTop: '#8b5e34',
+        fillBottom: '#5c3c1e',
+        stroke: '#291d14',
+        accent: '#fbbf24',
+        secondary: '#f5ead6',
+        frameBg: 'rgba(139, 94, 52, 0.12)',
+        frameBorder: 'rgba(110, 87, 66, 0.42)',
+      },
+      recon: {
+        fillTop: '#b45309',
+        fillBottom: '#78350f',
+        stroke: '#291d14',
+        accent: '#fef08a',
+        secondary: '#fde68a',
+        frameBg: 'rgba(180, 83, 9, 0.1)',
+        frameBorder: 'rgba(180, 83, 9, 0.4)',
+      },
+      maneuver: {
+        fillTop: '#5c4033',
+        fillBottom: '#3b261d',
+        stroke: '#1e130e',
+        accent: '#d97706',
+        secondary: '#f0d9b5',
+        frameBg: 'rgba(92, 64, 51, 0.12)',
+        frameBorder: 'rgba(110, 87, 66, 0.42)',
+      },
+    },
+  },
+  vert_et_beige: {
+    dark: {
+      offense: {
+        fillTop: '#e8b948',
+        fillBottom: '#b47d19',
+        stroke: '#f6f8f1',
+        accent: '#769656',
+        secondary: '#1e2e1a',
+        frameBg: 'rgba(232, 185, 72, 0.18)',
+        frameBorder: 'rgba(232, 185, 72, 0.55)',
+      },
+      defense: {
+        fillTop: '#769656',
+        fillBottom: '#4b6633',
+        stroke: '#eeeed2',
+        accent: '#e8b948',
+        secondary: '#192217',
+        frameBg: 'rgba(118, 150, 86, 0.22)',
+        frameBorder: 'rgba(141, 181, 103, 0.55)',
+      },
+      recon: {
+        fillTop: '#eeeed2',
+        fillBottom: '#cfd4a8',
+        stroke: '#1b2e16',
+        accent: '#4b7a2c',
+        secondary: '#56754e',
+        frameBg: 'rgba(238, 238, 210, 0.14)',
+        frameBorder: 'rgba(238, 238, 210, 0.46)',
+      },
+      maneuver: {
+        fillTop: '#4ade80',
+        fillBottom: '#15803d',
+        stroke: '#f6f8f1',
+        accent: '#eeeed2',
+        secondary: '#14532d',
+        frameBg: 'rgba(74, 222, 128, 0.16)',
+        frameBorder: 'rgba(74, 222, 128, 0.5)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#b45309',
+        fillBottom: '#78350f',
+        stroke: '#1b2e16',
+        accent: '#e8b948',
+        secondary: '#eeeed2',
+        frameBg: 'rgba(180, 83, 9, 0.12)',
+        frameBorder: 'rgba(180, 83, 9, 0.4)',
+      },
+      defense: {
+        fillTop: '#4e7330',
+        fillBottom: '#2f491b',
+        stroke: '#162412',
+        accent: '#e8b948',
+        secondary: '#eeeed2',
+        frameBg: 'rgba(78, 115, 48, 0.12)',
+        frameBorder: 'rgba(78, 115, 48, 0.45)',
+      },
+      recon: {
+        fillTop: '#2f5c3e',
+        fillBottom: '#1a3a25',
+        stroke: '#122619',
+        accent: '#4ade80',
+        secondary: '#eeeed2',
+        frameBg: 'rgba(47, 92, 62, 0.12)',
+        frameBorder: 'rgba(47, 92, 62, 0.45)',
+      },
+      maneuver: {
+        fillTop: '#6b7f36',
+        fillBottom: '#44541f',
+        stroke: '#162412',
+        accent: '#facc15',
+        secondary: '#eeeed2',
+        frameBg: 'rgba(107, 127, 54, 0.12)',
+        frameBorder: 'rgba(107, 127, 54, 0.45)',
+      },
+    },
+  },
+  noir_et_blanc: {
+    dark: {
+      offense: {
+        fillTop: '#ffffff',
+        fillBottom: '#d4d4d4',
+        stroke: '#141414',
+        accent: '#525252',
+        secondary: '#262626',
+        frameBg: 'rgba(255, 255, 255, 0.14)',
+        frameBorder: 'rgba(255, 255, 255, 0.56)',
+      },
+      defense: {
+        fillTop: '#d4d4d4',
+        fillBottom: '#8c8c8c',
+        stroke: '#f5f5f5',
+        accent: '#171717',
+        secondary: '#fafafa',
+        frameBg: 'rgba(163, 163, 163, 0.16)',
+        frameBorder: 'rgba(212, 212, 212, 0.52)',
+      },
+      recon: {
+        fillTop: '#e5e5e5',
+        fillBottom: '#a3a3a3',
+        stroke: '#171717',
+        accent: '#262626',
+        secondary: '#ffffff',
+        frameBg: 'rgba(229, 229, 229, 0.14)',
+        frameBorder: 'rgba(229, 229, 229, 0.5)',
+      },
+      maneuver: {
+        fillTop: '#fafafa',
+        fillBottom: '#b8b8b8',
+        stroke: '#0a0a0a',
+        accent: '#404040',
+        secondary: '#e5e5e5',
+        frameBg: 'rgba(250, 250, 250, 0.14)',
+        frameBorder: 'rgba(250, 250, 250, 0.54)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#262626',
+        fillBottom: '#0a0a0a',
+        stroke: '#0a0a0a',
+        accent: '#e5e5e5',
+        secondary: '#d4d4d4',
+        frameBg: 'rgba(23, 23, 23, 0.09)',
+        frameBorder: 'rgba(23, 23, 23, 0.45)',
+      },
+      defense: {
+        fillTop: '#404040',
+        fillBottom: '#171717',
+        stroke: '#171717',
+        accent: '#fafafa',
+        secondary: '#a3a3a3',
+        frameBg: 'rgba(64, 64, 64, 0.1)',
+        frameBorder: 'rgba(64, 64, 64, 0.45)',
+      },
+      recon: {
+        fillTop: '#525252',
+        fillBottom: '#262626',
+        stroke: '#171717',
+        accent: '#ffffff',
+        secondary: '#d4d4d4',
+        frameBg: 'rgba(82, 82, 82, 0.1)',
+        frameBorder: 'rgba(82, 82, 82, 0.45)',
+      },
+      maneuver: {
+        fillTop: '#333333',
+        fillBottom: '#121212',
+        stroke: '#0a0a0a',
+        accent: '#d4d4d4',
+        secondary: '#f5f5f5',
+        frameBg: 'rgba(51, 51, 51, 0.1)',
+        frameBorder: 'rgba(51, 51, 51, 0.45)',
+      },
+    },
+  },
+  bleu_et_argent: {
+    dark: {
+      offense: {
+        fillTop: '#60a5fa',
+        fillBottom: '#1d4ed8',
+        stroke: '#f1f6fc',
+        accent: '#e2e8f0',
+        secondary: '#0f2747',
+        frameBg: 'rgba(37, 99, 235, 0.24)',
+        frameBorder: 'rgba(96, 165, 250, 0.6)',
+      },
+      defense: {
+        fillTop: '#94a3b8',
+        fillBottom: '#475569',
+        stroke: '#f1f6fc',
+        accent: '#38bdf8',
+        secondary: '#0f172a',
+        frameBg: 'rgba(148, 163, 184, 0.2)',
+        frameBorder: 'rgba(203, 213, 225, 0.52)',
+      },
+      recon: {
+        fillTop: '#38bdf8',
+        fillBottom: '#0284c7',
+        stroke: '#f1f6fc',
+        accent: '#e0f2fe',
+        secondary: '#0c4a6e',
+        frameBg: 'rgba(56, 189, 248, 0.22)',
+        frameBorder: 'rgba(56, 189, 248, 0.58)',
+      },
+      maneuver: {
+        fillTop: '#dbeafe',
+        fillBottom: '#93c5fd',
+        stroke: '#0c2340',
+        accent: '#1d4ed8',
+        secondary: '#334155',
+        frameBg: 'rgba(219, 234, 254, 0.16)',
+        frameBorder: 'rgba(147, 197, 253, 0.56)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#1d4ed8',
+        fillBottom: '#1e3a8a',
+        stroke: '#0f172a',
+        accent: '#38bdf8',
+        secondary: '#dbeafe',
+        frameBg: 'rgba(29, 78, 216, 0.12)',
+        frameBorder: 'rgba(29, 78, 216, 0.45)',
+      },
+      defense: {
+        fillTop: '#334155',
+        fillBottom: '#1e293b',
+        stroke: '#0f172a',
+        accent: '#60a5fa',
+        secondary: '#e2e8f0',
+        frameBg: 'rgba(51, 65, 85, 0.12)',
+        frameBorder: 'rgba(51, 65, 85, 0.42)',
+      },
+      recon: {
+        fillTop: '#0369a1',
+        fillBottom: '#0c4a6e',
+        stroke: '#082f49',
+        accent: '#7dd3fc',
+        secondary: '#e0f2fe',
+        frameBg: 'rgba(3, 105, 161, 0.12)',
+        frameBorder: 'rgba(3, 105, 161, 0.45)',
+      },
+      maneuver: {
+        fillTop: '#2563eb',
+        fillBottom: '#1e40af',
+        stroke: '#0f172a',
+        accent: '#cbd5e1',
+        secondary: '#eff6ff',
+        frameBg: 'rgba(37, 99, 235, 0.11)',
+        frameBorder: 'rgba(37, 99, 235, 0.42)',
+      },
+    },
+  },
+  ambre_et_ebene: {
+    dark: {
+      offense: {
+        fillTop: '#f59e0b',
+        fillBottom: '#b45309',
+        stroke: '#fef3c7',
+        accent: '#fde68a',
+        secondary: '#2d1c0c',
+        frameBg: 'rgba(245, 158, 11, 0.2)',
+        frameBorder: 'rgba(245, 158, 11, 0.58)',
+      },
+      defense: {
+        fillTop: '#a8742a',
+        fillBottom: '#66400d',
+        stroke: '#fdf8f2',
+        accent: '#fbbf24',
+        secondary: '#1e1815',
+        frameBg: 'rgba(168, 116, 42, 0.2)',
+        frameBorder: 'rgba(229, 169, 76, 0.5)',
+      },
+      recon: {
+        fillTop: '#fde68a',
+        fillBottom: '#d97706',
+        stroke: '#1c1410',
+        accent: '#78350f',
+        secondary: '#451a03',
+        frameBg: 'rgba(253, 230, 138, 0.15)',
+        frameBorder: 'rgba(245, 158, 11, 0.52)',
+      },
+      maneuver: {
+        fillTop: '#fb923c',
+        fillBottom: '#c2410c',
+        stroke: '#fdf8f2',
+        accent: '#fef3c7',
+        secondary: '#291710',
+        frameBg: 'rgba(251, 146, 60, 0.18)',
+        frameBorder: 'rgba(251, 146, 60, 0.52)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#b45309',
+        fillBottom: '#78350f',
+        stroke: '#1e1815',
+        accent: '#fbbf24',
+        secondary: '#fef3c7',
+        frameBg: 'rgba(180, 83, 9, 0.12)',
+        frameBorder: 'rgba(180, 83, 9, 0.45)',
+      },
+      defense: {
+        fillTop: '#5c4128',
+        fillBottom: '#332215',
+        stroke: '#1c1410',
+        accent: '#f59e0b',
+        secondary: '#f5ead6',
+        frameBg: 'rgba(92, 65, 40, 0.12)',
+        frameBorder: 'rgba(92, 65, 40, 0.42)',
+      },
+      recon: {
+        fillTop: '#92400e',
+        fillBottom: '#572408',
+        stroke: '#1c1410',
+        accent: '#fde68a',
+        secondary: '#fef3c7',
+        frameBg: 'rgba(146, 64, 14, 0.12)',
+        frameBorder: 'rgba(146, 64, 14, 0.42)',
+      },
+      maneuver: {
+        fillTop: '#78350f',
+        fillBottom: '#451a03',
+        stroke: '#1c1410',
+        accent: '#e5a94c',
+        secondary: '#fef3c7',
+        frameBg: 'rgba(120, 53, 15, 0.12)',
+        frameBorder: 'rgba(120, 53, 15, 0.42)',
+      },
+    },
+  },
+};
+
+/**
+ * Derive harmonious card palettes for any future custom `BlindWarThemeDefinition`
+ * without duplicating vector illustrations.
+ */
+export function createCustomThemeCardPalettes(
+  spec: CustomThemeCardPaletteSpec,
+): Readonly<Record<CardPaletteRole, CardArtworkPalette>> {
+  const { theme, colorMode = 'dark' } = spec;
+  const ui = resolveThemeUiForColorMode(theme, colorMode);
+  const stroke = colorMode === 'light' ? '#18181b' : '#f8fafc';
+  const sec = colorMode === 'light' ? ui.bgElevated : theme.ui.bgPanel;
+
+  return {
+    offense: {
+      fillTop: ui.accentBright,
+      fillBottom: ui.accent,
+      stroke,
+      accent: ui.gold,
+      secondary: sec,
+      frameBg: ui.accentSoftBg,
+      frameBorder: ui.borderBright,
+    },
+    defense: {
+      fillTop: ui.borderBright,
+      fillBottom: ui.bgElevated,
+      stroke,
+      accent: ui.accentBright,
+      secondary: ui.textSecondary,
+      frameBg: ui.accentSoftBg,
+      frameBorder: ui.borderBright,
+    },
+    recon: {
+      fillTop: ui.cyan,
+      fillBottom: ui.accent,
+      stroke,
+      accent: ui.gold,
+      secondary: sec,
+      frameBg: ui.accentSoftBg,
+      frameBorder: ui.borderBright,
+    },
+    maneuver: {
+      fillTop: ui.green,
+      fillBottom: ui.borderBright,
+      stroke,
+      accent: ui.gold,
+      secondary: sec,
+      frameBg: ui.accentSoftBg,
+      frameBorder: ui.borderBright,
+    },
+  };
+}
+
+/** Resolve the theme-adapted palette for any card or card role under any theme & color mode. */
+export function getThemedCardPalette(
+  themeOrId: BlindWarThemeDefinition | ThemeId | string | null | undefined,
+  cardOrRole: CardType | CardPaletteRole,
+  colorMode: 'dark' | 'light' = 'dark',
+): CardArtworkPalette {
+  const role: CardPaletteRole =
+    cardOrRole in CARD_PALETTE_ROLES
+      ? CARD_PALETTE_ROLES[cardOrRole as CardType]
+      : (cardOrRole as CardPaletteRole);
+
+  if (typeof themeOrId === 'object' && themeOrId !== null && 'ui' in themeOrId) {
+    const custom = themeOrId;
+    const builtinPack = BUILTIN_CARD_PALETTES[custom.id];
+    if (builtinPack && custom === BLIND_WAR_THEMES[custom.id]) {
+      return builtinPack[colorMode][role];
+    }
+    return createCustomThemeCardPalettes({ theme: custom, colorMode })[role];
+  }
+
+  const resolvedTheme = getThemeDefinition(themeOrId);
+  return BUILTIN_CARD_PALETTES[resolvedTheme.id][colorMode][role];
+}
+
+export interface CardSurfaceContrastReport {
+  readonly role: CardPaletteRole;
+  readonly colorMode: 'dark' | 'light';
+  readonly panelHex: string;
+  readonly fillContrast: number;
+  readonly strokeContrast: number;
+  readonly effectiveVisibilityContrast: number;
+}
+
+/**
+ * Verify objective contrast across all 4 card roles under any theme in dark or light mode.
+ */
+export function verifyThemeCardContrast(
+  theme: BlindWarThemeDefinition,
+  colorMode: 'dark' | 'light' = 'dark',
+): readonly CardSurfaceContrastReport[] {
+  const ui = resolveThemeUiForColorMode(theme, colorMode);
+  const panelHex = ui.bgPanel;
+  const roles: readonly CardPaletteRole[] = ['offense', 'defense', 'recon', 'maneuver'];
+  return roles.map((role) => {
+    const pal = getThemedCardPalette(theme, role, colorMode);
+    const fillContrast = getContrastRatioBetweenHex(pal.fillTop, panelHex);
+    const strokeContrast = getContrastRatioBetweenHex(pal.stroke, panelHex);
+    return {
+      role,
+      colorMode,
+      panelHex,
+      fillContrast,
+      strokeContrast,
+      effectiveVisibilityContrast: Math.max(fillContrast, strokeContrast),
+    };
+  });
 }

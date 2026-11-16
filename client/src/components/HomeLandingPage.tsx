@@ -9,6 +9,7 @@ import {
 } from '../../../shared/src/index.js';
 import type { ClientUserProfile } from '../services/apiClient.js';
 import { useOptionalBlindWarTheme } from '../themes/themeManager.js';
+import { CardArtwork } from './CardArtwork.js';
 import { PieceArtwork } from './PieceArtwork.js';
 
 export interface HomeLandingPageProps {
@@ -401,7 +402,7 @@ export const HomeLandingPage: React.FC<HomeLandingPageProps> = ({
                 }}
               >
                 <div className="bw-landing-card-pill-top">
-                  <span>{card.badge}</span>
+                  <CardArtwork card={card.id} size="sm" framed />
                   <strong>{card.name}</strong>
                 </div>
                 <p>{card.effectDescription}</p>

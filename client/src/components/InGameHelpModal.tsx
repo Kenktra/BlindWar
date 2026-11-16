@@ -9,9 +9,12 @@ import {
   SETTINGS_HELP_ITEMS,
   SPECIAL_RULE_TUTORIALS,
   filterTutorialsByQuery,
+  type CardType,
   type CharacterType,
   type PlayerColor,
 } from '../../../shared/src/index.js';
+import { CardArtwork } from './CardArtwork.js';
+import { CardDescriptionPanel } from './CardDescriptionPanel.js';
 import { InteractiveBoardDiagram } from './InteractiveBoardDiagram.js';
 import { PieceArtwork, PieceDualVariantPreview } from './PieceArtwork.js';
 
@@ -39,6 +42,7 @@ export const InGameHelpModal: React.FC<InGameHelpModalProps> = ({
   const [tab, setTab] = useState<InGameHelpTabId>(initialTab);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedChar, setSelectedChar] = useState<CharacterType>('traqueur');
+  const [selectedCardId, setSelectedCardId] = useState<CardType>('kamikaze');
 
   const matchingPieces = useMemo(
     () =>
@@ -300,19 +304,41 @@ export const InGameHelpModal: React.FC<InGameHelpModalProps> = ({
             <>
               <div className="bw-rule-block">
                 <h3>🃏 16 Cartes Tactiques ({matchingCards.length})</h3>
-                <ul>
-                  {matchingCards.map((c) => (
-                    <li key={c.id}>
-                      <strong>
-                        {c.badge} {c.name} ({c.durationLabel}) :
-                      </strong>{' '}
-                      {c.effectDescription}
-                      {c.restrictions.length > 0 && (
-                        <span className="bw-muted-small"> — {c.restrictions[0]}</span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                {matchingCards.length === 0 ? (
+                  <p className="bw-muted-small">Aucune carte ne correspond à « {searchQuery} ».</p>
+                ) : (
+                  <>
+                    <div className="bw-ingame-piece-pills">
+                      {matchingCards.map((c) => {
+                        const isActive =
+                          (matchingCards.some((m) => m.id === selectedCardId)
+                            ? selectedCardId
+                            : matchingCards[0]!.id) === c.id;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            className={`bw-learn-piece-chip${isActive ? ' active' : ''}`}
+                            onClick={() => setSelectedCardId(c.id)}
+                          >
+                            <CardArtwork card={c.id} size="xs" framed />
+                            <span>{c.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <CardDescriptionPanel
+                      card={
+                        (
+                          matchingCards.find((m) => m.id === selectedCardId) ??
+                          matchingCards[0] ??
+                          CARD_DOSSIERS.kamikaze
+                        ).id
+                      }
+                      compact
+                    />
+                  </>
+                )}
               </div>
               <div className="bw-rule-block">
                 <h3>❓ Questions fréquentes (FAQ)</h3>

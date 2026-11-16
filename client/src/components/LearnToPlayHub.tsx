@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import {
+  CARD_DOSSIERS,
   CHARACTER_TYPES,
   LEARN_TO_PLAY_CATEGORIES,
   PIECE_TUTORIALS,
@@ -7,9 +8,12 @@ import {
   SPECIAL_RULE_TUTORIALS,
   TUTORIAL_SCENARIOS,
   filterTutorialsByQuery,
+  type CardType,
   type CharacterType,
   type LearnCategoryId,
 } from '../../../shared/src/index.js';
+import { CardArtwork } from './CardArtwork.js';
+import { CardDescriptionPanel } from './CardDescriptionPanel.js';
 import { InteractiveBoardDiagram } from './InteractiveBoardDiagram.js';
 import { PieceArtwork } from './PieceArtwork.js';
 
@@ -33,6 +37,7 @@ export const LearnToPlayHub: React.FC<LearnToPlayHubProps> = ({
   const [activeCategory, setActiveCategory] = useState<'all' | LearnCategoryId>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedPieceId, setSelectedPieceId] = useState<CharacterType>('traqueur');
+  const [selectedRuleCardId, setSelectedRuleCardId] = useState<CardType>('espionnage');
 
   const scenarioIndexById = useMemo(
     () => new Map(TUTORIAL_SCENARIOS.map((s, idx) => [s.id, idx])),
@@ -373,6 +378,30 @@ export const LearnToPlayHub: React.FC<LearnToPlayHubProps> = ({
 
                   {rule.demoSteps.length > 0 && (
                     <InteractiveBoardDiagram steps={rule.demoSteps} />
+                  )}
+
+                  {rule.relatedCards && rule.relatedCards.length > 0 && (
+                    <div className="bw-learn-cards-strip">
+                      <div className="bw-learn-cards-pills" role="list" aria-label="Cartes illustrées associées">
+                        {rule.relatedCards.map((cid) => {
+                          const isSelected = selectedRuleCardId === cid;
+                          return (
+                            <button
+                              key={`${rule.id}-${cid}`}
+                              type="button"
+                              className={`bw-learn-piece-chip${isSelected ? ' active' : ''}`}
+                              onClick={() => setSelectedRuleCardId(cid)}
+                            >
+                              <CardArtwork card={cid} size="sm" framed />
+                              <span>{CARD_DOSSIERS[cid].name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {rule.relatedCards.includes(selectedRuleCardId) && (
+                        <CardDescriptionPanel card={selectedRuleCardId} compact />
+                      )}
+                    </div>
                   )}
 
                   <div className="bw-learn-rule-cols">

@@ -1,6 +1,6 @@
-import type { CharacterType, Coord } from '../types/core.js';
+import type { CardType, CharacterType, Coord } from '../types/core.js';
 import { ARMY_COMPOSITION } from '../constants/army.js';
-import { COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD } from '../constants/cards.js';
+import { CARD_TYPES, COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD } from '../constants/cards.js';
 
 export type DiagramCellHighlightKind =
   | 'selected'
@@ -931,6 +931,7 @@ export interface SpecialRuleTutorial {
   readonly title: string;
   readonly summary: string;
   readonly relatedCharacterIds?: readonly CharacterType[];
+  readonly relatedCards?: readonly CardType[];
   readonly linkedScenarioId?: string;
   readonly howItWorksSteps: readonly string[];
   readonly whenToUse: string;
@@ -996,6 +997,7 @@ export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
     title: 'Hiérarchie des Révélations (Guetteurs, Assassin, Brouillard & Espionnage)',
     summary: 'Toutes les sources de révélation et de camouflage suivent un ordre de priorité strict côté serveur.',
     relatedCharacterIds: ['guetteur_h', 'guetteur_d', 'assassin'],
+    relatedCards: ['revelation_temporaire', 'revelation_permanente', 'espionnage', 'contre_espionnage', 'brouillard'],
     linkedScenarioId: 'recon-guetteurs',
     howItWorksSteps: [
       '1. Proximité (Guetteur H en H/V, Guetteur D en diagonale à 1 case) : révélation temporaire tant que le Guetteur reste vivant adjacent.',
@@ -1064,6 +1066,7 @@ export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
     title: `Colosse : Armure, Bascule d’extrémité & Règle des ${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD} Kamikazes`,
     summary: `Le Colosse résiste aux attaques normales et à l’Arbalétrier, mais tombe après ${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD} déclenchements de Kamikaze qu’il provoque lui-même.`,
     relatedCharacterIds: ['colosse'],
+    relatedCards: ['kamikaze', 'protection', 'invincibilite'],
     linkedScenarioId: 'kamikaze-colosse-v2',
     howItWorksSteps: [
       '1. Progression : 5 directions vers l’avant/côtés ; arrivé tout au bout du plateau, il inverse son sens et reste révélé 1 tour complet.',
@@ -1275,6 +1278,7 @@ export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
     badge: '🃏',
     title: 'Les 16 Cartes Tactiques & Pioche toutes les 3 éliminations',
     summary: 'Toute la gestion tactique des cartes : obtention, main de 3 max, visibilité secrète et interdictions.',
+    relatedCards: CARD_TYPES,
     linkedScenarioId: 'cartes-tactiques-effet',
     howItWorksSteps: [
       '1. Toutes les 3 pièces ennemies éliminées, vous piochez 1 carte tactique (si vous avez < 3 cartes en main) ; la carte Sacrifice permet aussi de piocher sans compter vers ce palier.',

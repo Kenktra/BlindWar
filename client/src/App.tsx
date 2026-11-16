@@ -69,6 +69,8 @@ import {
 import { getBrowserStandaloneNode } from './services/browserP2PEngine.js';
 import { AdminDashboardScreen } from './components/AdminDashboardScreen.js';
 import { AvatarCropperModal } from './components/AvatarCropperModal.js';
+import { CardArtwork } from './components/CardArtwork.js';
+import { CardDescriptionPanel } from './components/CardDescriptionPanel.js';
 import { HomeLandingPage } from './components/HomeLandingPage.js';
 import { LearnToPlayHub } from './components/LearnToPlayHub.js';
 import { NotificationCenter } from './components/NotificationCenter.js';
@@ -1609,7 +1611,10 @@ export const App: React.FC = () => {
                             }
                           }}
                         >
-                          {CARD_DOSSIERS[cid].badge} {CARD_DOSSIERS[cid].name}
+                          <span className="bw-chip-toggle-art">
+                            <CardArtwork card={cid} size="xs" />
+                            <span>{CARD_DOSSIERS[cid].name}</span>
+                          </span>
                         </button>
                       );
                     })}
@@ -1917,7 +1922,9 @@ export const App: React.FC = () => {
                       className={`bw-collection-tab ${selectedCardDossier === cid ? 'active' : ''}`}
                       onClick={() => setSelectedCardDossier(cid)}
                     >
-                      <span className="bw-tab-sym">{c.badge}</span>
+                      <span className="bw-tab-sym">
+                        <CardArtwork card={cid} size="sm" framed />
+                      </span>
                       <div>
                         <strong>{c.name}</strong>
                         <small>{c.durationLabel}</small>
@@ -1928,32 +1935,7 @@ export const App: React.FC = () => {
               </div>
 
               <div className="bw-dossier-detail">
-                {(() => {
-                  const c = CARD_DOSSIERS[selectedCardDossier];
-                  return (
-                    <>
-                      <div className="bw-dossier-header">
-                        <span className="bw-dossier-big-sym">{c.badge}</span>
-                        <div>
-                          <h3>{c.name}</h3>
-                          <span className="bw-mode-pill">Durée : {c.durationLabel}</span>
-                        </div>
-                      </div>
-                      <p>
-                        <strong>Confidentialité / Visibilité :</strong> {c.visibilityLabel}
-                      </p>
-                      <p>
-                        <strong>Effet officiel :</strong> {c.effectDescription}
-                      </p>
-                      <h4>Règles et interactions :</h4>
-                      <ul>
-                        {c.restrictions.map((r, i) => (
-                          <li key={i}>{r}</li>
-                        ))}
-                      </ul>
-                    </>
-                  );
-                })()}
+                <CardDescriptionPanel card={selectedCardDossier} />
               </div>
             </div>
           </section>

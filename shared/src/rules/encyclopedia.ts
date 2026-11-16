@@ -971,3 +971,117 @@ export const SETTINGS_HELP_ITEMS: readonly SettingsHelpEntry[] = [
   },
 ];
 
+export interface CardUsageDetails {
+  readonly id: CardType;
+  readonly targetSummary: string;
+  readonly usageConditions: readonly string[];
+  readonly restrictions: readonly string[];
+  readonly particularities: readonly string[];
+}
+
+const TARGET_KIND_CONDITION_LABELS: Readonly<Record<string, string>> = {
+  none: 'S’active directement sans sélectionner de case ni de pièce sur l’échiquier.',
+  own_piece: 'Cible : 1 pièce alliée vivante sur le plateau.',
+  enemy_piece: 'Cible : 1 pièce ennemie vivante sur le plateau.',
+  two_enemy_pieces: 'Cible : 1 ou 2 pièces ennemies vivantes sur le plateau.',
+  own_graveyard_piece: 'Cible : 1 pièce alliée éliminée au cimetière + 1 case libre sur votre 1re rangée.',
+  empty_square: 'Cible : 1 case libre autorisée par les règles de la carte.',
+  own_soldier: 'Cible : 1 Soldat allié vivant sur le plateau.',
+};
+
+const CARD_PARTICULARITY_EXTRA: Readonly<Partial<Record<CardType, readonly string[]>>> = {
+  kamikaze: [
+    'Réplique automatiquement contre toute capture ou tir adverse, sauf le 1er impact sur un Colosse (seuil 2/2).',
+  ],
+  invincibilite: [
+    'Protège la pièce ciblée contre 100 % des captures et éliminations pendant 1 tour complet.',
+  ],
+  block: [
+    'L’adversaire saute intégralement son prochain tour (temps de recharge : 2 tours).',
+  ],
+  retreat: [
+    'Permet une retraite tactique d’une case vers l’arrière, y compris pour Soldat et Colosse.',
+  ],
+  revelation_temporaire: [
+    'Dévoile un rôle caché 1 tour complet pour orienter une capture ou un Marquage Traqueur.',
+  ],
+  revelation_permanente: [
+    'Verrouille l’identité ennemie jusqu’au terme de la partie sans blocage possible par Brouillard.',
+  ],
+  resurrection: [
+    'Restaure le rôle réel (y compris s’il s’agissait d’un pion promu avant son élimination).',
+  ],
+  brouillard: [
+    'Camoufle l’ensemble de votre armée contre Guetteurs H/D, Révélation temporaire et Espionnage.',
+  ],
+  espionnage: [
+    'Traverse Contre-espionnage pendant 3 tours sur 1 ou 2 pièces ennemies sans en révéler le ciblage.',
+  ],
+  teleportation: [
+    'Relocalise jusqu’à 2 cases selon les axes autorisés de l’unité sans déclencher de capture.',
+  ],
+  protection: [
+    'Bouclier secret à usage unique absorbant la 1re attaque, tir ou explosion Kamikaze subie.',
+  ],
+  recrutement: [
+    'Renfort unique (1 fois max par partie) ramenant exclusivement un Soldat en 1re rangée.',
+  ],
+  double_action: [
+    'Enchaîne deux actions de déplacement/attaque lors du même tour sans consommer une seconde carte.',
+  ],
+  piege: [
+    'Effet symétrique : toute pièce alliée comme ennemie entrant sur la case piégée est immobilisée 1 tour.',
+  ],
+  contre_espionnage: [
+    'Dissimule secrètement 1 unité alliée pendant 3 tours face aux Guetteurs et à Révélation temporaire.',
+  ],
+  sacrifice: [
+    'Retire 1 Soldat allié du plateau pour piocher aussitôt 1 carte sans offrir d’élimination à l’adversaire.',
+  ],
+};
+
+/**
+ * Derive structured UI inspection details (usage conditions, restrictions, particularities)
+ * directly from the authoritative card catalog & encyclopedia dossiers.
+ */
+export function getCardUsageDetails(card: CardType): CardUsageDetails {
+  const meta = CARD_CATALOG[card];
+  const dossier = CARD_DOSSIERS[card];
+  const targetCondition = TARGET_KIND_CONDITION_LABELS[meta.targetKind] ?? '';
+
+  const usageConditions: string[] = [
+    targetCondition,
+    'Jouable pendant votre tour principal avant d’avoir épuisé vos actions (interdit durant un Tour Bonus).',
+    '1 seule carte jouable par tour ; jouer une carte ne consomme pas votre déplacement normal.',
+  ];
+  if (card === 'recrutement') {
+    usageConditions.push('Nécessite au moins 1 Soldat éliminé, 1 case libre sur votre 1re rangée, et 1 seule utilisation par partie.');
+  }
+  if (card === 'resurrection') {
+    usageConditions.push('Nécessite au moins 1 pièce alliée éligible au cimetière et 1 case libre sur votre 1re rangée.');
+  }
+  if (card === 'sacrifice') {
+    usageConditions.push('Nécessite au moins 1 Soldat allié vivant sur le plateau (autorisé même avec 3 cartes en main).');
+  }
+  if (card === 'piege') {
+    usageConditions.push('Doit cibler une case actuellement inoccupée sans autre piège allié actif.');
+  }
+
+  const secretNotice = meta.isTargetSecretToOpponent
+    ? 'Confidentialité : l’adversaire voit quelle carte est jouée mais ignore sur quel pion ou quelle case.'
+    : 'Visibilité : effet ou déplacement annoncé publiquement selon les règles officielles.';
+
+  const particularities: string[] = [
+    secretNotice,
+    ...(CARD_PARTICULARITY_EXTRA[card] ?? []),
+  ];
+
+  return {
+    id: card,
+    targetSummary: targetCondition,
+    usageConditions,
+    restrictions: [...dossier.restrictions],
+    particularities,
+  };
+}
+

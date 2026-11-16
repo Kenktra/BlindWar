@@ -70,6 +70,8 @@ import {
 } from '../board/annotations.js';
 import { PhaserBoardCanvas } from '../board/PhaserBoardCanvas.js';
 import { selectContextualTip } from '../board/contextualTutorials.js';
+import { CardArtwork } from '../components/CardArtwork.js';
+import { CardDescriptionPanel } from '../components/CardDescriptionPanel.js';
 import { InGameHelpModal } from '../components/InGameHelpModal.js';
 import { PieceArtwork, PieceAvatar } from '../components/PieceArtwork.js';
 import { PieceDescriptionPanel } from '../components/PieceDescriptionPanel.js';
@@ -1625,7 +1627,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         >
           <div className="bw-card-spotlight-inner">
             <div className="bw-card-spotlight-illustration">
-              <span className="bw-card-spotlight-icon">{activeOpponentCardAlert.badge}</span>
+              <span className="bw-card-spotlight-icon">
+                <CardArtwork card={activeOpponentCardAlert.card} size="lg" framed />
+              </span>
               <span className="bw-card-spotlight-cat">
                 {CARD_CATEGORY_META[activeOpponentCardAlert.category].label}
               </span>
@@ -1689,7 +1693,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           <div className="bw-new-card-banner-inner">
             <div className="bw-new-card-illustration">
               <span className="bw-new-card-sparkle" aria-hidden="true">✨</span>
-              <span className="bw-new-card-artwork">{activeNewCardAlert.badge}</span>
+              <span className="bw-new-card-artwork">
+                <CardArtwork card={activeNewCardAlert.card} size="lg" framed />
+              </span>
               <span className="bw-new-card-cat">
                 {CARD_CATEGORY_META[activeNewCardAlert.category].label}
               </span>
@@ -2102,8 +2108,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                           className={`bw-card-item ${isSelectedCard ? 'bw-card-selected' : ''} ${isNewlyObtained ? 'bw-card-newly-obtained' : ''}`}
                         >
                           <div className="bw-card-top">
-                            <span className="bw-card-title">
-                              {dossier.badge} {dossier.name}
+                            <span className="bw-card-title bw-card-title-art">
+                              <CardArtwork card={cardId} size="sm" framed />
+                              <span>{dossier.name}</span>
                               {isNewlyObtained && (
                                 <span className="bw-new-card-badge">NOUVELLE !</span>
                               )}
@@ -2118,7 +2125,15 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                               disabled={!view.turn.canPlayCardNow}
                               onClick={() => handleOpenCardConfirm(cardId)}
                             >
-                              {isSelectedCard ? '✕ Annuler le ciblage' : '🃏 Utiliser cette carte'}
+                              {isSelectedCard ? '✕ Annuler le ciblage' : '🃏 Utiliser'}
+                            </button>
+                            <button
+                              type="button"
+                              className="bw-btn bw-btn-ghost bw-btn-xs"
+                              onClick={() => setConfirmingCard(cardId)}
+                              title={`Consulter la fiche détaillée de ${dossier.name}`}
+                            >
+                              ⓘ Fiche
                             </button>
                           </div>
                         </div>
@@ -2529,11 +2544,16 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                         <button
                           key={`mob-${cardId}-${idx}`}
                           type="button"
-                          disabled={!view.turn.canPlayCardNow}
                           className={`bw-mobile-card-chip ${isSelected ? 'bw-mobile-card-chip-active' : ''} ${isNewlyObtained ? 'bw-card-newly-obtained' : ''}`}
-                          onClick={() => handleOpenCardConfirm(cardId)}
+                          onClick={() => {
+                            if (view.turn.canPlayCardNow) {
+                              handleOpenCardConfirm(cardId);
+                            } else {
+                              setConfirmingCard(cardId);
+                            }
+                          }}
                         >
-                          <span>{dossier.badge}</span>
+                          <CardArtwork card={cardId} size="xs" />
                           <span>{dossier.name}</span>
                           {isNewlyObtained && <span className="bw-new-chip-dot">★</span>}
                         </button>
@@ -2718,20 +2738,30 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                         return (
                           <div key={`tab-${cardId}-${idx}`} className="bw-card-item">
                             <div className="bw-card-top">
-                              <span className="bw-card-title">
-                                {dossier.badge} {dossier.name}
+                              <span className="bw-card-title bw-card-title-art">
+                                <CardArtwork card={cardId} size="sm" framed />
+                                <span>{dossier.name}</span>
                               </span>
                               <span className="bw-card-duration">{dossier.durationLabel}</span>
                             </div>
                             <p className="bw-card-desc">{dossier.effectDescription}</p>
-                            <button
-                              type="button"
-                              className={`bw-btn ${isSelectedCard ? 'bw-btn-ghost' : 'bw-btn-primary'} bw-btn-xs`}
-                              disabled={!view.turn.canPlayCardNow}
-                              onClick={() => handleOpenCardConfirm(cardId)}
-                            >
-                              {isSelectedCard ? '✕ Annuler' : '🃏 Utiliser'}
-                            </button>
+                            <div className="bw-card-actions">
+                              <button
+                                type="button"
+                                className={`bw-btn ${isSelectedCard ? 'bw-btn-ghost' : 'bw-btn-primary'} bw-btn-xs`}
+                                disabled={!view.turn.canPlayCardNow}
+                                onClick={() => handleOpenCardConfirm(cardId)}
+                              >
+                                {isSelectedCard ? '✕ Annuler' : '🃏 Utiliser'}
+                              </button>
+                              <button
+                                type="button"
+                                className="bw-btn bw-btn-ghost bw-btn-xs"
+                                onClick={() => setConfirmingCard(cardId)}
+                              >
+                                ⓘ Fiche
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -2878,12 +2908,20 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                           Tout voir
                         </button>
                       </div>
-                      <p className="bw-muted-small" style={{ margin: 0 }}>
-                        {view.cardNotifications[view.cardNotifications.length - 1]?.badge}{' '}
-                        <strong>
-                          {view.cardNotifications[view.cardNotifications.length - 1]?.cardName}
-                        </strong>{' '}
-                        — {view.cardNotifications[view.cardNotifications.length - 1]?.consequenceText}
+                      <p className="bw-muted-small bw-recent-card-row" style={{ margin: 0 }}>
+                        {view.cardNotifications[view.cardNotifications.length - 1]?.card && (
+                          <CardArtwork
+                            card={view.cardNotifications[view.cardNotifications.length - 1]!.card}
+                            size="xs"
+                            framed
+                          />
+                        )}
+                        <span>
+                          <strong>
+                            {view.cardNotifications[view.cardNotifications.length - 1]?.cardName}
+                          </strong>{' '}
+                          — {view.cardNotifications[view.cardNotifications.length - 1]?.consequenceText}
+                        </span>
                       </p>
                     </div>
                   )}
@@ -2909,6 +2947,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                           <div key={entry.seq} className={`bw-log-entry ${evMeta.colorClass}`}>
                             <div className="bw-log-entry-head">
                               <span className="bw-log-seq">#{entry.seq}</span>
+                              {entry.cardNotification && (
+                                <CardArtwork card={entry.cardNotification.card} size="xs" />
+                              )}
                               <span className="bw-log-type-badge">
                                 {evMeta.icon} {evMeta.label}
                               </span>
@@ -3217,8 +3258,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                             className={`bw-card-item ${isSelectedCard ? 'bw-card-selected' : ''} ${isNewlyObtained ? 'bw-card-newly-obtained' : ''}`}
                           >
                             <div className="bw-card-top">
-                              <span className="bw-card-title">
-                                {dossier.badge} {dossier.name}
+                              <span className="bw-card-title bw-card-title-art">
+                                <CardArtwork card={cardId} size="sm" framed />
+                                <span>{dossier.name}</span>
                                 {isNewlyObtained && (
                                   <span className="bw-new-card-badge">NOUVELLE !</span>
                                 )}
@@ -3226,17 +3268,29 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                               <span className="bw-card-duration">{dossier.durationLabel}</span>
                             </div>
                             <p className="bw-card-desc">{dossier.effectDescription}</p>
-                            <button
-                              type="button"
-                              className="bw-btn bw-btn-primary bw-btn-sm"
-                              disabled={!view.turn.canPlayCardNow}
-                              onClick={() => {
-                                setMobileDrawer('none');
-                                handleOpenCardConfirm(cardId);
-                              }}
-                            >
-                              {isSelectedCard ? 'Annuler le ciblage' : '🃏 Préparer cette carte'}
-                            </button>
+                            <div className="bw-card-actions">
+                              <button
+                                type="button"
+                                className="bw-btn bw-btn-primary bw-btn-sm"
+                                disabled={!view.turn.canPlayCardNow}
+                                onClick={() => {
+                                  setMobileDrawer('none');
+                                  handleOpenCardConfirm(cardId);
+                                }}
+                              >
+                                {isSelectedCard ? 'Annuler le ciblage' : '🃏 Préparer cette carte'}
+                              </button>
+                              <button
+                                type="button"
+                                className="bw-btn bw-btn-ghost bw-btn-sm"
+                                onClick={() => {
+                                  setMobileDrawer('none');
+                                  setConfirmingCard(cardId);
+                                }}
+                              >
+                                ⓘ Fiche
+                              </button>
+                            </div>
                           </div>
                         );
                       })
@@ -3260,6 +3314,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                         <div key={entry.seq} className={`bw-log-entry ${evMeta.colorClass}`}>
                           <div className="bw-log-entry-head">
                             <span className="bw-log-seq">#{entry.seq}</span>
+                            {entry.cardNotification && (
+                              <CardArtwork card={entry.cardNotification.card} size="xs" />
+                            )}
                             <span className="bw-log-type-badge">
                               {evMeta.icon} {evMeta.label}
                             </span>
@@ -3408,12 +3465,13 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                       {[...view.cardNotifications].reverse().map((notif) => (
                         <div key={notif.id} className="bw-card-history-item">
                           <div className="bw-card-history-top">
-                            <span>
-                              <strong>
-                                {notif.badge} {notif.cardName}
-                              </strong>{' '}
-                              — {notif.actor === 'red' ? '🔴 Rouge' : '⚫ Noir'} (Tour #
-                              {notif.turnNumber})
+                            <span className="bw-card-title-art">
+                              <CardArtwork card={notif.card} size="sm" framed />
+                              <strong>{notif.cardName}</strong>
+                              <span>
+                                — {notif.actor === 'red' ? '🔴 Rouge' : '⚫ Noir'} (Tour #
+                                {notif.turnNumber})
+                              </span>
                             </span>
                           </div>
                           <p className="bw-muted-small">{notif.consequenceText}</p>
@@ -3495,14 +3553,12 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
       )}
 
-      {/* Touch-Friendly Card Confirmation Modal (§3.8) */}
+      {/* Touch-Friendly Card Preview & Confirmation Modal (§3.8 & §6) */}
       {confirmingCard && (
         <div className="bw-modal-backdrop" onClick={() => setConfirmingCard(null)}>
-          <div className="bw-modal-dialog bw-modal-compact" onClick={(e) => e.stopPropagation()}>
+          <div className="bw-modal-dialog bw-card-confirm-dialog" onClick={(e) => e.stopPropagation()}>
             <div className="bw-modal-header">
-              <h2>
-                {CARD_DOSSIERS[confirmingCard].badge} {CARD_DOSSIERS[confirmingCard].name}
-              </h2>
+              <h2>🃏 Aperçu & Utilisation — {CARD_DOSSIERS[confirmingCard].name}</h2>
               <button
                 type="button"
                 className="bw-btn bw-btn-ghost bw-btn-sm"
@@ -3512,61 +3568,51 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               </button>
             </div>
             <div className="bw-modal-body">
-              <p>
-                <strong>Effet :</strong> {CARD_DOSSIERS[confirmingCard].effectDescription}
-              </p>
-              <p className="bw-muted-small">
-                <strong>Durée :</strong> {CARD_DOSSIERS[confirmingCard].durationLabel} •{' '}
-                <strong>Visibilité :</strong> {CARD_DOSSIERS[confirmingCard].visibilityLabel}
-              </p>
-              {CARD_CATALOG[confirmingCard].forbiddenOnCharacters.length > 0 && (
-                <p className="bw-card-restriction-note">
-                  ⚠️ Restriction officielle : ne peut pas cibler{' '}
-                  {CARD_CATALOG[confirmingCard].forbiddenOnCharacters
-                    .map((c) => CHARACTER_CATALOG[c].name)
-                    .join(' ni ')}
-                  .
-                </p>
-              )}
-              <div className="bw-modal-footer-btns">
-                {confirmingCard === 'block' ||
-                confirmingCard === 'brouillard' ||
-                confirmingCard === 'double_action' ? (
-                  <button
-                    type="button"
-                    className="bw-btn bw-btn-primary"
-                    disabled={!view.turn.canPlayCardNow}
-                    onClick={() => dispatchCardPlay({ card: confirmingCard })}
-                  >
-                    ✅ Confirmer et Activer Immédiatement
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className="bw-btn bw-btn-primary"
-                    disabled={!view.turn.canPlayCardNow}
-                    onClick={() => {
-                      const cardToTarget = confirmingCard;
-                      setConfirmingCard(null);
-                      setActiveCardInUse(cardToTarget);
-                      setCardSourcePieceId(null);
-                      setEspionageSelectedIds([]);
-                      if (cardToTarget === 'resurrection') {
-                        setMobileDrawer('graveyard');
-                      }
-                    }}
-                  >
-                    Choisir la Cible sur le Plateau
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="bw-btn bw-btn-ghost"
-                  onClick={() => setConfirmingCard(null)}
-                >
-                  Annuler
-                </button>
-              </div>
+              <CardDescriptionPanel
+                card={confirmingCard}
+                compact
+                footer={
+                  <div className="bw-modal-footer-btns">
+                    {confirmingCard === 'block' ||
+                    confirmingCard === 'brouillard' ||
+                    confirmingCard === 'double_action' ? (
+                      <button
+                        type="button"
+                        className="bw-btn bw-btn-primary"
+                        disabled={!view.turn.canPlayCardNow}
+                        onClick={() => dispatchCardPlay({ card: confirmingCard })}
+                      >
+                        ✅ Confirmer et Activer Immédiatement
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="bw-btn bw-btn-primary"
+                        disabled={!view.turn.canPlayCardNow}
+                        onClick={() => {
+                          const cardToTarget = confirmingCard;
+                          setConfirmingCard(null);
+                          setActiveCardInUse(cardToTarget);
+                          setCardSourcePieceId(null);
+                          setEspionageSelectedIds([]);
+                          if (cardToTarget === 'resurrection') {
+                            setMobileDrawer('graveyard');
+                          }
+                        }}
+                      >
+                        Choisir la Cible sur le Plateau
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="bw-btn bw-btn-ghost"
+                      onClick={() => setConfirmingCard(null)}
+                    >
+                      Fermer
+                    </button>
+                  </div>
+                }
+              />
             </div>
           </div>
         </div>
@@ -3703,8 +3749,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                       className={`bw-card-history-item ${CARD_CATEGORY_META[notif.category].className}`}
                     >
                       <div className="bw-card-history-top">
-                        <span className="bw-card-history-name">
-                          {notif.badge} <strong>{notif.cardName}</strong>
+                        <span className="bw-card-history-name bw-card-title-art">
+                          <CardArtwork card={notif.card} size="md" framed />
+                          <strong>{notif.cardName}</strong>
                         </span>
                         <span className="bw-card-history-meta">
                           Joueur {notif.actor === 'red' ? 'Rouge 🔴' : 'Noir ⚫'} • Tour #
