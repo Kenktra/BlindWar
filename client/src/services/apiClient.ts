@@ -1,6 +1,8 @@
 import {
   DEFAULT_USER_PREFERENCES,
   sanitizeUserPreferences,
+  type AccountStatus,
+  type AdminAuditLogEntry,
   type ClientNotificationItem,
   type CustomRulesetConfig,
   type GameMode,
@@ -12,6 +14,7 @@ import {
   type ProfileBannerId,
   type ProfileTitleId,
   type UserPreferences,
+  type UserRole,
 } from '../../../shared/src/index.js';
 import { getBrowserStandaloneNode } from './browserP2PEngine.js';
 
@@ -30,6 +33,10 @@ export interface ClientUserProfile {
   readonly selectedTitle?: ProfileTitleId;
   readonly selectedBadge?: ProfileAchievementId | null;
   readonly preferences?: UserPreferences;
+  readonly role?: UserRole;
+  readonly accountStatus?: AccountStatus;
+  readonly suspendedReason?: string | null;
+  readonly suspendedAt?: string | null;
   readonly eloRating: number;
   readonly wins: number;
   readonly losses: number;
@@ -554,4 +561,104 @@ export function playTacticalSfx(
   } catch {
     // Ignore audio context errors when browser autoplay is restricted
   }
+}
+
+// ============================================================================
+// ADMIN API HELPERS (STRICTLY PROTECTED ON SERVER BY KENKTRA_7003 ROLE)
+// ============================================================================
+
+export interface ClientAdminStorageHealth {
+  readonly diskFilePath: string;
+  readonly fileExists: boolean;
+  readonly backupExists: boolean;
+  readonly usersCount: number;
+  readonly matchesCount: number;
+  readonly eloHistoryCount: number;
+}
+
+export interface ClientAdminOverview {
+  readonly users: readonly ClientUserProfile[];
+  readonly matches: readonly ClientMatchHistoryItem[];
+  readonly adminLogs: readonly AdminAuditLogEntry[];
+  readonly storage: ClientAdminStorageHealth;
+  readonly activeRoomsCount: number;
+}
+
+export async function apiFetchAdminOverview(): Promise<ClientAdminOverview> {
+  const token = getSavedAuthToken();
+  if (!token) {
+    throw new Error('Authentification requise.');
+  }
+  const res = await fetch('/api/admin/overview', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = (await res.json()) as Partial<ClientAdminOverview> & { error?: string };
+  if (!res.ok || !data.users) {
+    throw new Error(data.error ?? 'Accès administrateur refusé.');
+  }
+  return data as ClientAdminOverview;
+}
+
+export async function apiAdminUpdateUserStats(
+  userId: string,
+  payload: {
+    eloRating?: number;
+    wins?: number;
+    losses?: number;
+    draws?: number;
+    gamesPlayed?: number;
+    totalEliminations?: number;
+    newMechanicsStats?: Partial<NewMechanicsStats>;
+    reason?: string;
+  },
+): Promise<{ readonly profile: ClientUserProfile; readonly logEntry: AdminAuditLogEntry }> {
+  const token = getSavedAuthToken();
+  if (!token) throw new Error('Authentification requise.');
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/stats`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json()) as {
+    profile?: ClientUserProfile;
+    logEntry?: AdminAuditLogEntry;
+    error?: string;
+  };
+  if (!res.ok || !data.profile || !data.logEntry) {
+    throw new Error(data.error ?? 'Modification impossible.');
+  }
+  return { profile: data.profile, logEntry: data.logEntry };
+}
+
+export async function apiAdminManageUserAccount(
+  userId: string,
+  payload: {
+    accountStatus?: AccountStatus;
+    suspendedReason?: string | null;
+    displayName?: string;
+    bio?: string;
+  },
+): Promise<{ readonly profile: ClientUserProfile; readonly logEntry: AdminAuditLogEntry }> {
+  const token = getSavedAuthToken();
+  if (!token) throw new Error('Authentification requise.');
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}/account`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = (await res.json()) as {
+    profile?: ClientUserProfile;
+    logEntry?: AdminAuditLogEntry;
+    error?: string;
+  };
+  if (!res.ok || !data.profile || !data.logEntry) {
+    throw new Error(data.error ?? 'Opération sur le compte refusée.');
+  }
+  return { profile: data.profile, logEntry: data.logEntry };
 }

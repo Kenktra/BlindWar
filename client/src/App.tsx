@@ -18,6 +18,7 @@ import {
   computeProfileCosmetics,
   createMatchState,
   createZeroNewMechanicsStats,
+  isDesignatedAdminUsername,
   sanitizeUserPreferences,
   type CardPlayPayload,
   type CardType,
@@ -66,6 +67,7 @@ import {
   type UserSettings,
 } from './services/apiClient.js';
 import { getBrowserStandaloneNode } from './services/browserP2PEngine.js';
+import { AdminDashboardScreen } from './components/AdminDashboardScreen.js';
 import { AvatarCropperModal } from './components/AvatarCropperModal.js';
 import { NotificationCenter } from './components/NotificationCenter.js';
 import {
@@ -97,6 +99,7 @@ export type ScreenId =
   | 'history' // 15. Historique
   | 'leaderboard' // 16. Classement
   | 'settings' // 17. Paramètres
+  | 'admin' // Administration Kenktra_7003
   | 'victory' // 18. Victoire
   | 'defeat'; // 19. Défaite
 
@@ -631,6 +634,16 @@ export const App: React.FC = () => {
         >
           ⚙️ Thèmes & Options
         </button>
+        {userProfile?.role === 'admin' && isDesignatedAdminUsername(userProfile.username) && (
+          <button
+            type="button"
+            className={`bw-nav-link ${screen === 'admin' ? 'active' : ''}`}
+            onClick={() => setScreen('admin')}
+            title="Panneau d'administration sécurisé"
+          >
+            🛡️ Admin
+          </button>
+        )}
       </div>
 
       <div className="bw-nav-auth">
@@ -2773,6 +2786,18 @@ export const App: React.FC = () => {
             onResetAll={handleResetAllSettings}
             onGoToProfile={() => setScreen('profile')}
             onGoToAuth={() => setScreen('login')}
+          />
+        )}
+
+        {/* ADMINISTRATION DÉDIÉE (Kenktra_7003) */}
+        {screen === 'admin' && (
+          <AdminDashboardScreen
+            currentUser={userProfile}
+            onAdminProfileSynced={(updated) => {
+              syncProfileFormAndSettings(updated);
+              void apiFetchLeaderboard().then(setLeaderboard);
+            }}
+            onBackToMenu={() => setScreen('main_menu')}
           />
         )}
 

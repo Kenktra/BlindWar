@@ -4053,3 +4053,75 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
 .bw-color-light .bw-game-topbar {
   border-bottom-color: var(--bw-border);
 }
+
+/* ============================================================================
+ * ADMINISTRATION (§4.2)
+ * ============================================================================ */
+
+.bw-admin-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.bw-admin-kpi-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.bw-admin-section-tabs {
+  margin-top: 0.9rem;
+}
+
+.bw-admin-selected-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  border-color: var(--bw-accent);
+}
+
+.bw-admin-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.bw-admin-stats-grid,
+.bw-admin-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.bw-admin-status-pill {
+  display: inline-block;
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.bw-admin-status-pill.active {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid var(--bw-green);
+  color: #a7f3d0;
+}
+
+.bw-admin-status-pill.suspended {
+  background: rgba(220, 38, 38, 0.22);
+  border: 1px solid #ef4444;
+  color: #fecaca;
+}
+
+.bw-color-light .bw-admin-status-pill.active {
+  color: #065f46;
+}
+
+.bw-color-light .bw-admin-status-pill.suspended {
+  color: #991b1b;
+}

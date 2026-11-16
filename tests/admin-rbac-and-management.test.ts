@@ -1,8 +1,12 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { createBlindWarServer } from '../server/src/index.js';
+import { AdminDashboardScreen } from '../client/src/components/AdminDashboardScreen.js';
+import type { ClientAdminOverview, ClientUserProfile } from '../client/src/services/apiClient.js';
 
 function makeTempDir(tag: string): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), `bw-admin-${tag}-`));
@@ -238,5 +242,74 @@ describe('Compte Administrateur Kenktra_7003, Permissions Serveur & Audit (§4, 
       await srv2.close();
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+
+  it('renders dedicated AdminDashboardScreen with all 6 sections for Kenktra_7003 and blocks normal players', () => {
+    const adminProfile: ClientUserProfile = {
+      id: 'adm-1',
+      username: 'Kenktra_7003',
+      displayName: 'Kenktra_7003',
+      avatarBadge: '♔',
+      bio: 'Admin',
+      role: 'admin',
+      accountStatus: 'active',
+      eloRating: 257,
+      wins: 6,
+      losses: 3,
+      draws: 0,
+      gamesPlayed: 9,
+      winRatePercent: 66.7,
+      totalEliminations: 22,
+      createdAt: new Date().toISOString(),
+    };
+    const normalProfile: ClientUserProfile = {
+      ...adminProfile,
+      id: 'plr-1',
+      username: 'SimpleJoueur',
+      displayName: 'SimpleJoueur',
+      role: 'player',
+      eloRating: 200,
+    };
+
+    const overview: ClientAdminOverview = {
+      users: [adminProfile, normalProfile],
+      matches: [],
+      adminLogs: [],
+      storage: {
+        diskFilePath: 'data/blind-war-db.json',
+        fileExists: true,
+        backupExists: true,
+        usersCount: 2,
+        matchesCount: 0,
+        eloHistoryCount: 0,
+      },
+      activeRoomsCount: 0,
+    };
+
+    const adminHtml = renderToStaticMarkup(
+      React.createElement(AdminDashboardScreen, {
+        currentUser: adminProfile,
+        initialOverview: overview,
+        onBackToMenu: () => {},
+      }),
+    );
+    expect(adminHtml).toContain('Administration BLIND WAR');
+    expect(adminHtml).toContain('1. Gestion des utilisateurs');
+    expect(adminHtml).toContain('2. Gestion des classements Elo');
+    expect(adminHtml).toContain('3. Gestion des statistiques');
+    expect(adminHtml).toContain('4. Historique des parties');
+    expect(adminHtml).toContain('5. Gestion des comptes');
+    expect(adminHtml).toContain('6. Journal des actions administrateur');
+    expect(adminHtml).toContain('SimpleJoueur');
+
+    const deniedHtml = renderToStaticMarkup(
+      React.createElement(AdminDashboardScreen, {
+        currentUser: normalProfile,
+        initialOverview: overview,
+        onBackToMenu: () => {},
+      }),
+    );
+    expect(deniedHtml).toContain('Accès restreint');
+    expect(deniedHtml).not.toContain('Gestion des classements Elo');
   });
 });
