@@ -20,6 +20,12 @@ import {
   type UserPreferences,
 } from '../../../shared/src/index.js';
 import { validateAvatarImageDataUrl } from '../auth/avatarValidation.js';
+import {
+  atomicWriteTextFileSync,
+  resolveDataFilePath,
+  resolveProjectRoot,
+  sweepStaleTempFilesSync,
+} from './dataPaths.js';
 
 export function normalizeNewMechanicsStats(
   raw?: Partial<NewMechanicsStats> | null,
@@ -246,6 +252,7 @@ export function toPublicProfile(user: StoredUserRecord): PublicUserProfile {
 export class BlindWarDatabase {
   private readonly pgPool: Pool | null = null;
   private readonly diskFilePath: string;
+  private mutationQueue: Promise<unknown> = Promise.resolve();
   private store: DiskStoreFormat = {
     users: [],
     matches: [],
@@ -258,37 +265,125 @@ export class BlindWarDatabase {
       this.pgPool = new Pool({ connectionString: dbUrl });
     }
     this.diskFilePath =
-      options?.diskFilePath ?? path.resolve(process.cwd(), 'data', 'blind-war-db.json');
+      options?.diskFilePath ?? resolveDataFilePath('blind-war-db.json');
     this.loadDiskStore();
   }
 
-  private loadDiskStore(): void {
+  /** Serialize concurrent mutations cleanly so rapid updates never race on disk. */
+  protected withMutationLock<T>(operation: () => Promise<T>): Promise<T> {
+    const run = this.mutationQueue.then(operation, operation);
+    this.mutationQueue = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    return run;
+  }
+
+  private validateAndNormalizeStore(raw: unknown): DiskStoreFormat {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new Error('Format de base de données invalide.');
+    }
+    const parsed = raw as Partial<DiskStoreFormat>;
+    if (
+      (parsed.users !== undefined && !Array.isArray(parsed.users)) ||
+      (parsed.matches !== undefined && !Array.isArray(parsed.matches)) ||
+      (parsed.eloHistory !== undefined && !Array.isArray(parsed.eloHistory))
+    ) {
+      throw new Error('Structure de base de données corrompue.');
+    }
+    return {
+      users: deduplicateUsersByUsername(Array.isArray(parsed.users) ? parsed.users : []),
+      matches: Array.isArray(parsed.matches)
+        ? parsed.matches.filter((m) => Boolean(m && typeof m.id === 'string'))
+        : [],
+      eloHistory: Array.isArray(parsed.eloHistory)
+        ? parsed.eloHistory.filter(
+            (e) => Boolean(e && typeof e.userId === 'string' && typeof e.matchId === 'string'),
+          )
+        : [],
+    };
+  }
+
+  private tryReadStoreFile(filePath: string): DiskStoreFormat | null {
+    if (!fs.existsSync(filePath)) return null;
     try {
-      if (fs.existsSync(this.diskFilePath)) {
-        const raw = fs.readFileSync(this.diskFilePath, 'utf-8');
-        const parsed = JSON.parse(raw) as Partial<DiskStoreFormat>;
-        this.store = {
-          users: deduplicateUsersByUsername(Array.isArray(parsed.users) ? parsed.users : []),
-          matches: Array.isArray(parsed.matches) ? parsed.matches : [],
-          eloHistory: Array.isArray(parsed.eloHistory) ? parsed.eloHistory : [],
-        };
-      }
+      const raw = fs.readFileSync(filePath, 'utf-8');
+      if (!raw.trim()) return null;
+      const parsed = JSON.parse(raw) as unknown;
+      return this.validateAndNormalizeStore(parsed);
     } catch {
-      this.store = { users: [], matches: [], eloHistory: [] };
+      return null;
     }
   }
 
-  private saveDiskStore(): void {
+  private loadDiskStore(): void {
     const dir = path.dirname(this.diskFilePath);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(this.diskFilePath, JSON.stringify(this.store, null, 2), 'utf-8');
+    sweepStaleTempFilesSync(dir);
+
+    const primaryExists = fs.existsSync(this.diskFilePath);
+    const primary = this.tryReadStoreFile(this.diskFilePath);
+    if (primary) {
+      this.store = primary;
+      return;
+    }
+
+    const bakPath = `${this.diskFilePath}.bak`;
+    const backup = this.tryReadStoreFile(bakPath);
+    if (backup) {
+      console.warn(
+        `[BLIND WAR DB] Fichier principal endommagé (${this.diskFilePath}) : restauration automatique depuis ${bakPath}.`,
+      );
+      this.store = backup;
+      atomicWriteTextFileSync(this.diskFilePath, JSON.stringify(this.store, null, 2), {
+        createBackup: false,
+      });
+      return;
+    }
+
+    if (primaryExists) {
+      console.error(
+        `[BLIND WAR DB] Le fichier ${this.diskFilePath} est illisible et aucune sauvegarde .bak valide n'a été trouvée.`,
+      );
+      this.store = { users: [], matches: [], eloHistory: [] };
+      return;
+    }
+
+    // Premier démarrage absolu : initialise le fichier unique sans sauvegarde .bak superflue
+    this.store = { users: [], matches: [], eloHistory: [] };
+    this.saveDiskStore(false);
+  }
+
+  private saveDiskStore(createBackup: boolean = true): void {
+    const normalized = this.validateAndNormalizeStore(this.store);
+    this.store = normalized;
+    atomicWriteTextFileSync(this.diskFilePath, JSON.stringify(normalized, null, 2), {
+      createBackup,
+    });
+  }
+
+  getStorageHealth(): {
+    readonly diskFilePath: string;
+    readonly fileExists: boolean;
+    readonly backupExists: boolean;
+    readonly usersCount: number;
+    readonly matchesCount: number;
+    readonly eloHistoryCount: number;
+  } {
+    return {
+      diskFilePath: this.diskFilePath,
+      fileExists: fs.existsSync(this.diskFilePath),
+      backupExists: fs.existsSync(`${this.diskFilePath}.bak`),
+      usersCount: this.store.users.length,
+      matchesCount: this.store.matches.length,
+      eloHistoryCount: this.store.eloHistory.length,
+    };
   }
 
   async initSchema(): Promise<void> {
     if (!this.pgPool) {
       return;
     }
-    const schemaPath = path.resolve(process.cwd(), 'server', 'src', 'database', 'schema.sql');
+    const schemaPath = path.resolve(resolveProjectRoot(), 'server', 'src', 'database', 'schema.sql');
     if (fs.existsSync(schemaPath)) {
       const sql = fs.readFileSync(schemaPath, 'utf-8');
       await this.pgPool.query(sql);
@@ -301,6 +396,7 @@ export class BlindWarDatabase {
     passwordHash: string;
     avatarBadge?: string;
   }): Promise<StoredUserRecord> {
+    return this.withMutationLock(async () => {
     const normalizedUsername = params.username.trim().replace(/\s+/g, ' ');
     const usernameKey = normalizeUsernameKey(normalizedUsername);
     const nowIso = new Date().toISOString();
@@ -364,6 +460,7 @@ export class BlindWarDatabase {
     this.store.users.push(record);
     this.saveDiskStore();
     return record;
+    });
   }
 
   async findUserByUsername(username: string): Promise<StoredUserRecord | null> {
@@ -404,6 +501,7 @@ export class BlindWarDatabase {
       preferences?: Partial<UserPreferences>;
     },
   ): Promise<PublicUserProfile> {
+    return this.withMutationLock(async () => {
     const user = await this.findUserById(userId);
     if (!user) {
       throw new Error(`Utilisateur introuvable.`);
@@ -513,6 +611,7 @@ export class BlindWarDatabase {
     this.store.users = this.store.users.map((u) => (u.id === userId ? updated : u));
     this.saveDiskStore();
     return toPublicProfile(updated);
+    });
   }
 
   async recordCompletedMatch(params: {
@@ -534,6 +633,7 @@ export class BlindWarDatabase {
     ruleset: CustomRulesetConfig;
     startedAt: string;
   }): Promise<StoredMatchRecord> {
+    return this.withMutationLock(async () => {
     const existingMatch = this.store.matches.find((m) => m.id === params.matchId);
     if (existingMatch) {
       return existingMatch;
@@ -648,6 +748,7 @@ export class BlindWarDatabase {
     }
 
     return matchRecord;
+    });
   }
 
   async getLeaderboard(limit: number = 50): Promise<PublicUserProfile[]> {

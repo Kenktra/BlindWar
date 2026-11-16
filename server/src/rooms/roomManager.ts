@@ -33,6 +33,7 @@ import {
   type ServerMatchState,
 } from '../../../shared/src/index.js';
 import type { BlindWarDatabase } from '../database/db.js';
+import { atomicWriteTextFileSync } from '../database/dataPaths.js';
 
 export interface RoomParticipant {
   readonly userId: string;
@@ -153,7 +154,18 @@ export class GameRoomManager {
   // ---------------------------------------------------------------------------
 
   private restoreSnapshot(nowMs: number = Date.now()): void {
-    if (!this.snapshotFilePath || !fs.existsSync(this.snapshotFilePath)) {
+    if (!this.snapshotFilePath) {
+      return;
+    }
+    const staleTmp = `${this.snapshotFilePath}.tmp`;
+    if (fs.existsSync(staleTmp)) {
+      try {
+        fs.unlinkSync(staleTmp);
+      } catch {
+        // Ignore locked temp file
+      }
+    }
+    if (!fs.existsSync(this.snapshotFilePath)) {
       return;
     }
     try {
@@ -217,12 +229,14 @@ export class GameRoomManager {
     const rooms = [...this.roomsById.values()].filter(
       (r) => r.matchState?.phase !== 'finished',
     );
+    if (rooms.length === 0 && !fs.existsSync(this.snapshotFilePath)) {
+      return;
+    }
     const payload: RoomsSnapshotFile = { savedAtMs: Date.now(), rooms };
     try {
-      fs.mkdirSync(path.dirname(this.snapshotFilePath), { recursive: true });
-      const tmp = `${this.snapshotFilePath}.tmp`;
-      fs.writeFileSync(tmp, JSON.stringify(payload), 'utf-8');
-      fs.renameSync(tmp, this.snapshotFilePath);
+      atomicWriteTextFileSync(this.snapshotFilePath, JSON.stringify(payload), {
+        createBackup: false,
+      });
     } catch {
       // Écriture impossible : la partie continue en mémoire
     }

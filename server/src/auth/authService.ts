@@ -6,6 +6,10 @@ import {
   type PublicUserProfile,
   toPublicProfile,
 } from '../database/db.js';
+import {
+  atomicWriteTextFileSync,
+  resolveDataFilePath,
+} from '../database/dataPaths.js';
 
 /** Durée de validité d'une session : 7 jours. */
 export const SESSION_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -27,7 +31,7 @@ function getTokenSecret(): string {
     cachedSecret = fromEnv;
     return cachedSecret;
   }
-  const secretPath = path.resolve(process.cwd(), 'data', 'auth-secret.key');
+  const secretPath = resolveDataFilePath('auth-secret.key');
   try {
     if (fs.existsSync(secretPath)) {
       const stored = fs.readFileSync(secretPath, 'utf-8').trim();
@@ -37,8 +41,11 @@ function getTokenSecret(): string {
       }
     }
     const generated = crypto.randomBytes(48).toString('hex');
-    fs.mkdirSync(path.dirname(secretPath), { recursive: true });
-    fs.writeFileSync(secretPath, generated, { encoding: 'utf-8', mode: 0o600 });
+    atomicWriteTextFileSync(secretPath, generated, {
+      createBackup: false,
+      validateJsonBackup: false,
+      mode: 0o600,
+    });
     cachedSecret = generated;
   } catch {
     // Disque non accessible : clé aléatoire en mémoire (les sessions expirent au redémarrage)

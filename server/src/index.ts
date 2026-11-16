@@ -21,6 +21,7 @@ import {
 } from '../../shared/src/index.js';
 import { AuthService, verifySessionToken } from './auth/authService.js';
 import { BlindWarDatabase, toPublicProfile } from './database/db.js';
+import { resolveDataFilePath } from './database/dataPaths.js';
 import { BlindWarP2PMesh } from './p2p/p2pMesh.js';
 import { GameRoomManager, type ManagedRoom } from './rooms/roomManager.js';
 
@@ -59,7 +60,7 @@ export async function createBlindWarServer(options?: {
       ? options.roomsSnapshotFilePath
       : options?.diskFilePath
         ? `${options.diskFilePath}.rooms.json`
-        : path.resolve(process.cwd(), 'data', 'active-rooms.json');
+        : resolveDataFilePath('active-rooms.json');
   const roomManager = new GameRoomManager(db, { snapshotFilePath: roomsSnapshotFilePath });
   let p2pMeshRef: BlindWarP2PMesh | null = null;
 
