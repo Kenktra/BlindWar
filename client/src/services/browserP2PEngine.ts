@@ -492,6 +492,47 @@ export class BrowserStandaloneNode {
     return toClientProfile(this.db.users[idx]);
   }
 
+  verifyCurrentPassword(token: string | null, currentPassword: string): boolean {
+    const prof = this.getUserFromToken(token);
+    if (!prof) throw new Error('Non authentifié.');
+    const cur = this.db.users.find((u) => u.id === prof.id);
+    if (!cur) throw new Error('Utilisateur introuvable.');
+    if (cur.passwordHash.startsWith('bw:') && cur.passwordHash !== simpleHashPassword(currentPassword)) {
+      throw new Error('Ancien mot de passe incorrect.');
+    }
+    return true;
+  }
+
+  changePassword(
+    token: string | null,
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ): { token: string; profile: ClientUserProfile } {
+    this.verifyCurrentPassword(token, currentPassword);
+    if (!newPassword || newPassword.length < 6 || newPassword.length > 128) {
+      throw new Error('Le nouveau mot de passe doit contenir entre 6 et 128 caractères.');
+    }
+    if (newPassword !== confirmPassword) {
+      throw new Error('La confirmation du nouveau mot de passe ne correspond pas.');
+    }
+    if (newPassword === currentPassword) {
+      throw new Error('Le nouveau mot de passe doit être différent de l’ancien.');
+    }
+    const prof = this.getUserFromToken(token)!;
+    const idx = this.db.users.findIndex((u) => u.id === prof.id);
+    if (idx === -1) throw new Error('Utilisateur introuvable.');
+    const cur = this.db.users[idx];
+    this.db.users[idx] = {
+      ...cur,
+      passwordHash: simpleHashPassword(newPassword),
+      updatedAt: new Date().toISOString(),
+    };
+    this.saveLocalDb();
+    const nextToken = `localtoken:${cur.id}:${cur.username}:${Date.now()}`;
+    return { token: nextToken, profile: toClientProfile(this.db.users[idx]) };
+  }
+
   getLeaderboard(): ClientUserProfile[] {
     this.loadLocalDb();
     return [...this.db.users]

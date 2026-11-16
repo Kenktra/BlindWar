@@ -2783,6 +2783,17 @@ export const App: React.FC = () => {
             preferences={settings}
             userProfile={userProfile}
             onUpdatePreferences={handleUpdateSettings}
+            onPasswordChanged={(updated) => {
+              syncProfileFormAndSettings(updated);
+              resetSocket();
+              ensureSocket(updated.username);
+              pushAppNotification(
+                'account',
+                'Mot de passe mis à jour',
+                'Votre mot de passe a été modifié et vos anciennes sessions ont été révoquées.',
+                'settings',
+              );
+            }}
             onResetAll={handleResetAllSettings}
             onGoToProfile={() => setScreen('profile')}
             onGoToAuth={() => setScreen('login')}

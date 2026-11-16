@@ -665,6 +665,47 @@ export class BlindWarDatabase {
     });
   }
 
+  /**
+   * Met à jour le hash du mot de passe d'un utilisateur et incrémente `sessionVersion`
+   * afin d'invalider immédiatement toutes les anciennes sessions existantes (§5.2).
+   */
+  async updateUserPasswordHash(
+    userId: string,
+    nextPasswordHash: string,
+  ): Promise<StoredUserRecord> {
+    return this.withMutationLock(async () => {
+      const user = await this.findUserById(userId);
+      if (!user) {
+        throw new Error('Utilisateur introuvable.');
+      }
+      const nextSessionVersion = (user.sessionVersion ?? 1) + 1;
+      const nowIso = new Date().toISOString();
+
+      if (this.pgPool) {
+        const res = await this.pgPool.query(
+          `UPDATE users
+           SET password_hash = $1,
+               session_version = $2,
+               updated_at = NOW()
+           WHERE id = $3
+           RETURNING *`,
+          [nextPasswordHash, nextSessionVersion, userId],
+        );
+        return mapPgRowToStoredUser(res.rows[0]);
+      }
+
+      const updated: StoredUserRecord = {
+        ...user,
+        passwordHash: nextPasswordHash,
+        sessionVersion: nextSessionVersion,
+        updatedAt: nowIso,
+      };
+      this.store.users = this.store.users.map((u) => (u.id === userId ? updated : u));
+      this.saveDiskStore();
+      return updated;
+    });
+  }
+
   async recordCompletedMatch(params: {
     matchId: string;
     mode: GameMode;

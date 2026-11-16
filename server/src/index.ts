@@ -19,7 +19,12 @@ import {
   type MoveCandidateKind,
   type PlacementEntry,
 } from '../../shared/src/index.js';
-import { AuthService, authenticateSession, verifySessionToken } from './auth/authService.js';
+import {
+  AuthService,
+  PasswordRateLimitError,
+  authenticateSession,
+  verifySessionToken,
+} from './auth/authService.js';
 import {
   BlindWarDatabase,
   resolveAccountRole,
@@ -174,6 +179,65 @@ export async function createBlindWarServer(options?: {
     const user = await requireActiveUser(req, res);
     if (!user) return;
     res.json({ profile: toPublicProfile(user) });
+  });
+
+  app.post('/api/auth/verify-password', async (req: Request, res: Response) => {
+    try {
+      const user = await requireActiveUser(req, res);
+      if (!user) return;
+      const { currentPassword } = req.body as { currentPassword?: string };
+      if (typeof currentPassword !== 'string' || !currentPassword) {
+        res.status(400).json({ error: 'Veuillez saisir votre ancien mot de passe.' });
+        return;
+      }
+      await authService.verifyCurrentPassword(user.id, currentPassword);
+      res.json({ verified: true });
+    } catch (err) {
+      if (err instanceof PasswordRateLimitError) {
+        res.status(429).json({ error: err.message });
+        return;
+      }
+      res.status(403).json({
+        verified: false,
+        error: err instanceof Error ? err.message : 'Vérification impossible.',
+      });
+    }
+  });
+
+  app.post('/api/auth/change-password', async (req: Request, res: Response) => {
+    try {
+      const user = await requireActiveUser(req, res);
+      if (!user) return;
+      const { currentPassword, newPassword, confirmPassword } = req.body as {
+        currentPassword?: string;
+        newPassword?: string;
+        confirmPassword?: string;
+      };
+      if (
+        typeof currentPassword !== 'string' ||
+        typeof newPassword !== 'string' ||
+        typeof confirmPassword !== 'string'
+      ) {
+        res.status(400).json({ error: 'Tous les champs de mot de passe sont requis.' });
+        return;
+      }
+      const result = await authService.changePassword({
+        userId: user.id,
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      p2pMeshRef?.broadcastDatabaseSync();
+      res.json(result);
+    } catch (err) {
+      if (err instanceof PasswordRateLimitError) {
+        res.status(429).json({ error: err.message });
+        return;
+      }
+      const msg = err instanceof Error ? err.message : 'Modification du mot de passe refusée.';
+      const status = msg.toLowerCase().includes('incorrect') ? 403 : 400;
+      res.status(status).json({ error: msg });
+    }
   });
 
   app.patch('/api/profile', async (req: Request, res: Response) => {

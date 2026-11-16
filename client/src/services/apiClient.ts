@@ -662,3 +662,90 @@ export async function apiAdminManageUserAccount(
   }
   return { profile: data.profile, logEntry: data.logEntry };
 }
+
+// ============================================================================
+// SECURE PASSWORD VERIFICATION & CHANGE (§5)
+// ============================================================================
+
+export async function apiVerifyCurrentPassword(currentPassword: string): Promise<boolean> {
+  const token = getSavedAuthToken();
+  if (!token) {
+    throw new Error('Authentification requise.');
+  }
+  if (isStandaloneFileMode() || token.startsWith('localtoken:')) {
+    return getBrowserStandaloneNode().verifyCurrentPassword(token, currentPassword);
+  }
+  try {
+    const res = await fetch('/api/auth/verify-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword }),
+    });
+    const data = (await res.json()) as { verified?: boolean; error?: string };
+    if (!res.ok || !data.verified) {
+      throw new Error(data.error ?? 'Ancien mot de passe incorrect.');
+    }
+    return true;
+  } catch (err) {
+    if (err instanceof TypeError) {
+      return getBrowserStandaloneNode().verifyCurrentPassword(token, currentPassword);
+    }
+    throw err;
+  }
+}
+
+export async function apiChangePassword(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<{ readonly token: string; readonly profile: ClientUserProfile }> {
+  const token = getSavedAuthToken();
+  if (!token) {
+    throw new Error('Authentification requise.');
+  }
+  if (isStandaloneFileMode() || token.startsWith('localtoken:')) {
+    const res = getBrowserStandaloneNode().changePassword(
+      token,
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    );
+    setSavedAuthToken(res.token);
+    return res;
+  }
+  try {
+    const res = await fetch('/api/auth/change-password', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    });
+    const data = (await res.json()) as {
+      token?: string;
+      profile?: ClientUserProfile;
+      error?: string;
+    };
+    if (!res.ok || !data.token || !data.profile) {
+      throw new Error(data.error ?? 'Modification du mot de passe refusée.');
+    }
+    setSavedAuthToken(data.token);
+    return { token: data.token, profile: data.profile };
+  } catch (err) {
+    if (err instanceof TypeError) {
+      const res = getBrowserStandaloneNode().changePassword(
+        token,
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      );
+      setSavedAuthToken(res.token);
+      return res;
+    }
+    throw err;
+  }
+}

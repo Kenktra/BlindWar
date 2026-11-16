@@ -7,7 +7,12 @@ import {
   type ThemeId,
   type UserPreferences,
 } from '../../../shared/src/index.js';
-import { playTacticalSfx, type ClientUserProfile } from '../services/apiClient.js';
+import {
+  apiChangePassword,
+  apiVerifyCurrentPassword,
+  playTacticalSfx,
+  type ClientUserProfile,
+} from '../services/apiClient.js';
 import { ThemePreviewPanel } from './ThemePreviewPanel.js';
 
 export type SettingsTabId = 'appearance' | 'gameplay' | 'notifications' | 'accessibility' | 'profile';
@@ -16,6 +21,7 @@ export interface SettingsScreenProps {
   readonly preferences: UserPreferences;
   readonly userProfile: ClientUserProfile | null;
   readonly onUpdatePreferences: (next: UserPreferences) => Promise<void> | void;
+  readonly onPasswordChanged?: (updatedProfile: ClientUserProfile) => void;
   readonly onResetAll: () => Promise<void> | void;
   readonly onGoToProfile: () => void;
   readonly onGoToAuth: () => void;
@@ -25,6 +31,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   preferences,
   userProfile,
   onUpdatePreferences,
+  onPasswordChanged,
   onResetAll,
   onGoToProfile,
   onGoToAuth,
@@ -33,6 +40,15 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const [draftAppearance, setDraftAppearance] = useState<UserPreferences>(preferences);
   const [showAllExplanations, setShowAllExplanations] = useState<boolean>(false);
   const [statusNote, setStatusNote] = useState<string | null>(null);
+
+  // Two-step secure password change states (§5)
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwIdentityVerified, setPwIdentityVerified] = useState(false);
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
+  const [pwSuccess, setPwSuccess] = useState<string | null>(null);
 
   useEffect(() => {
     setDraftAppearance(preferences);
@@ -649,47 +665,205 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
         </div>
       )}
 
-      {/* TAB 5 : PROFIL RAPIDE */}
+      {/* TAB 5 : PROFIL RAPIDE & MODIFIER MON MOT DE PASSE */}
       {activeTab === 'profile' && (
-        <div className="bw-panel">
-          <h3>👤 Compte & Synchronisation</h3>
-          {userProfile ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <p>
-                Connecté en tant que{' '}
-                <strong>{userProfile.displayName ?? userProfile.username}</strong> (@
-                {userProfile.username}) • <strong>{userProfile.eloRating} ELO</strong>.
-              </p>
+        <div className="bw-panel-page">
+          <div className="bw-panel">
+            <h3>👤 Compte & Synchronisation</h3>
+            {userProfile ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <p>
+                  Connecté en tant que{' '}
+                  <strong>{userProfile.displayName ?? userProfile.username}</strong> (@
+                  {userProfile.username}) • <strong>{userProfile.eloRating} ELO</strong>.
+                </p>
+                <p className="bw-muted-small">
+                  Gérez votre photo de profil recadrée, votre nom affiché, votre biographie, vos
+                  bannières débloquées, titres et badges sur votre page Profil.
+                </p>
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-primary"
+                  style={{ width: 'fit-content' }}
+                  onClick={onGoToProfile}
+                >
+                  👤 Ouvrir la personnalisation complète du Profil
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <p>Vous naviguez actuellement en mode invité.</p>
+                <p className="bw-muted-small">
+                  Créez un compte ou connectez-vous pour enregistrer votre thème personnalisé, importer
+                  votre photo de profil, débloquer bannières et titres, et accéder au classement.
+                </p>
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-primary"
+                  style={{ width: 'fit-content' }}
+                  onClick={onGoToAuth}
+                >
+                  🔐 Se connecter ou créer un compte
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="bw-panel" aria-label="Modifier mon mot de passe">
+            <h3>🔒 Modifier mon mot de passe</h3>
+            {!userProfile ? (
               <p className="bw-muted-small">
-                Gérez votre photo de profil recadrée, votre nom affiché, votre biographie, vos
-                bannières débloquées, titres et badges sur votre page Profil.
+                Connectez-vous à votre compte pour modifier votre mot de passe en toute sécurité.
               </p>
-              <button
-                type="button"
-                className="bw-btn bw-btn-primary"
-                style={{ width: 'fit-content' }}
-                onClick={onGoToProfile}
-              >
-                👤 Ouvrir la personnalisation complète du Profil
-              </button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <p>Vous naviguez actuellement en mode invité.</p>
-              <p className="bw-muted-small">
-                Créez un compte ou connectez-vous pour enregistrer votre thème personnalisé, importer
-                votre photo de profil, débloquer bannières et titres, et accéder au classement.
-              </p>
-              <button
-                type="button"
-                className="bw-btn bw-btn-primary"
-                style={{ width: 'fit-content' }}
-                onClick={onGoToAuth}
-              >
-                🔐 Se connecter ou créer un compte
-              </button>
-            </div>
-          )}
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', maxWidth: 480 }}>
+                <p className="bw-muted-small" style={{ margin: 0 }}>
+                  Par sécurité, confirmez d’abord votre identité en saisissant votre ancien mot de passe.
+                  Vos autres sessions actives seront automatiquement invalidées après la modification.
+                </p>
+
+                {pwSuccess && (
+                  <div className="bw-success-box" role="status">
+                    ✅ {pwSuccess}
+                  </div>
+                )}
+                {pwError && (
+                  <div className="bw-error-box" role="alert" style={{ margin: 0 }}>
+                    ⚠️ {pwError}
+                  </div>
+                )}
+
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setPwError(null);
+                    setPwSuccess(null);
+                    setPwBusy(true);
+                    try {
+                      await apiVerifyCurrentPassword(pwCurrent);
+                      setPwIdentityVerified(true);
+                    } catch (err) {
+                      setPwIdentityVerified(false);
+                      setPwError(
+                        err instanceof Error ? err.message : 'Ancien mot de passe incorrect.',
+                      );
+                    } finally {
+                      setPwBusy(false);
+                    }
+                  }}
+                >
+                  <label className="bw-field">
+                    <span>Étape 1 : Ancien mot de passe (vérification d’identité)</span>
+                    <input
+                      type="password"
+                      required
+                      disabled={pwBusy || pwIdentityVerified}
+                      value={pwCurrent}
+                      onChange={(e) => setPwCurrent(e.target.value)}
+                      placeholder="Saisissez votre mot de passe actuel"
+                      autoComplete="current-password"
+                    />
+                  </label>
+                  {!pwIdentityVerified ? (
+                    <button
+                      type="submit"
+                      className="bw-btn bw-btn-secondary"
+                      disabled={pwBusy || !pwCurrent}
+                    >
+                      {pwBusy ? 'Vérification...' : '🛡️ Confirmer mon identité'}
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span className="bw-mode-pill">✅ Identité confirmée</span>
+                      <button
+                        type="button"
+                        className="bw-btn bw-btn-ghost bw-btn-sm"
+                        onClick={() => {
+                          setPwIdentityVerified(false);
+                          setPwCurrent('');
+                          setPwNew('');
+                          setPwConfirm('');
+                          setPwError(null);
+                        }}
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  )}
+                </form>
+
+                {pwIdentityVerified && (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      setPwError(null);
+                      setPwSuccess(null);
+                      if (pwNew.length < 6) {
+                        setPwError('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+                        return;
+                      }
+                      if (pwNew !== pwConfirm) {
+                        setPwError('Les deux nouveaux mots de passe ne correspondent pas.');
+                        return;
+                      }
+                      setPwBusy(true);
+                      try {
+                        const updated = await apiChangePassword(pwCurrent, pwNew, pwConfirm);
+                        onPasswordChanged?.(updated.profile);
+                        setPwCurrent('');
+                        setPwNew('');
+                        setPwConfirm('');
+                        setPwIdentityVerified(false);
+                        setPwSuccess(
+                          'Votre mot de passe a été modifié avec succès. Les anciennes sessions ont été invalidées.',
+                        );
+                      } catch (err) {
+                        setPwError(
+                          err instanceof Error ? err.message : 'Modification du mot de passe refusée.',
+                        );
+                      } finally {
+                        setPwBusy(false);
+                      }
+                    }}
+                  >
+                    <label className="bw-field">
+                      <span>Étape 2 : Nouveau mot de passe (6 caractères minimum)</span>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        maxLength={128}
+                        value={pwNew}
+                        onChange={(e) => setPwNew(e.target.value)}
+                        placeholder="Nouveau mot de passe"
+                        autoComplete="new-password"
+                      />
+                    </label>
+                    <label className="bw-field">
+                      <span>Confirmer le nouveau mot de passe</span>
+                      <input
+                        type="password"
+                        required
+                        minLength={6}
+                        maxLength={128}
+                        value={pwConfirm}
+                        onChange={(e) => setPwConfirm(e.target.value)}
+                        placeholder="Retapez le nouveau mot de passe"
+                        autoComplete="new-password"
+                      />
+                    </label>
+                    <button
+                      type="submit"
+                      className="bw-btn bw-btn-primary"
+                      disabled={pwBusy}
+                    >
+                      {pwBusy ? 'Enregistrement...' : '🔑 Enregistrer le nouveau mot de passe'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

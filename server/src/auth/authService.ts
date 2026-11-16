@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs';
-import path from 'node:path';
+import bcrypt from 'bcryptjs';
 import {
   type BlindWarDatabase,
   type PublicUserProfile,
@@ -14,6 +14,17 @@ import {
 
 /** Durée de validité d'une session : 7 jours. */
 export const SESSION_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export const BCRYPT_ROUNDS = 10;
+export const MAX_PASSWORD_VERIFY_ATTEMPTS = 5;
+export const PASSWORD_VERIFY_WINDOW_MS = 15 * 60 * 1000;
+
+export class PasswordRateLimitError extends Error {
+  readonly statusCode = 429;
+  constructor(message: string) {
+    super(message);
+    this.name = 'PasswordRateLimitError';
+  }
+}
 
 let cachedSecret: string | null = null;
 
@@ -56,12 +67,17 @@ function getTokenSecret(): string {
 }
 
 export function hashPassword(password: string): string {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derived = crypto.scryptSync(password, salt, 64).toString('hex');
-  return `${salt}:${derived}`;
+  return bcrypt.hashSync(password, BCRYPT_ROUNDS);
 }
 
 export function verifyPassword(password: string, storedHash: string): boolean {
+  if (!storedHash || typeof storedHash !== 'string') {
+    return false;
+  }
+  if (storedHash.startsWith('$2a$') || storedHash.startsWith('$2b$') || storedHash.startsWith('$2y$')) {
+    return bcrypt.compareSync(password, storedHash);
+  }
+  // Rétrocompatibilité avec les comptes historiques hachés en scrypt (`salt:derivedHex`)
   const parts = storedHash.split(':');
   if (parts.length !== 2) {
     return false;
@@ -123,7 +139,42 @@ export function verifySessionToken(
 }
 
 export class AuthService {
+  private readonly passwordAttempts = new Map<
+    string,
+    { failedCount: number; resetAtMs: number }
+  >();
+
   constructor(private readonly db: BlindWarDatabase) {}
+
+  private assertPasswordAttemptAllowed(userId: string, nowMs: number = Date.now()): void {
+    const entry = this.passwordAttempts.get(userId);
+    if (!entry) return;
+    if (nowMs >= entry.resetAtMs) {
+      this.passwordAttempts.delete(userId);
+      return;
+    }
+    if (entry.failedCount >= MAX_PASSWORD_VERIFY_ATTEMPTS) {
+      throw new PasswordRateLimitError(
+        'Trop de tentatives incorrectes. Veuillez patienter avant de réessayer.',
+      );
+    }
+  }
+
+  private recordFailedPasswordAttempt(userId: string, nowMs: number = Date.now()): void {
+    const entry = this.passwordAttempts.get(userId);
+    if (!entry || nowMs >= entry.resetAtMs) {
+      this.passwordAttempts.set(userId, {
+        failedCount: 1,
+        resetAtMs: nowMs + PASSWORD_VERIFY_WINDOW_MS,
+      });
+      return;
+    }
+    entry.failedCount += 1;
+  }
+
+  private clearPasswordAttempts(userId: string): void {
+    this.passwordAttempts.delete(userId);
+  }
 
   async register(
     username: string,
@@ -185,6 +236,63 @@ export class AuthService {
       sessionVersion: user.sessionVersion ?? 1,
     });
 
+    return { token, profile };
+  }
+
+  /** Vérifie l'ancien mot de passe côté serveur avec limitation contre le force-brute. */
+  async verifyCurrentPassword(userId: string, currentPassword: string): Promise<boolean> {
+    this.assertPasswordAttemptAllowed(userId);
+    const user = await this.db.findUserById(userId);
+    if (!user || user.accountStatus === 'suspended') {
+      throw new Error('Compte introuvable ou suspendu.');
+    }
+    if (!currentPassword || !verifyPassword(currentPassword, user.passwordHash)) {
+      this.recordFailedPasswordAttempt(userId);
+      throw new Error('Ancien mot de passe incorrect.');
+    }
+    this.clearPasswordAttempts(userId);
+    return true;
+  }
+
+  /**
+   * Modifie le mot de passe d'un utilisateur après confirmation de l'ancien mot de passe,
+   * hache avec bcrypt, invalide les anciennes sessions (`sessionVersion++`) et renvoie un nouveau jeton.
+   */
+  async changePassword(params: {
+    readonly userId: string;
+    readonly currentPassword: string;
+    readonly newPassword: string;
+    readonly confirmPassword: string;
+  }): Promise<{ readonly token: string; readonly profile: PublicUserProfile }> {
+    this.assertPasswordAttemptAllowed(params.userId);
+    const user = await this.db.findUserById(params.userId);
+    if (!user || user.accountStatus === 'suspended') {
+      throw new Error('Compte introuvable ou suspendu.');
+    }
+    if (!params.currentPassword || !verifyPassword(params.currentPassword, user.passwordHash)) {
+      this.recordFailedPasswordAttempt(params.userId);
+      throw new Error('Ancien mot de passe incorrect.');
+    }
+    if (!params.newPassword || params.newPassword.length < 6 || params.newPassword.length > 128) {
+      throw new Error('Le nouveau mot de passe doit contenir entre 6 et 128 caractères.');
+    }
+    if (params.newPassword !== params.confirmPassword) {
+      throw new Error('La confirmation du nouveau mot de passe ne correspond pas.');
+    }
+    if (params.newPassword === params.currentPassword) {
+      throw new Error('Le nouveau mot de passe doit être différent de l’ancien.');
+    }
+
+    this.clearPasswordAttempts(params.userId);
+    const nextHash = hashPassword(params.newPassword);
+    const updatedUser = await this.db.updateUserPasswordHash(params.userId, nextHash);
+    const profile = toPublicProfile(updatedUser);
+    const token = signSessionToken({
+      userId: updatedUser.id,
+      username: updatedUser.username,
+      issuedAt: Date.now(),
+      sessionVersion: updatedUser.sessionVersion ?? 1,
+    });
     return { token, profile };
   }
 }
