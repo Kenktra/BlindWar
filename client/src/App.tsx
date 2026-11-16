@@ -70,6 +70,7 @@ import { getBrowserStandaloneNode } from './services/browserP2PEngine.js';
 import { AdminDashboardScreen } from './components/AdminDashboardScreen.js';
 import { AvatarCropperModal } from './components/AvatarCropperModal.js';
 import { HomeLandingPage } from './components/HomeLandingPage.js';
+import { LearnToPlayHub } from './components/LearnToPlayHub.js';
 import { NotificationCenter } from './components/NotificationCenter.js';
 import {
   AVATAR_CHARACTER_OPTIONS,
@@ -605,7 +606,7 @@ export const App: React.FC = () => {
           className={`bw-nav-link ${screen === 'tutorial' ? 'active' : ''}`}
           onClick={() => setScreen('tutorial')}
         >
-          Tutoriel
+          Apprendre à jouer
         </button>
         <button
           type="button"
@@ -1947,124 +1948,26 @@ export const App: React.FC = () => {
           </section>
         )}
 
-        {/* 12. TUTORIEL & MODE ENTRAÎNEMENT */}
+        {/* 12. APPRENDRE À JOUER & TUTORIELS COMPLETS */}
         {screen === 'tutorial' && (
-          <section className="bw-panel-page">
-            <h2>🎓 Programme d’Entraînement — 10 Thèmes Progressifs (§12.5)</h2>
-            <p>
-              Apprenez BLIND WAR étape par étape sans surcharge d’information (
-              <strong>{validCompletedTutorialIds.length}/{TUTORIAL_SCENARIOS.length}</strong>{' '}
-              leçons validées) :
-            </p>
-
-            <div className="bw-panel bw-tutorial-controls-panel">
-              <div className="bw-tutorial-controls-row">
-                <div>
-                  <strong>Aides contextuelles en partie :</strong>{' '}
-                  <span className="bw-muted-small">
-                    {settings.enableContextualTutorials
-                      ? 'Activées (affiche 1 guide ciblé selon la pièce sélectionnée ou l’événement, une seule fois).'
-                      : 'Désactivées (réactivables à tout moment).'}
-                  </span>
-                </div>
-                <div className="bw-form-actions">
-                  <button
-                    type="button"
-                    className={`bw-btn bw-btn-sm ${settings.enableContextualTutorials ? 'bw-btn-secondary' : 'bw-btn-primary'}`}
-                    onClick={() => {
-                      const next = {
-                        ...settings,
-                        enableContextualTutorials: !settings.enableContextualTutorials,
-                      };
-                      setSettings(next);
-                      saveUserSettings(next);
-                    }}
-                  >
-                    {settings.enableContextualTutorials
-                      ? '🔕 Désactiver les guides auto'
-                      : '🔔 Activer les guides auto'}
-                  </button>
-                  <button
-                    type="button"
-                    className="bw-btn bw-btn-ghost bw-btn-sm"
-                    disabled={dismissedContextualIds.length === 0}
-                    onClick={() => {
-                      resetContextualTips();
-                      setDismissedContextualIds([]);
-                    }}
-                  >
-                    ↺ Réinitialiser conseils vus ({dismissedContextualIds.length})
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {Array.from(new Set(TUTORIAL_SCENARIOS.map((s) => s.themeNumber)))
-              .sort((a, b) => a - b)
-              .map((themeNum) => {
-                const lessonsInTheme = TUTORIAL_SCENARIOS.filter(
-                  (s) => s.themeNumber === themeNum,
-                );
-                const firstLesson = lessonsInTheme[0];
-                if (!firstLesson) return null;
-                const doneInTheme = lessonsInTheme.filter((s) =>
-                  validCompletedTutorialIds.includes(s.id),
-                ).length;
-                return (
-                  <div key={themeNum} className="bw-tutorial-theme-group">
-                    <div className="bw-tutorial-theme-header">
-                      <h3>
-                        Thème {themeNum}/10 — {firstLesson.themeTitle}
-                      </h3>
-                      <span className="bw-mode-pill">
-                        {doneInTheme}/{lessonsInTheme.length} terminée
-                        {doneInTheme > 1 ? 's' : ''}
-                      </span>
-                    </div>
-                    <div className="bw-menu-grid">
-                      {lessonsInTheme.map((scen) => {
-                        const globalIdx = TUTORIAL_SCENARIOS.findIndex((s) => s.id === scen.id);
-                        const isDone = validCompletedTutorialIds.includes(scen.id);
-                        return (
-                          <div
-                            key={scen.id}
-                            className={`bw-menu-card ${isDone ? 'bw-tutorial-card-done' : ''} ${scen.isNewUpdate ? 'bw-tutorial-card-new' : ''}`}
-                          >
-                            <div className="bw-tutorial-card-badges">
-                              {scen.isNewUpdate && <span className="bw-badge-new">Mis à jour</span>}
-                              {isDone && <span className="bw-badge-done">✅ Validée</span>}
-                              {scen.relatedCharacterIds && (
-                                <span className="bw-tutorial-chars-pill">
-                                  {scen.relatedCharacterIds.map((ch) => (
-                                    <PieceArtwork
-                                      key={ch}
-                                      character={ch}
-                                      owner="red"
-                                      size="xs"
-                                    />
-                                  ))}
-                                </span>
-                              )}
-                            </div>
-                            <h4>{scen.title}</h4>
-                            <p>{scen.subtitle}</p>
-                            <button
-                              type="button"
-                              className={`bw-btn ${isDone ? 'bw-btn-secondary' : 'bw-btn-primary'}`}
-                              onClick={() => startTutorialScenario(globalIdx)}
-                            >
-                              {isDone
-                                ? `↻ Rejouer la Leçon #${scen.stepNumber}`
-                                : `▶ Jouer la Leçon #${scen.stepNumber}`}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-          </section>
+          <LearnToPlayHub
+            completedTutorialIds={validCompletedTutorialIds}
+            dismissedContextualCount={dismissedContextualIds.length}
+            enableContextualTutorials={settings.enableContextualTutorials}
+            onToggleContextualTutorials={() => {
+              const next = {
+                ...settings,
+                enableContextualTutorials: !settings.enableContextualTutorials,
+              };
+              setSettings(next);
+              saveUserSettings(next);
+            }}
+            onResetContextualTips={() => {
+              resetContextualTips();
+              setDismissedContextualIds([]);
+            }}
+            onStartScenario={(idx) => startTutorialScenario(idx)}
+          />
         )}
 
         {/* 13. PROFIL JOUEUR */}

@@ -6,10 +6,6 @@ import {
   CHARACTER_CATALOG,
   CHARACTER_DOSSIERS,
   CHARACTER_TYPES,
-  FAQ_ITEMS,
-  MECHANIC_DOSSIERS,
-  RULE_SECTIONS,
-  SETTINGS_HELP_ITEMS,
   TOTAL_PIECES_PER_PLAYER,
   autoCompletePlacement,
   canPlayerPlayCard,
@@ -71,7 +67,8 @@ import {
 } from '../board/annotations.js';
 import { PhaserBoardCanvas } from '../board/PhaserBoardCanvas.js';
 import { selectContextualTip } from '../board/contextualTutorials.js';
-import { PieceArtwork, PieceDualVariantPreview } from '../components/PieceArtwork.js';
+import { InGameHelpModal } from '../components/InGameHelpModal.js';
+import { PieceArtwork } from '../components/PieceArtwork.js';
 import { PieceDescriptionPanel } from '../components/PieceDescriptionPanel.js';
 import {
   type UserSettings,
@@ -413,7 +410,6 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   const [espionageSelectedIds, setEspionageSelectedIds] = useState<string[]>([]);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [showInGameRulesModal, setShowInGameRulesModal] = useState<boolean>(false);
-  const [rulesModalTab, setRulesModalTab] = useState<'rules' | 'mechanics' | 'characters' | 'faq'>('rules');
   const [showTutorialHints, setShowTutorialHints] = useState<boolean>(false);
   const [dismissedContextualIds, setDismissedContextualIds] = useState<string[]>(() =>
     loadDismissedContextualTips(),
@@ -3353,157 +3349,18 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
       )}
 
-      {/* In-Game Encyclopedia & Rules Modal (§16) */}
-      {showInGameRulesModal && (
-        <div className="bw-modal-backdrop" onClick={() => setShowInGameRulesModal(false)}>
-          <div className="bw-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="bw-modal-header">
-              <h2>📖 Encyclopédie & Règles Officielles de BLIND WAR</h2>
-              <button
-                type="button"
-                className="bw-btn bw-btn-ghost"
-                onClick={() => setShowInGameRulesModal(false)}
-              >
-                ✕ Fermer
-              </button>
-            </div>
-            <div className="bw-modal-tabs">
-              <button
-                type="button"
-                className={`bw-btn bw-btn-sm ${rulesModalTab === 'rules' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
-                onClick={() => setRulesModalTab('rules')}
-              >
-                📜 Règles officielles
-              </button>
-              <button
-                type="button"
-                className={`bw-btn bw-btn-sm ${rulesModalTab === 'mechanics' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
-                onClick={() => setRulesModalTab('mechanics')}
-              >
-                ✨ Mécaniques & Nouveautés
-              </button>
-              <button
-                type="button"
-                className={`bw-btn bw-btn-sm ${rulesModalTab === 'characters' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
-                onClick={() => setRulesModalTab('characters')}
-              >
-                12 Personnages (27 pions)
-              </button>
-              <button
-                type="button"
-                className={`bw-btn bw-btn-sm ${rulesModalTab === 'faq' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
-                onClick={() => setRulesModalTab('faq')}
-              >
-                ❓ FAQ & Guide
-              </button>
-              {mode !== 'tutorial' && dismissedContextualIds.length > 0 && (
-                <button
-                  type="button"
-                  className="bw-btn bw-btn-ghost bw-btn-sm"
-                  onClick={() => {
-                    resetContextualTips();
-                    setDismissedContextualIds([]);
-                  }}
-                >
-                  ↺ Réactiver guides contextuels ({dismissedContextualIds.length})
-                </button>
-              )}
-            </div>
-            <div className="bw-modal-body">
-              {rulesModalTab === 'rules' &&
-                RULE_SECTIONS.map((sec) => (
-                  <div key={sec.id} className="bw-rule-block">
-                    <h3>{sec.title}</h3>
-                    <p>{sec.summary}</p>
-                    <ul>
-                      {sec.bullets.map((b, i) => (
-                        <li key={i}>{b}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-
-              {rulesModalTab === 'mechanics' &&
-                MECHANIC_DOSSIERS.map((mech) => (
-                  <div key={mech.id} className="bw-rule-block">
-                    <h3>
-                      {mech.badge} {mech.title}
-                    </h3>
-                    <p>{mech.summary}</p>
-                    <ul>
-                      {mech.rules.map((r, i) => (
-                        <li key={i}>{r}</li>
-                      ))}
-                    </ul>
-                    {mech.edgeCases.length > 0 && (
-                      <p className="bw-muted-small">
-                        <strong>Cas particuliers :</strong> {mech.edgeCases.join(' • ')}
-                      </p>
-                    )}
-                  </div>
-                ))}
-
-              {rulesModalTab === 'characters' &&
-                CHARACTER_TYPES.map((ch) => {
-                  const d = CHARACTER_DOSSIERS[ch];
-                  return (
-                    <div key={ch} className="bw-rule-block">
-                      <h3 className="bw-rule-char-heading">
-                        <PieceArtwork character={ch} owner={viewerColor} size="sm" />{' '}
-                        <span>
-                          {d.name} ({d.initialQuantity}/27)
-                        </span>
-                      </h3>
-                      <PieceDualVariantPreview character={ch} size="xs" />
-                      <p>
-                        <strong>Rôle :</strong> {d.roleSummary}
-                      </p>
-                      <ul>
-                        <li>
-                          <strong>Déplacement :</strong> {d.movementSummary}
-                        </li>
-                        <li>
-                          <strong>Capacité spéciale :</strong> {d.specialAbility}
-                        </li>
-                        {d.interactionsSummary.length > 0 && (
-                          <li>
-                            <strong>Interactions :</strong> {d.interactionsSummary.join(' • ')}
-                          </li>
-                        )}
-                      </ul>
-                    </div>
-                  );
-                })}
-
-              {rulesModalTab === 'faq' && (
-                <>
-                  <div className="bw-rule-block">
-                    <h3>❓ Questions fréquentes (FAQ)</h3>
-                    {FAQ_ITEMS.map((faq) => (
-                      <div key={faq.id} style={{ marginBottom: '0.8rem' }}>
-                        <strong>{faq.question}</strong>
-                        <p className="bw-muted-small" style={{ marginTop: '0.2rem' }}>
-                          {faq.answer}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="bw-rule-block">
-                    <h3>⚙️ Guide des paramètres</h3>
-                    <ul>
-                      {SETTINGS_HELP_ITEMS.map((item) => (
-                        <li key={item.id}>
-                          <strong>{item.section} :</strong> {item.summary}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Interactive In-Game Help, Piece Guide & Searchable Rules Modal (§3.5 — preserves live match state) */}
+      <InGameHelpModal
+        isOpen={showInGameRulesModal}
+        viewerColor={viewerColor}
+        dismissedContextualCount={dismissedContextualIds.length}
+        canResetContextualTips={mode !== 'tutorial'}
+        onResetContextualTips={() => {
+          resetContextualTips();
+          setDismissedContextualIds([]);
+        }}
+        onClose={() => setShowInGameRulesModal(false)}
+      />
     </div>
   );
 };

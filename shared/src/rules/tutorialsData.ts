@@ -855,3 +855,591 @@ export const PIECE_TUTORIALS: Readonly<Record<CharacterType, PieceTutorialDossie
     ],
   },
 };
+
+export type LearnCategoryId =
+  | 'regles_generales'
+  | 'presentation_pieces'
+  | 'deplacements'
+  | 'attaques_captures'
+  | 'regles_speciales'
+  | 'situations_particulieres'
+  | 'strategies_conseils'
+  | 'exemples_parties';
+
+export interface LearnCategoryMeta {
+  readonly id: LearnCategoryId;
+  readonly label: string;
+  readonly icon: string;
+  readonly summary: string;
+}
+
+export const LEARN_TO_PLAY_CATEGORIES: readonly LearnCategoryMeta[] = [
+  {
+    id: 'regles_generales',
+    label: 'Règles générales',
+    icon: '📜',
+    summary: 'Plateau 9×9, placement secret initial des 27 pièces, objectif Roi et pendule.',
+  },
+  {
+    id: 'presentation_pieces',
+    label: 'Présentation des pièces',
+    icon: '♟️',
+    summary: 'Fiches détaillées et interactives pour chacune des 12 unités de BlindWar.',
+  },
+  {
+    id: 'deplacements',
+    label: 'Déplacements',
+    icon: '🧭',
+    summary: 'Règles exactes de trajectoires, sauts du Cavalier, restrictions et obstacles.',
+  },
+  {
+    id: 'attaques_captures',
+    label: 'Attaques et captures',
+    icon: '⚔️',
+    summary: 'Corps à corps, diagonale du Soldat, Tir d’arbalète, Frappe traversante et Armure.',
+  },
+  {
+    id: 'regles_speciales',
+    label: 'Règles spéciales',
+    icon: '✨',
+    summary: 'Identités cachées, Guetteurs, Marquage Traqueur, Colosse, Promotions et 16 Cartes.',
+  },
+  {
+    id: 'situations_particulieres',
+    label: 'Situations particulières',
+    icon: '⚖️',
+    summary: 'Tour Bonus 2+ éliminations, Kamikaze 2/2, Invincibilité/Protection, Répétition x5 et Pat.',
+  },
+  {
+    id: 'strategies_conseils',
+    label: 'Stratégies et conseils',
+    icon: '🧠',
+    summary: 'Couverture de reconnaissance, gestion du Brouillard, leurres du Roi et tempo.',
+  },
+  {
+    id: 'exemples_parties',
+    label: 'Exemples de parties',
+    icon: '🎓',
+    summary: 'Scénarios jouables guidés pour pratiquer chaque mécanique sur le véritable plateau.',
+  },
+];
+
+export interface SpecialRuleTutorial {
+  readonly id: string;
+  readonly category: LearnCategoryId;
+  readonly badge: string;
+  readonly title: string;
+  readonly summary: string;
+  readonly relatedCharacterIds?: readonly CharacterType[];
+  readonly linkedScenarioId?: string;
+  readonly howItWorksSteps: readonly string[];
+  readonly whenToUse: string;
+  readonly conditions: readonly string[];
+  readonly limits: readonly string[];
+  readonly examples: readonly string[];
+  readonly consequences: readonly string[];
+  readonly demoSteps: readonly TutorialDiagramStep[];
+}
+
+export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
+  {
+    id: 'rule-hidden-identity-and-placement',
+    category: 'regles_generales',
+    badge: '🕵️',
+    title: 'Identités cachées & Placement secret initial (27 pièces)',
+    summary: 'Les positions de chaque pion sur les 81 cases sont publiques, mais leur rôle ennemi reste masqué jusqu’à révélation.',
+    howItWorksSteps: [
+      '1. En début de partie, chaque joueur dispose secrètement ses 27 pièces sur ses 3 rangées arrière (90 secondes max, ou placement automatique à expiration).',
+      '2. Sur l’échiquier, votre adversaire voit vos emplacements comme des jetons « ? » voilés — et inversement.',
+      '3. Aucune identité non révélée n’est envoyée par le serveur aux joueurs avant une révélation réglementaire.',
+    ],
+    whenToUse: 'Dès la phase de préparation pour dissimuler votre Roi, excentrer l’Exécuteur ou piéger un axe avec un Soldat Kamikaze.',
+    conditions: [
+      'Les 27 pièces obligatoires (1 Roi, 1 Reine, 1 Colosse, 2 Cavaliers, 1 Berserker, 3 Assassins, 3 Guetteurs H, 3 Guetteurs D, 1 Traqueur, 1 Exécuteur, 1 Arbalétrier, 9 Soldats) doivent toutes être posées.',
+    ],
+    limits: [
+      'Impossible d’espionner avant le premier tour ou de voir si un pion inconnu porte Protection ou Kamikaze.',
+    ],
+    examples: [
+      'Placer un Guetteur D derrière deux Soldats en pointe pour démasquer le premier attaquant ennemi sans exposer votre Reine.',
+    ],
+    consequences: [
+      'Un adversaire attaquant à l’aveugle risque de rebondir sur votre Colosse (et de vous le révéler gratuitement) ou de tomber sur Kamikaze !',
+    ],
+    linkedScenarioId: 'intro-plateau-roi',
+    demoSteps: [
+      {
+        id: 'secret-demo-1',
+        stepTitle: 'Vue asymétrique : vous voyez vos rôles, l’adversaire reste voilé « ? »',
+        verdictBadge: 'EXEMPLE',
+        explanation: 'Les pions adverses non révélés affichent le sceau « ? ». Déduisez ou révélez avec vos Guetteurs avant de frapper.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 0, col: 1, kind: 'secret', owner: 'black' },
+          { row: 0, col: 3, kind: 'secret', owner: 'black' },
+          { row: 3, col: 1, kind: 'guetteur_d', owner: 'red' },
+          { row: 4, col: 2, kind: 'roi', owner: 'red' },
+        ],
+        highlights: [
+          { row: 0, col: 1, kind: 'mark', tag: 'Caché' },
+          { row: 0, col: 3, kind: 'mark', tag: 'Caché' },
+          { row: 3, col: 1, kind: 'selected' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'rule-visibility-hierarchy',
+    category: 'regles_speciales',
+    badge: '👁️',
+    title: 'Hiérarchie des Révélations (Guetteurs, Assassin, Brouillard & Espionnage)',
+    summary: 'Toutes les sources de révélation et de camouflage suivent un ordre de priorité strict côté serveur.',
+    relatedCharacterIds: ['guetteur_h', 'guetteur_d', 'assassin'],
+    linkedScenarioId: 'recon-guetteurs',
+    howItWorksSteps: [
+      '1. Proximité (Guetteur H en H/V, Guetteur D en diagonale à 1 case) : révélation temporaire tant que le Guetteur reste vivant adjacent.',
+      '2. Révélation temporaire (carte 👁️ ou attaque ratée sur Colosse) : dure 1 tour complet.',
+      '3. Contre-espionnage (🕶️ sur 1 pièce, 3 tours) : bloque Guetteurs et Révélation temporaire.',
+      '4. Espionnage (📡 jusqu’à 2 ennemis, 3 tours) : PERCE le Contre-espionnage.',
+      '5. Brouillard (🌫️ toute votre armée, 3 tours) : bloque Guetteurs, Révélation temporaire ET Espionnage.',
+      '6. Révélation définitive (Assassin tuant sa victime ou carte 🔍) : JAMAIS annulée, ni par Brouillard ni par Contre-espionnage.',
+    ],
+    whenToUse: 'Activez Brouillard pour casser un Marquage du Traqueur adverse ou masquer un siège devant vos lignes.',
+    conditions: [
+      'Chaque niveau supérieur neutralise ou contourne exactement les niveaux inférieurs selon l’ordre officiel.',
+    ],
+    limits: [
+      'Un Guetteur H ne révèle que H/V (1 case) ; il ne traverse ni les cases vides au-delà de 1 case ni Brouillard.',
+    ],
+    examples: [
+      'L’ennemi lance Contre-espionnage sur sa Reine puis croit être intouchable : votre carte Espionnage passe à travers et la révèle aussitôt pour votre Traqueur.',
+    ],
+    consequences: [
+      'Dès qu’une cible redevient masquée (expiration ou Brouillard), tout marquage actif du Traqueur sur elle disparaît immédiatement.',
+    ],
+    demoSteps: [
+      {
+        id: 'vis-demo-1',
+        stepTitle: '1. Guetteur H + Guetteur D dévoilent en croix et en diagonale',
+        verdictBadge: 'CAPACITÉ',
+        explanation: 'Un pion ennemi entrant dans le rayon orthogonal du Guetteur H ou diagonal du Guetteur D est immédiatement identifié.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 2, col: 2, kind: 'guetteur_h', owner: 'red' },
+          { row: 1, col: 2, kind: 'reine', owner: 'black' },
+          { row: 2, col: 3, kind: 'secret', owner: 'black' },
+        ],
+        highlights: [
+          { row: 2, col: 2, kind: 'selected' },
+          { row: 1, col: 2, kind: 'recon', tag: 'Reine vue!' },
+          { row: 2, col: 3, kind: 'recon', tag: 'Identifié' },
+          { row: 3, col: 2, kind: 'recon' },
+          { row: 2, col: 1, kind: 'recon' },
+        ],
+      },
+      {
+        id: 'vis-demo-2',
+        stepTitle: '2. Brouillard / Contre-espionnage recouvre la pièce temporairement',
+        verdictBadge: 'INTERDIT',
+        explanation: 'Sous Brouillard ou Contre-espionnage, l’ennemi redevient « ? » face aux Guetteurs et le Traqueur perd sa marque.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 2, col: 2, kind: 'guetteur_h', owner: 'red' },
+          { row: 1, col: 2, kind: 'secret', owner: 'black' },
+        ],
+        highlights: [
+          { row: 2, col: 2, kind: 'selected' },
+          { row: 1, col: 2, kind: 'forbidden', tag: 'Brouillard' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'rule-colosse-kamikaze',
+    category: 'regles_speciales',
+    badge: '💥',
+    title: `Colosse : Armure, Bascule d’extrémité & Règle des ${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD} Kamikazes`,
+    summary: `Le Colosse résiste aux attaques normales et à l’Arbalétrier, mais tombe après ${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD} déclenchements de Kamikaze qu’il provoque lui-même.`,
+    relatedCharacterIds: ['colosse'],
+    linkedScenarioId: 'kamikaze-colosse-v2',
+    howItWorksSteps: [
+      '1. Progression : 5 directions vers l’avant/côtés ; arrivé tout au bout du plateau, il inverse son sens et reste révélé 1 tour complet.',
+      '2. Seuls Roi, Reine, autre Colosse et la Frappe traversante de l’Exécuteur (en cible arrière) le tuent directement.',
+      `3. Au 1er ennemi sous Kamikaze abattu par ce Colosse : le Kamikaze explose, le Colosse SURVIT à 1/${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD}.`,
+      `4. Au ${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD}e ennemi sous Kamikaze abattu par ce même Colosse : le Colosse est ÉLIMINÉ (${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD}/${COLOSSUS_KAMIKAZE_ELIMINATION_THRESHOLD}).`,
+    ],
+    whenToUse: 'Placez deux cartes Kamikaze sur les pions situés sur le chemin d’un Colosse adverse hors de portée de votre Reine.',
+    conditions: [
+      'Le compteur n’augmente QUE pour les explosions Kamikaze déclenchées par le Colosse en attaquant lui-même.',
+    ],
+    limits: [
+      'Un Kamikaze déclenché contre une autre pièce que le Colosse n’avance JAMAIS le compteur du Colosse.',
+      'Le Colosse ne peut jamais recevoir Kamikaze, Protection, Invincibilité ni Résurrection.',
+    ],
+    examples: [
+      'Votre Colosse mange un Soldat Kamikaze (compteur 1/2, survit), puis deux tours plus tard capture un Guetteur Kamikaze (compteur 2/2, éliminé).',
+    ],
+    consequences: [
+      'Le compteur (0/2, 1/2) est persisté côté serveur et affiché dans le panneau gauche du propriétaire.',
+    ],
+    demoSteps: [
+      {
+        id: 'col-kam-1',
+        stepTitle: 'Étape 1 : 1er Kamikaze provoqué par le Colosse → Survie (1/2)',
+        verdictBadge: 'CAPACITÉ',
+        explanation: 'L’ennemi Kamikaze explose mais le Colosse encaisse le choc et passe son compteur à 1/2.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 3, col: 2, kind: 'colosse', owner: 'red' },
+          { row: 2, col: 2, kind: 'soldat', owner: 'black' },
+        ],
+        highlights: [
+          { row: 3, col: 2, kind: 'selected', tag: '0/2 → 1/2' },
+          { row: 2, col: 2, kind: 'attack', tag: 'Kamikaze 1' },
+        ],
+        arrows: [{ from: { row: 3, col: 2 }, to: { row: 2, col: 2 }, kind: 'attack' }],
+      },
+      {
+        id: 'col-kam-2',
+        stepTitle: 'Étape 2 : 2e Kamikaze provoqué par le Colosse → Élimination (2/2)',
+        verdictBadge: 'EXEMPLE',
+        explanation: 'Déjà entamé à 1/2, le Colosse ne survit pas à une seconde explosion Kamikaze et disparaît du plateau.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 2, col: 2, kind: 'colosse', owner: 'red' },
+          { row: 1, col: 2, kind: 'berserker', owner: 'black' },
+        ],
+        highlights: [
+          { row: 2, col: 2, kind: 'selected', tag: '1/2 → 2/2 KO' },
+          { row: 1, col: 2, kind: 'attack', tag: 'Kamikaze 2' },
+        ],
+        arrows: [{ from: { row: 2, col: 2 }, to: { row: 1, col: 2 }, kind: 'attack' }],
+      },
+    ],
+  },
+  {
+    id: 'rule-traqueur-marquage',
+    category: 'regles_speciales',
+    badge: '🎯',
+    title: 'Marquage (0 action) & Poursuite à 4 cases (Traqueur)',
+    summary: 'Action gratuite préparant dès le tour suivant une percée à 4 cases contre un ennemi déjà identifié.',
+    relatedCharacterIds: ['traqueur'],
+    linkedScenarioId: 'traqueur-marquage-poursuite',
+    howItWorksSteps: [
+      '1. Vérifiez qu’un ennemi est DÉJÀ révélé et aligné H/V à 1–3 cases de votre Traqueur sans obstacle.',
+      '2. Sélectionnez votre Traqueur → cliquez sur « Marquer (0 action) » → cliquez l’ennemi violet : la marque est posée gratuitement, vous gardez toute votre action du tour.',
+      '3. Dès votre tour personnel suivant, la portée vers la direction qui rapproche de la cible monte à 4 cases H/V.',
+    ],
+    whenToUse: 'Dès qu’un Guetteur ou Espionnage dévoile une pièce majeure ennemie susceptible de fuir à 4 cases au tour suivant.',
+    conditions: [
+      'Cible strictement déjà révélée (jamais « ? »), alignée orthogonalement (1–3 cases) et sans obstacle.',
+      'La Poursuite 4 cases ne s’arme jamais au tour même où le marquage est posé.',
+    ],
+    limits: [
+      'À distance 4, impossible d’éliminer une autre pièce que la cible marquée (et jamais un Colosse).',
+      'Si la cible redevient masquée ou meurt, le marquage disparaît instantanément.',
+    ],
+    examples: [
+      'Vous marquez une Reine ennemie à 2 cases, puis reculez un Guetteur ; au tour suivant elle recule encore — votre Traqueur fond sur 4 cases et l’abat.',
+    ],
+    consequences: [
+      'Le déplacement à distance 4 consomme le marquage ; un trajet de 1–3 cases ou une Téléportation le conserve actif.',
+    ],
+    demoSteps: PIECE_TUTORIALS.traqueur.demoSteps,
+  },
+  {
+    id: 'rule-executeur-piercing',
+    category: 'attaques_captures',
+    badge: '🪓',
+    title: 'Frappe traversante de l’Exécuteur',
+    summary: 'Frappe à exactement 2 cases derrière une pièce ennemie écran sans toucher la première pièce — perce même le Colosse.',
+    relatedCharacterIds: ['executeur'],
+    linkedScenarioId: 'executeur-frappe-traversante',
+    howItWorksSteps: [
+      '1. Alignement orthogonal exact requis : [Exécuteur] → [Ennemi 1 (≠ Colosse)] → [Ennemi 2].',
+      '2. Cliquez sur la case d’Ennemi 2 : choisissez « Frappe traversante » si un choix s’affiche.',
+      '3. L’Exécuteur reste sur sa case de départ ; Ennemi 1 reste intact sur sa case ; Ennemi 2 est éliminé !',
+    ],
+    whenToUse: 'Quand l’adversaire protège son Colosse ou son Roi derrière un simple Soldat aligné devant votre Exécuteur.',
+    conditions: [
+      'Exactement 1 pièce ennemie non-Colosse entre l’Exécuteur et la cible arrière sur la même ligne/colonne.',
+    ],
+    limits: [
+      'Impossible à travers une pièce alliée, à travers 2 pièces ou si l’écran est un Colosse (un Colosse écran cache/bloque la frappe et est révélé 1 tour).',
+    ],
+    examples: [
+      'Exécuteur en D3, Soldat ennemi en D4, Roi (ou Colosse) ennemi en D5 : cliquez D5 pour gagner ou abattre le Colosse sans déplacer D3 !',
+    ],
+    consequences: [
+      'Si Ennemi 2 porte Kamikaze, son explosion atteint l’Exécuteur (sauf Protection) ; si Ennemi 2 porte Protection, sa Protection se brise.',
+    ],
+    demoSteps: PIECE_TUTORIALS.executeur.demoSteps,
+  },
+  {
+    id: 'rule-arbaletrier-cadence',
+    category: 'attaques_captures',
+    badge: '🏹',
+    title: 'Tir à distance & Cadence (1 tir / 3 tours personnels)',
+    summary: 'Tir sur 1–3 cases dans les 8 directions suivi de 2 tours personnels d’attente obligatoire.',
+    relatedCharacterIds: ['arbaletrier'],
+    linkedScenarioId: 'arbaletrier-tir-cadence',
+    howItWorksSteps: [
+      '1. Tour 1 (Prêt) : visez une cible ennemie en ligne dégagée à 1, 2 ou 3 cases (8 directions) ; l’Arbalétrier ne se déplace pas.',
+      '2. Tour 2 personnel : Tir indisponible (2 tours d’attente restants) — seul le pas d’1 case H/V est autorisé.',
+      '3. Tour 3 personnel : Tir indisponible (1 tour d’attente restant).',
+      '4. Tour 4 personnel : Le tir redevient disponible automatiquement !',
+    ],
+    whenToUse: 'Pour éliminer à distance sans subir de Piège sur la case ciblée ni bouger votre ligne de défense.',
+    conditions: [
+      'Ligne de visée totalement dégagée entre l’Arbalétrier et la cible.',
+    ],
+    limits: [
+      'Les tours de l’adversaire ne font jamais avancer la recharge.',
+      'Double Action ne permet jamais de tirer 2 fois ; Téléportation ne réinitialise jamais le compteur.',
+      'Ne tue jamais le Colosse et ne révèle pas un Colosse inconnu s’il bloque le tir.',
+    ],
+    examples: [
+      'Après un tir bloqué par Protection au Tour 1, la recharge démarre tout de même (2 tours d’attente).',
+    ],
+    consequences: [
+      'Si la cible abattue à distance porte Kamikaze, l’explosion emporte aussi l’Arbalétrier (sauf Protection).',
+    ],
+    demoSteps: PIECE_TUTORIALS.arbaletrier.demoSteps,
+  },
+  {
+    id: 'rule-cavalier-mobility',
+    category: 'deplacements',
+    badge: '🐴',
+    title: 'Cavalier : Bond en « L » & Saut Percée sans pénalité',
+    summary: 'Triple mobilité orthogonale/équestre permettant de sauter les obstacles et de déclencher un Tour Bonus à 2+ éliminations.',
+    relatedCharacterIds: ['cavalier'],
+    linkedScenarioId: 'cavalier-bond-et-percee',
+    howItWorksSteps: [
+      '1. Choisissez soit un pas simple de 1 case H/V, soit un Bond en « L » (2×1), soit un Saut Percée style dames au-dessus d’un ennemi adjacent vers la case vide derrière.',
+      '2. Pendant un Bond en « L », vous survolez toutes les pièces (même le Colosse) et tous les pièges intermédiaires sans les déclencher.',
+      '3. Pendant un Saut Percée, chaque ennemi sauté est éliminé et vous pouvez enchaîner ou cliquer « Terminer les sauts ».',
+    ],
+    whenToUse: 'Pour briser une défense verrouillée en début de partie sans aucun risque de pénalité en cas de coup pacifique.',
+    conditions: [
+      'Pour le Saut Percée, la case de réception immédiatement derrière l’ennemi doit être libre et l’ennemi sauté ne doit pas être un Colosse.',
+    ],
+    limits: [
+      'Plus de déplacement d’1 case en diagonale.',
+      'Ne peut tuer aucun Colosse directement.',
+    ],
+    examples: [
+      'Double Saut Percée dans un même tour : 2 ennemis éliminés → Tour Bonus immédiat de 1 mouvement supplémentaire !',
+    ],
+    consequences: [
+      'Seule la case d’arrivée d’un Bond en « L » peut déclencher un Piège.',
+    ],
+    demoSteps: PIECE_TUTORIALS.cavalier.demoSteps,
+  },
+  {
+    id: 'rule-promotion-cap',
+    category: 'regles_speciales',
+    badge: '👑',
+    title: 'Promotion du Soldat & Plafond strict de 1 exemplaire',
+    summary: 'Tout Soldat parvenu sur la dernière rangée ennemie se transforme selon les plafonds actifs de votre armée.',
+    relatedCharacterIds: ['soldat'],
+    linkedScenarioId: 'pions-et-promotion',
+    howItWorksSteps: [
+      '1. Amenez un Soldat sur la dernière rangée du camp adverse (rangée 9 pour Rouge, rangée 1 pour Noir).',
+      '2. Le moteur ouvre la fenêtre de promotion dès la fin du coup.',
+      '3. Choisissez parmi Guetteur H/D, Assassin, Cavalier, Berserker — et parmi Reine, Colosse, Traqueur, Exécuteur, Arbalétrier uniquement si votre exemplaire initial est déjà mort.',
+    ],
+    whenToUse: 'Dès qu’un couloir s’ouvre, particulièrement pour ressusciter tactiquement votre Reine ou votre Exécuteur tombé.',
+    conditions: [
+      'Le Roi et le Soldat ne sont jamais sélectionnables en promotion.',
+      'Les pièces uniques respectent toujours un plafond strict d’1 vivant sur le plateau.',
+    ],
+    limits: [
+      'Si votre Colosse est promu sur la rangée finale, son sens initial pointe aussitôt vers le camp adverse (il repart dans l’autre sens).',
+    ],
+    examples: [
+      'Votre Arbalétrier unique a été éliminé au tour 12 : au tour 20 votre Soldat atteint la ligne adverse → l’Arbalétrier réapparaît disponible dans les choix de promotion !',
+    ],
+    consequences: [
+      'L’identité promue est conservée même si la pièce est plus tard ciblée par la carte Résurrection.',
+    ],
+    demoSteps: PIECE_TUTORIALS.soldat.demoSteps,
+  },
+  {
+    id: 'rule-cards-and-draw',
+    category: 'regles_speciales',
+    badge: '🃏',
+    title: 'Les 16 Cartes Tactiques & Pioche toutes les 3 éliminations',
+    summary: 'Toute la gestion tactique des cartes : obtention, main de 3 max, visibilité secrète et interdictions.',
+    linkedScenarioId: 'cartes-tactiques-effet',
+    howItWorksSteps: [
+      '1. Toutes les 3 pièces ennemies éliminées, vous piochez 1 carte tactique (si vous avez < 3 cartes en main) ; la carte Sacrifice permet aussi de piocher sans compter vers ce palier.',
+      '2. Jouer une carte ne consomme PAS votre action de déplacement du tour (sauf les restrictions explicites comme l’absence de carte en Tour Bonus).',
+      '3. L’adversaire reçoit une alerte sur la carte utilisée mais ne connaît JAMAIS le pion ou la case secrète ciblée par Kamikaze, Protection, Invincibilité, Espionnage, Contre-espionnage ou Piège.',
+    ],
+    whenToUse: 'Avant ou entre vos attaques : par exemple Espionnage avant de marquer au Traqueur, ou Double Action pour enchaîner deux coups.',
+    conditions: [
+      'Kamikaze, Invincibilité et Protection sont interdits sur Roi et Colosse.',
+      'Block possède un délai de recharge de 2 tours ; Recrutement et Sacrifice ciblent uniquement vos Soldats.',
+      'Un Piège posé sur case vide affecte les pièces des DEUX camps (sauf en cas de survol en Bond L du Cavalier).',
+    ],
+    limits: [
+      'Impossible de jouer 2 cartes pendant un tour sous Double Action, ni aucune carte durant un Tour Bonus.',
+    ],
+    examples: [
+      'Activer Double Action puis déplacer votre Soldat vers la promotion (action 1) et frapper avec votre Reine (action 2).',
+    ],
+    consequences: [
+      'Chaque carte consommée est enregistrée dans l’historique de partie visible depuis l’onglet Partie / Historique.',
+    ],
+    demoSteps: [
+      {
+        id: 'cards-demo-1',
+        stepTitle: 'Combo Carte + Unité : Espionnage suivi d’un Marquage Traqueur',
+        verdictBadge: 'CAPACITÉ',
+        explanation: 'Révélez 1–2 cibles secrètes grâce à Espionnage (contournant Contre-espionnage), marquez aussitôt sans coût d’action et préparez la Poursuite !',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 4, col: 2, kind: 'traqueur', owner: 'red' },
+          { row: 2, col: 2, kind: 'reine', owner: 'black' },
+          { row: 0, col: 4, kind: 'secret', owner: 'black' },
+        ],
+        highlights: [
+          { row: 4, col: 2, kind: 'selected' },
+          { row: 2, col: 2, kind: 'mark', tag: 'Espionnée + Marquée' },
+          { row: 0, col: 4, kind: 'recon', tag: '2e cible libre' },
+        ],
+        arrows: [{ from: { row: 4, col: 2 }, to: { row: 2, col: 2 }, kind: 'pierce' }],
+      },
+    ],
+  },
+  {
+    id: 'rule-bonus-turn-and-end',
+    category: 'situations_particulieres',
+    badge: '⚡',
+    title: 'Tour Bonus (2+ éliminations), Répétitions (5x), Pat & Pendule',
+    summary: 'Conditions exactes du Tour Bonus immédiat, de l’avertissement à 3 répétitions, du match nul et des fins de partie.',
+    linkedScenarioId: 'gestion-tours-bonus',
+    howItWorksSteps: [
+      '1. Pénalité supprimée : 0 ou 1 élimination réelle rend toujours 1 action normale à l’adversaire.',
+      '2. Tour Bonus : dès que vous éliminez 2+ ennemis réels dans un même tour (Double Action ou Saut Percée en chaîne), vous gagnez 1 Tour Bonus d’un seul déplacement (aucune carte autorisée, pas de 2e Tour Bonus enchaîné).',
+      '3. Répétition : une alerte s’affiche à 3 occurrences identiques ; 5 répétitions déclenchent automatiquement un match nul.',
+      '4. Pendule 10 min & Pat : manquer de temps (0:00), abandonner ou rester déconnecté > 60s entraîne la défaite ; aucun coup ni carte légale = match nul (Pat).',
+    ],
+    whenToUse: 'À calculer avant d’engager une double capture en Double Action ou en Saut Cavalier pour gagner une avance de temps décisive.',
+    conditions: [
+      'Seules les éliminations adverses réelles comptent (une attaque bloquée par Protection/Invincibilité/Colosse ou un Sacrifice allié ne compte jamais).',
+    ],
+    limits: [
+      'Un Tour Bonus ne permet jamais de jouer une carte et ne peut pas déclencher un second Tour Bonus à la suite.',
+    ],
+    examples: [
+      'Avec Double Action, votre Reine élimine 1 ennemi (action 1) puis votre Berserker en élimine un 2e (action 2) → vous obtenez immédiatement 1 déplacement bonus avant que l’adversaire ne joue !',
+    ],
+    consequences: [
+      'Surveillez l’alerte Répétition (⚠️) en haut de l’écran en fin de partie serrée pour éviter le nul involontaire à 5/5.',
+    ],
+    demoSteps: [
+      {
+        id: 'turn-demo-1',
+        stepTitle: '2+ éliminations dans un tour = Tour Bonus (1 déplacement gratuit)',
+        verdictBadge: 'EXEMPLE',
+        explanation: 'Enchaîner deux éliminations réelles déclenche un déplacement supplémentaire immédiat avant la main adverse.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 3, col: 1, kind: 'cavalier', owner: 'red' },
+          { row: 2, col: 2, kind: 'soldat', owner: 'black' },
+          { row: 0, col: 2, kind: 'assassin', owner: 'black' },
+        ],
+        highlights: [
+          { row: 3, col: 1, kind: 'selected' },
+          { row: 2, col: 2, kind: 'attack', tag: 'Kill #1' },
+          { row: 1, col: 3, kind: 'jump' },
+          { row: 0, col: 2, kind: 'attack', tag: 'Kill #2' },
+          { row: 0, col: 0, kind: 'mark', tag: 'Tour Bonus!' },
+        ],
+        arrows: [
+          { from: { row: 3, col: 1 }, to: { row: 1, col: 3 }, kind: 'move' },
+          { from: { row: 1, col: 3 }, to: { row: 0, col: 1 }, kind: 'leap' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'rule-strategy-duo-scouts',
+    category: 'strategies_conseils',
+    badge: '🧠',
+    title: 'Synergies gagnantes : Duo Guetteurs, Appât Colosse & Cadence',
+    summary: 'Conseils tactiques avancés pour dominer l’information cachée et contrôler le plateau sans gaspiller vos cadres uniques.',
+    howItWorksSteps: [
+      '1. Associez Guetteur H et Guetteur D côte à côte : à eux deux, ils surveillent simultanément croix H/V et coins diagonaux tout en couvrant mutuellement leurs déplacements.',
+      '2. Utilisez vos cartes Espionnage puis marquez avec le Traqueur le même tour : votre adversaire est mis sous pression sur une allée de 4 cases dès le tour suivant.',
+      '3. Gardez toujours un œil sur les alignements H/V pour éviter une Frappe traversante fatale de l’Exécuteur sur votre Roi ou votre Colosse.',
+    ],
+    whenToUse: 'Pendant tout le milieu de partie pour prendre l’avantage informationnel avant les échanges directs.',
+    conditions: [
+      'Conservez au moins 1 Soldat en réserve arrière pour convertir une promotion en Reine ou Arbalétrier si votre exemplaire chute.',
+    ],
+    limits: [
+      'Un adversaire averti sous Brouillard neutralise vos Guetteurs et Espionnages pendant 3 tours — gardez alors vos Assassins et Cavaliers en « L » actifs.',
+    ],
+    examples: [
+      'Si l’adversaire pousse son Colosse très vite sans hésiter, posez Kamikaze sur deux défenseurs alignés sur sa trajectoire probable pour atteindre 2/2.',
+    ],
+    consequences: [
+      'Un avantage d’information (3+ ennemis identifiés) vaut souvent plus qu’un échange de Soldat isolé.',
+    ],
+    demoSteps: [
+      {
+        id: 'strat-demo-1',
+        stepTitle: 'Verrouillage combiné : Guetteur H + Guetteur D + Exécuteur',
+        verdictBadge: 'EXEMPLE',
+        explanation: 'Les Guetteurs identifient le duo ennemi aligné ; l’Exécuteur frappe la cible prioritaire derrière sans risquer sa case.',
+        rows: 5,
+        cols: 5,
+        pieces: [
+          { row: 2, col: 1, kind: 'guetteur_h', owner: 'red' },
+          { row: 2, col: 2, kind: 'soldat', owner: 'black' },
+          { row: 1, col: 2, kind: 'colosse', owner: 'black' },
+          { row: 4, col: 2, kind: 'executeur', owner: 'red' },
+        ],
+        highlights: [
+          { row: 2, col: 1, kind: 'recon' },
+          { row: 4, col: 2, kind: 'selected' },
+          { row: 2, col: 2, kind: 'recon', tag: 'Écran vu' },
+          { row: 1, col: 2, kind: 'attack', tag: 'Cible Colosse!' },
+        ],
+        arrows: [{ from: { row: 4, col: 2 }, to: { row: 1, col: 2 }, kind: 'pierce' }],
+      },
+    ],
+  },
+];
+
+function normalizeSearchText(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
+
+/** Search pieces, special rule tutorials, and playable lessons cleanly across accents/case. */
+export function filterTutorialsByQuery<T extends { readonly title?: string; readonly name?: string }>(
+  items: readonly T[],
+  query: string,
+  extraTextFn?: (item: T) => string,
+): T[] {
+  const q = normalizeSearchText(query.trim());
+  if (!q) return [...items];
+  return items.filter((item) => {
+    const haystack = normalizeSearchText(
+      [item.title ?? '', item.name ?? '', extraTextFn ? extraTextFn(item) : ''].join(' '),
+    );
+    return haystack.includes(q);
+  });
+}
