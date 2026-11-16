@@ -69,6 +69,7 @@ import {
 import { getBrowserStandaloneNode } from './services/browserP2PEngine.js';
 import { AdminDashboardScreen } from './components/AdminDashboardScreen.js';
 import { AvatarCropperModal } from './components/AvatarCropperModal.js';
+import { HomeLandingPage } from './components/HomeLandingPage.js';
 import { NotificationCenter } from './components/NotificationCenter.js';
 import {
   AVATAR_CHARACTER_OPTIONS,
@@ -823,62 +824,20 @@ export const App: React.FC = () => {
       <main className="bw-page-container">
         {/* 1. PAGE D'ACCUEIL */}
         {screen === 'home' && (
-          <section className="bw-hero-section">
-            <div className="bw-hero-badge">STRATÉGIE MILITAIRE À IDENTITÉS CACHÉES</div>
-            <h1 className="bw-hero-title">BLIND WAR</h1>
-            <p className="bw-hero-subtitle">
-              9 × 9 cases. 27 pièces par armée. Toutes les positions sont visibles, mais chaque
-              identité adverse est un secret mortel. Anticipez, infiltrez avec vos Guetteurs et vos
-              Assassins, maîtrisez les 16 cartes tactiques et éliminez le Roi ennemi.
-            </p>
-            <div className="bw-hero-cta-row">
-              <button
-                type="button"
-                className="bw-btn bw-btn-primary bw-btn-lg"
-                onClick={() => startNewLocalGame()}
-              >
-                Jouer en Mode Local (2 Joueurs)
-              </button>
-              <button
-                type="button"
-                className="bw-btn bw-btn-secondary bw-btn-lg"
-                onClick={() => setScreen('matchmaking')}
-              >
-                🌐 Multijoueur & Matchmaking ELO
-              </button>
-              <button
-                type="button"
-                className="bw-btn bw-btn-secondary bw-btn-lg"
-                onClick={() => setScreen('tutorial')}
-              >
-                🎓 Mode Entraînement & Tutoriel
-              </button>
-            </div>
-
-            <div className="bw-feature-grid">
-              <div className="bw-feature-card" onClick={() => setScreen('characters_collection')}>
-                <h3>12 Rôles Asymétriques (27 Pièces)</h3>
-                <p>
-                  Roi, Reine, Colosse, Cavalier, Berserker, Assassin, Guetteurs H & D, Soldats
-                  promouvables, ainsi que le Traqueur, l’Exécuteur et l’Arbalétrier.
-                </p>
-              </div>
-              <div className="bw-feature-card" onClick={() => setScreen('cards_collection')}>
-                <h3>🃏 16 Cartes Tactiques</h3>
-                <p>
-                  Kamikaze, Invincibilité, Protection, Espionnage (2 cibles au choix), Brouillard,
-                  Double action, Piège, Téléportation, Résurrection, Sacrifice...
-                </p>
-              </div>
-              <div className="bw-feature-card" onClick={() => setScreen('rules')}>
-                <h3>🔒 Serveur Autoritaire & Anti-Triche</h3>
-                <p>
-                  Pendule d’échecs de 10 minutes par joueur, départ officiel à 200 ELO, cimetière
-                  confidentiel et zéro fuite d’identité réseau.
-                </p>
-              </div>
-            </div>
-          </section>
+          <HomeLandingPage
+            userProfile={userProfile}
+            onPlayLocal={() => startNewLocalGame()}
+            onOpenMatchmaking={() => setScreen('matchmaking')}
+            onOpenCustomCreate={() => setScreen('custom_create')}
+            onOpenTutorial={() => setScreen('tutorial')}
+            onOpenLeaderboard={() => setScreen('leaderboard')}
+            onOpenProfileOrAuth={() => setScreen(userProfile ? 'profile' : 'login')}
+            onOpenRegister={() => setScreen('register')}
+            onOpenCharacters={() => setScreen('characters_collection')}
+            onOpenCards={() => setScreen('cards_collection')}
+            onOpenRules={() => setScreen('rules')}
+            onOpenSettings={() => setScreen('settings')}
+          />
         )}
 
         {/* 2. PAGE CONNEXION */}
