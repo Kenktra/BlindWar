@@ -205,6 +205,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
       data-piece-theme={effectiveTheme.id}
       data-asset-style={assetDescriptor.styleVariant}
       data-asset-id={assetDescriptor.assetId}
+      data-transparent-bg={assetDescriptor.transparentBackground ? 'true' : undefined}
       title={title}
       aria-hidden={title ? undefined : true}
       role={title ? 'img' : undefined}
@@ -214,42 +215,23 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
         width={px}
         height={px}
         viewBox="0 0 64 64"
+        preserveAspectRatio="xMidYMid meet"
         className="bw-piece-artwork-svg"
+        style={{ background: 'transparent' }}
+        data-transparent-bg="true"
         focusable="false"
       >
         <defs>
-          <radialGradient id={gradId} cx="35%" cy="28%" r="75%">
+          <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={resolvedPalette.bgTop} />
             <stop offset="100%" stopColor={resolvedPalette.bgBottom} />
-          </radialGradient>
+          </linearGradient>
         </defs>
-        <circle
-          cx="32"
-          cy="32"
-          r="29"
-          fill={`url(#${gradId})`}
-          stroke={resolvedPalette.rimOuter}
-          strokeWidth={assetDescriptor.outerStrokeWidth}
-        />
-        <circle
-          cx="32"
-          cy="32"
-          r={assetDescriptor.innerRingRadius}
-          fill="none"
-          stroke={resolvedPalette.rimInner}
-          strokeWidth="1.1"
-          strokeOpacity={assetDescriptor.innerRingOpacity}
-        />
-        {assetDescriptor.frameDecoration === 'tactical_bevel' && (
-          <polygon
-            points="32,6 50,14 58,32 50,50 32,58 14,50 6,32 14,14"
-            fill="none"
-            stroke={resolvedPalette.rimInner}
-            strokeWidth="0.8"
-            strokeOpacity="0.32"
-          />
-        )}
-        {renderPieceSilhouette(safeKind, resolvedPalette, assetDescriptor.styleVariant)}
+        {renderPieceSilhouette(safeKind, resolvedPalette, {
+          styleVariant: assetDescriptor.styleVariant,
+          bodyGradId: gradId,
+          outlineWidth: assetDescriptor.outlineWidth,
+        })}
       </svg>
     </span>
   );

@@ -74,8 +74,8 @@ function makeWebpDataUrl(): string {
 }
 
 describe('Restauration des assets originaux, Thèmes personnalisables, Profil & Sécurité', () => {
-  describe('1. Restauration des médaillons circulaires métalliques originaux', () => {
-    it('renders the original radialGradient dual-ring circular medallion SVG for every character and secret pawn', () => {
+  describe('1. Refonte des pièces vectorielles à fond 100% transparent', () => {
+    it('renders a sculpted linearGradient transparent-background SVG without any medallion disc for every character and secret pawn', () => {
       const svgs = new Map<string, string>();
       for (const kind of [...CHARACTER_TYPES, 'secret' as const]) {
         const html = renderToStaticMarkup(
@@ -87,9 +87,12 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
           }),
         );
         expect(html).toContain('viewBox="0 0 64 64"');
-        expect(html).toContain('<radialGradient');
-        expect(html).toContain('r="29"');
-        expect(html).toContain('r="25"');
+        expect(html).toContain('preserveAspectRatio="xMidYMid meet"');
+        expect(html).toContain('<linearGradient');
+        expect(html).toContain('data-transparent-bg="true"');
+        expect(html).not.toContain('<radialGradient');
+        expect(html).not.toContain('r="29"');
+        expect(html).not.toContain('width="64" height="64"');
         expect(html).toContain(`data-piece-kind="${kind}"`);
         svgs.set(kind, html);
       }
@@ -108,7 +111,7 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       );
     });
 
-    it('supports custom uploaded avatar photo in PieceAvatar and falls back to restored PieceArtwork otherwise', () => {
+    it('supports custom uploaded avatar photo in PieceAvatar and falls back to transparent PieceArtwork otherwise', () => {
       const png = makePngDataUrl();
       const photoHtml = renderToStaticMarkup(
         React.createElement(PieceAvatar, {
@@ -132,7 +135,8 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       );
       expect(fallbackHtml).not.toContain('<img');
       expect(fallbackHtml).toContain('data-piece-kind="arbaletrier"');
-      expect(fallbackHtml).toContain('<radialGradient');
+      expect(fallbackHtml).toContain('<linearGradient');
+      expect(fallbackHtml).toContain('data-transparent-bg="true"');
     });
 
     it('renders theme-aware dual-square piece previews for any selected board theme', () => {

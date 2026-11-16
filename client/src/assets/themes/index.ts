@@ -22,10 +22,8 @@ export interface PieceThemeAssetDescriptor {
   readonly pieceKind: PieceArtKind;
   readonly assetId: string;
   readonly styleVariant: PieceAssetStyleVariant;
-  readonly frameDecoration: PieceAssetPackStyleMeta['frameDecoration'];
-  readonly outerStrokeWidth: number;
-  readonly innerRingRadius: number;
-  readonly innerRingOpacity: number;
+  readonly outlineWidth: number;
+  readonly transparentBackground: true;
   readonly palettes: {
     readonly light: PieceMedallionPalette;
     readonly dark: PieceMedallionPalette;
@@ -59,13 +57,9 @@ function buildThemeAssetPack(themeId: ThemeId): ThemeAssetPack {
       pieceKind,
       assetId: `${themeId}/${styleMeta.styleVariant}/${pieceKind}`,
       styleVariant: styleMeta.styleVariant,
-      frameDecoration: styleMeta.frameDecoration,
-      outerStrokeWidth: styleMeta.outerStrokeWidth,
-      innerRingRadius: styleMeta.innerRingRadius,
-      innerRingOpacity: styleMeta.innerRingOpacity,
+      outlineWidth: styleMeta.outlineWidth,
+      transparentBackground: true,
       palettes: {
-        // pieceOnB = pièce contrastée affichée sur case foncée (teinte claire/vive),
-        // pieceOnA = pièce contrastée affichée sur case claire (teinte sombre/contrastée).
         light: theme.board.pieceOnB,
         dark: theme.board.pieceOnA,
         neutral: theme.board.pieceNeutral,
@@ -80,7 +74,7 @@ export const THEME_ASSET_PACKS: Readonly<Record<ThemeId, ThemeAssetPack>> = Obje
   THEME_LIST.map((t) => [t.id, buildThemeAssetPack(t.id)]),
 ) as Readonly<Record<ThemeId, ThemeAssetPack>>;
 
-/** Resolve the full theme asset descriptor (style + light/dark/neutral variants) for any piece and theme. */
+/** Resolve the full transparent-background theme asset descriptor for any piece and theme. */
 export function resolvePieceThemeAsset(
   themeId: ThemeId | string | null | undefined,
   pieceKind: PieceArtKind,
