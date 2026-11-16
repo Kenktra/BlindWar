@@ -351,13 +351,14 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     stepNumber: 9,
     isNewUpdate: true,
     relatedCharacterIds: ['traqueur'],
-    title: 'Leçon 8A : Le Traqueur (Marquage Gratuit & Poursuite 4 Cases)',
-    subtitle: 'Marquez gratuitement un ennemi révélé au Tour 1, puis bondissez de 4 cases vers lui au Tour 2.',
+    title: 'Leçon 8A : Le Traqueur (Portée 2 → Poursuite 3 Cases)',
+    subtitle: 'Marquez gratuitement un ennemi révélé à portée 2 au Tour 1, puis bondissez à 3 cases vers lui au Tour 2.',
     objectiveDescription:
-      '1) Sélectionnez le Traqueur (E2) → cliquez « Marquer une cible (0 action) » → cliquez l’ennemi déjà révélé en E5 (jamais l’ennemi caché en G2). 2) Déplacez votre Soldat (A3→A4) : la cible recule alors en E6. 3) Votre Poursuite est maintenant prête : traversez 4 cases (E2→E6) pour l’éliminer !',
+      '1) Sélectionnez le Traqueur (E2) → cliquez « Marquer une cible (0 action) » → cliquez l’ennemi déjà révélé en E4 (jamais l’ennemi caché en G2). 2) Déplacez votre Soldat (A3→A4) : la cible recule alors en E5. 3) Votre Poursuite est maintenant prête : traversez 3 cases (E2→E5) pour l’éliminer !',
     coachingTips: [
-      'Condition stricte : la cible doit DÉJÀ être révélée (Guetteur, Espionnage, Révélation) et alignée H/V à 1–3 cases sans obstacle.',
-      'Activation sans coût (0 action) : marquer ne consomme pas votre tour ; la Poursuite (+1 case = 4 cases vers la cible) démarre dès votre tour suivant.',
+      'Portée standard : 1 à 2 cases H/V (ligne dégagée, sans diagonale).',
+      'Condition stricte : la cible doit DÉJÀ être révélée (Guetteur, Espionnage, Révélation) et alignée H/V à 1–2 cases sans obstacle.',
+      'Activation sans coût (0 action) : marquer ne consomme pas votre tour ; la Poursuite (+1 case = 3 cases vers la cible) démarre dès votre tour suivant.',
       'Fin d’effet : le marquage disparaît si la cible meurt ou redevient cachée (Brouillard, Contre-espionnage, expiration).',
     ],
     createInitialState: () =>
@@ -365,7 +366,7 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
         makeTutorialPiece('r-king', 'red', 'roi', { row: 8, col: 4 }),
         makeTutorialPiece('r-traq', 'red', 'traqueur', { row: 7, col: 4 }),
         makeTutorialPiece('r-sol', 'red', 'soldat', { row: 6, col: 0 }),
-        makeTutorialPiece('b-known', 'black', 'reine', { row: 4, col: 4 }, {
+        makeTutorialPiece('b-known', 'black', 'reine', { row: 5, col: 4 }, {
           permanentlyRevealedTo: { red: true, black: false },
         }),
         makeTutorialPiece('b-unknown', 'black', 'soldat', { row: 7, col: 6 }),
@@ -373,12 +374,12 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
       ]),
     stepOpponentTurn: (state) => {
       const target = state.pieces.find((p) => p.id === 'b-known' && p.alive && p.position);
-      if (target && target.position && target.position.row === 4 && target.position.col === 4) {
+      if (target && target.position && target.position.row === 5 && target.position.col === 4) {
         const occUp = state.pieces.some(
-          (p) => p.alive && p.position && p.position.row === 3 && p.position.col === 4,
+          (p) => p.alive && p.position && p.position.row === 4 && p.position.col === 4,
         );
         if (!occUp) {
-          return executePieceMove(state, 'black', 'b-known', { row: 3, col: 4 }, Date.now());
+          return executePieceMove(state, 'black', 'b-known', { row: 4, col: 4 }, Date.now());
         }
       }
       return runDefaultTutorialOpponentStep(state);

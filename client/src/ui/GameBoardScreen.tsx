@@ -1306,7 +1306,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         return;
       }
       setStatusError(
-        `Sélectionnez une cible ennemie déjà révélée à 1–3 cases orthogonales sans obstacle (ou annulez le marquage).`,
+        `Sélectionnez une cible ennemie déjà révélée à 1–2 cases orthogonales sans obstacle (ou annulez le marquage).`,
       );
       return;
     }
@@ -2282,11 +2282,11 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                       <strong>Traqueur — Marquage (0 action) :</strong>{' '}
                       {traqueurMarkModePieceId === selectedOwnPieceView.id ? (
                         <span className="bw-ability-accent">
-                          Cliquez sur un ennemi déjà révélé en violet (1–3 cases H/V sans obstacle).
+                          Cliquez sur un ennemi déjà révélé en violet (1–2 cases H/V sans obstacle).
                         </span>
                       ) : selectedOwnPieceView.traqueurHasActiveMarkVisible ? (
                         <span>
-                          Cible marquée — Poursuite +1 case (4 cases pour l’éliminer) :{' '}
+                          Cible marquée — Poursuite +1 case (portée 3 cases pour l’éliminer) :{' '}
                           <strong>
                             {selectedOwnPieceView.traqueurPursuitReadyVisible
                               ? 'ACTIVE ce tour !'
@@ -2295,9 +2295,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                         </span>
                       ) : (
                         <span>
-                          Aucune cible marquée. {traqueurMarkTargets.length > 0
+                          Aucune cible marquée (portée de base 2). {traqueurMarkTargets.length > 0
                             ? `${traqueurMarkTargets.length} cible(s) révélée(s) à portée (marquage gratuit : ne consomme pas votre tour).`
-                            : 'Révélez un ennemi à 1–3 cases H/V sans obstacle pour le marquer gratuitement.'}
+                            : 'Révélez un ennemi à 1–2 cases H/V sans obstacle pour passer à 3 cases.'}
                         </span>
                       )}
                     </div>
@@ -3055,7 +3055,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                   <strong>Traqueur :</strong>{' '}
                   {selectedOwnPieceView.traqueurHasActiveMarkVisible
                     ? selectedOwnPieceView.traqueurPursuitReadyVisible
-                      ? 'Poursuite 4 cases PRÊTE'
+                      ? 'Poursuite 3 cases PRÊTE'
                       : 'Cible marquée (tour suivant)'
                     : `${traqueurMarkTargets.length} cible(s) révélée(s)`}
                 </span>

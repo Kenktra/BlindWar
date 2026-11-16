@@ -62,7 +62,7 @@ const LANDING_BOARD_SAMPLES: readonly LandingBoardSample[] = [
     kind: 'traqueur',
     owner: 'red',
     label: 'Traqueur allié',
-    summary: 'Marque une cible ennemie repérée pour foncer à 4 cases au tour suivant.',
+    summary: 'Portée 2 H/V ; marque un ennemi révélé pour étendre sa portée à 3 cases au tour suivant.',
   },
   {
     coord: { row: 3, col: 2 },

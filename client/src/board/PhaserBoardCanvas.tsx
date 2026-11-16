@@ -536,7 +536,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                             className="bw-badge bw-badge-pursuit"
                             title={
                               boardPiece.traqueurPursuitReadyVisible
-                                ? 'Poursuite active (+1 déplacement = 4 cases pour éliminer la cible marquée)'
+                                ? 'Poursuite active (+1 déplacement = 3 cases pour éliminer la cible marquée)'
                                 : 'Cible marquée (Poursuite active dès votre prochain tour)'
                             }
                           >

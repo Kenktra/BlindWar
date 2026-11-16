@@ -207,54 +207,51 @@ describe('Équilibrage & Refonte : Arbalétrier 1/3, Cavalier Bond en L, Traqueu
     });
   });
 
-  describe('3. Traqueur Clarté : Marquage 0 action, Poursuite tour suivant uniquement sur cible marquée', () => {
-    it('keeps pursuit locked on the marking turn, enables +1 capture on the next turn exclusively on the marked square, and stays blocked on empty 4th square or wrong enemy', () => {
+  describe('3. Traqueur Nerfé & Clarté : Portée 2 (3 en Poursuite), Marquage 0 action sur cible révélée uniquement', () => {
+    it('keeps base range at 2, keeps pursuit locked on marking turn, enables +1 (range 3) capture exclusively on marked target next turn, and forbids empty or wrong 3rd square', () => {
       const redKing = makePiece('r-king', 'red', 'roi', { row: 8, col: 0 });
-      const blackKing = makePiece('b-king', 'black', 'roi', { row: 0, col: 8 });
       const redTraq = makePiece('r-traq', 'red', 'traqueur', { row: 6, col: 4 });
-      const bMarked = makePiece('b-marked', 'black', 'roi', { row: 2, col: 4 }, {
+      const bMarked = makePiece('b-marked', 'black', 'roi', { row: 4, col: 4 }, {
         permanentlyRevealedTo: { red: true, black: false },
       });
-      const bOther4 = makePiece('b-other', 'black', 'soldat', { row: 6, col: 8 }, {
+      const bOther3 = makePiece('b-other', 'black', 'soldat', { row: 6, col: 7 }, {
         permanentlyRevealedTo: { red: true, black: false },
       });
 
-      let state = makePlayingState([redKing, redTraq, bMarked, bOther4], 'red');
-      // Mark bMarked (dist 4? Wait make bMarked at (3,4) dist 3 to mark -> move down to (7,4) -> bMarked stays at (3,4) dist 4!)
-      state = {
-        ...state,
-        pieces: state.pieces.map((p) =>
-          p.id === 'b-marked' ? { ...p, position: { row: 3, col: 4 } } : p,
-        ),
-      };
-      // Mark at 0 action
+      let state = makePlayingState([redKing, redTraq, bMarked, bOther3], 'red');
+      // Base range is strictly 2: bOther3 at dist 3 right (6,7) MUST NOT be capturable before pursuit!
+      const baseMoves = generateMoveCandidatesForPiece(redTraq, state.pieces, CLEAR_VIS, false);
+      expect(baseMoves.some((m) => m.to.row === 6 && m.to.col === 7)).toBe(false);
+
+      // Mark bMarked at dist 2 (0 action)
       state = markTraqueurTarget(state, 'red', 'r-traq', 'b-marked');
       expect(state.turn.activePlayer).toBe('red');
       expect(state.turn.remainingActions).toBe(1);
       expect(state.pieces.find((p) => p.id === 'r-traq')?.traqueurPursuitReady).toBe(false);
 
-      // Same turn: move 1 square down (6,4) -> (7,4) so target at (3,4) is dist 4 away, end turn
+      // Same turn: step 1 square down (6,4) -> (7,4) so marked target at (4,4) is dist 3 away, end turn
       state = executePieceMove(state, 'red', 'r-traq', { row: 7, col: 4 });
       expect(state.turn.activePlayer).toBe('black');
 
-      // Black moves bOther4 1 step forward (6,8)->(7,8), leaving marked b-marked at (3,4) (dist 4 from (7,4))!
-      state = executePieceMove(state, 'black', 'b-other', { row: 7, col: 8 });
+      // Black moves bOther3 1 step down (6,7)->(7,7), leaving marked b-marked at (4,4) (dist 3 from (7,4))!
+      state = executePieceMove(state, 'black', 'b-other', { row: 7, col: 7 });
 
-      // Red next turn: Pursuit +1 READY! Can capture bMarked at dist 4 (3,4), CANNOT step onto empty 4th square!
+      // Red next turn: Pursuit +1 (range 3) READY! Can capture bMarked at dist 3 (4,4), CANNOT hit bOther3 at sideways dist 3 (7,7) or empty dist-3 left (7,1) or dist-4 (3,4)
       const traqNext = state.pieces.find((p) => p.id === 'r-traq')!;
       expect(traqNext.traqueurPursuitReady).toBe(true);
       const nextMoves = generateMoveCandidatesForPiece(traqNext, state.pieces, CLEAR_VIS, false);
       expect(
         nextMoves.some(
           (m) =>
-            m.to.row === 3 &&
+            m.to.row === 4 &&
             m.to.col === 4 &&
             m.kind === 'capture_move' &&
             m.targetEnemyPieceId === 'b-marked',
         ),
       ).toBe(true);
-      // Empty 4th square to the left (7,0) must NOT be reachable by Pursuit
-      expect(nextMoves.some((m) => m.to.row === 7 && m.to.col === 0)).toBe(false);
+      expect(nextMoves.some((m) => m.to.row === 7 && m.to.col === 7)).toBe(false);
+      expect(nextMoves.some((m) => m.to.row === 7 && m.to.col === 1)).toBe(false);
+      expect(nextMoves.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false);
     });
   });
 

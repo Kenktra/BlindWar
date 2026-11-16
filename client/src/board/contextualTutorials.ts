@@ -40,7 +40,7 @@ const CONTEXTUAL_TIPS: Readonly<Record<string, ContextualTipSpec>> = {
     badge: 'Traqueur • Marquage & Poursuite',
     title: 'Marquage (0 action) + Poursuite +1 case au tour suivant',
     message:
-      'Sélectionnez un ennemi avec « Marquer une cible » (gratuit : ne consomme pas votre tour). Vous pouvez encore jouer normalement ce tour-ci, et dès votre TOUR SUIVANT le Traqueur gagnera +1 case en Poursuite uniquement pour éliminer cette cible.',
+      'Sélectionnez un ennemi révélé (1–2 cases H/V) avec « Marquer une cible » (gratuit : ne consomme pas votre tour). Vous pouvez encore jouer normalement ce tour-ci, et dès votre TOUR SUIVANT le Traqueur étend sa portée de 2 à 3 cases en Poursuite uniquement pour se rapprocher ou éliminer cette cible.',
     relatedCharacter: 'traqueur',
   },
   ctx_cavalier_rework: {

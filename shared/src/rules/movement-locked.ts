@@ -360,14 +360,14 @@ export function generateMoveCandidatesForPiece(
           : null;
 
       for (const dir of ORTHOGONAL_DIRECTIONS) {
-        let rayClearUpToThree = true;
-        for (let step = 1; step <= 3; step += 1) {
+        let rayClearUpToTwo = true;
+        for (let step = 1; step <= 2; step += 1) {
           const dest: Coord = {
             row: origin.row + dir.row * step,
             col: origin.col + dir.col * step,
           };
           if (!isWithinBoard(dest)) {
-            rayClearUpToThree = false;
+            rayClearUpToTwo = false;
             break;
           }
           const occupant = boardMap.get(coordKey(dest));
@@ -392,42 +392,42 @@ export function generateMoveCandidatesForPiece(
               targetEnemyPieceId: occupant.id,
             });
           }
-          rayClearUpToThree = false;
+          rayClearUpToTwo = false;
           break;
         }
 
-        // Poursuite (+1 case = jusqu'à 4 cases) au tour suivant, strictement pour se rapprocher de la cible marquée
-        if (rayClearUpToThree && markedTarget && markedTarget.position !== null) {
-          const dest4: Coord = {
-            row: origin.row + dir.row * 4,
-            col: origin.col + dir.col * 4,
+        // Poursuite (+1 case = jusqu'à 3 cases) au tour suivant, strictement pour se rapprocher / éliminer la cible marquée révélée
+        if (rayClearUpToTwo && markedTarget && markedTarget.position !== null) {
+          const dest3: Coord = {
+            row: origin.row + dir.row * 3,
+            col: origin.col + dir.col * 3,
           };
-          if (isWithinBoard(dest4)) {
+          if (isWithinBoard(dest3)) {
             const targetPos = markedTarget.position;
             const manhattanBefore =
               Math.abs(origin.row - targetPos.row) + Math.abs(origin.col - targetPos.col);
             const manhattanAfter =
-              Math.abs(dest4.row - targetPos.row) + Math.abs(dest4.col - targetPos.col);
+              Math.abs(dest3.row - targetPos.row) + Math.abs(dest3.col - targetPos.col);
             const dirDot =
               dir.row * (targetPos.row - origin.row) + dir.col * (targetPos.col - origin.col);
             if (manhattanAfter < manhattanBefore && dirDot > 0) {
-              const occ4 = boardMap.get(coordKey(dest4));
-              if (!occ4) {
+              const occ3 = boardMap.get(coordKey(dest3));
+              if (!occ3) {
                 candidates.push({
                   from: origin,
-                  to: dest4,
+                  to: dest3,
                   kind: 'normal_move',
                   targetEnemyPieceId: null,
                 });
               } else if (
-                occ4.id === markedTarget.id &&
-                canSelectEnemyForDirectAttack(piece, occ4, visibilityContextForOwner)
+                occ3.id === markedTarget.id &&
+                canSelectEnemyForDirectAttack(piece, occ3, visibilityContextForOwner)
               ) {
                 candidates.push({
                   from: origin,
-                  to: dest4,
+                  to: dest3,
                   kind: 'capture_move',
-                  targetEnemyPieceId: occ4.id,
+                  targetEnemyPieceId: occ3.id,
                 });
               }
             }
@@ -686,7 +686,7 @@ export function generateTeleportCandidatesForPiece(
 /**
  * Generate all legal enemy pieces that a Traqueur may mark right now (§3.3):
  * - Target must be an enemy piece already revealed to the Traqueur's owner
- * - Orthogonal alignment at distance 1 to 3
+ * - Orthogonal alignment at distance 1 to 2
  * - Clear line of sight (no piece in between)
  */
 export function generateTraqueurMarkCandidates(
@@ -714,7 +714,7 @@ export function generateTraqueurMarkCandidates(
   const targets: ServerPieceRecord[] = [];
 
   for (const dir of ORTHOGONAL_DIRECTIONS) {
-    for (let step = 1; step <= 3; step += 1) {
+    for (let step = 1; step <= 2; step += 1) {
       const sq: Coord = {
         row: origin.row + dir.row * step,
         col: origin.col + dir.col * step,

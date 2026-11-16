@@ -1270,7 +1270,7 @@ export function executePieceMove(
 
   // Case A: Simple movement onto an empty square
   if (chosen.kind === 'normal_move') {
-    const usedTraqueurPursuit = piece.character === 'traqueur' && orthogonalDist === 4;
+    const usedTraqueurPursuit = piece.character === 'traqueur' && orthogonalDist === 3;
     let movedPiece: ServerPieceRecord = {
       ...piece,
       position: destination,
@@ -1384,7 +1384,7 @@ export function executePieceMove(
 
     const combat = resolveDirectCapture(piece, defender, ownerVis, opponentVis);
     const usedTraqueurPursuit =
-      combat.defenderEliminated && piece.character === 'traqueur' && orthogonalDist === 4;
+      combat.defenderEliminated && piece.character === 'traqueur' && orthogonalDist === 3;
 
     let finalAttacker: ServerPieceRecord = usedTraqueurPursuit
       ? {
@@ -2213,9 +2213,9 @@ export function selectSoldierPromotion(
 /**
  * Capacité spéciale du Traqueur : Marquage de cible (§3.3 & clarification A2).
  * - Coût d'action nul (n'utilise aucune action et ne termine pas le tour).
- * - Uniquement sur une pièce ennemie DÉJÀ révélée à distance orthogonale 1..3 sans obstacle.
+ * - Uniquement sur une pièce ennemie DÉJÀ révélée à distance orthogonale 1..2 sans obstacle.
  * - Ne révèle jamais une pièce inconnue. Remplace l'éventuelle cible précédente.
- * - Le bonus Poursuite (+1 déplacement = 4 cases) s'active au prochain tour du joueur.
+ * - Le bonus Poursuite (+1 déplacement = 3 cases) s'active au prochain tour du joueur.
  */
 export function markTraqueurTarget(
   state: ServerMatchState,
@@ -2254,7 +2254,7 @@ export function markTraqueurTarget(
   const target = candidates.find((c) => c.id === targetEnemyPieceId);
   if (!target || target.position === null) {
     throw new Error(
-      `Cible de marquage invalide : la pièce ennemie doit être déjà révélée, alignée à 1–3 cases orthogonales et sans obstacle.`,
+      `Cible de marquage invalide : la pièce ennemie doit être déjà révélée, alignée à 1–2 cases orthogonales et sans obstacle.`,
     );
   }
   if (traqueur.traqueurMarkedTargetId === target.id) {
