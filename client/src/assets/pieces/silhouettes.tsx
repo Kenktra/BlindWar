@@ -31,519 +31,347 @@ export interface PieceSilhouetteStyleContext {
 }
 
 /**
- * Shared sculpted vector silhouettes for all 13 BLIND WAR pieces on a 100% transparent 64×64 canvas.
- * Every piece uses the exact same proportions (central hitbox x=12..52, y=8..55 with balanced margins),
- * uniform outer contour thickness, and cohesive two-tone gradient shading across every theme.
+ * Minimalist geometric silhouettes for all 13 BLIND WAR pieces on a 100% transparent 64×64 canvas.
+ * - Occupies ~80% of the 64×64 viewBox (x: 6..58, y: 6..58) with clean outer breathing room.
+ * - Bold, distinct geometric contours readable at small sizes and in grayscale.
+ * - Dynamically colored from active theme palettes (`url(#bodyGradId)`, `glyphStroke`, `glyphAccent`).
  */
 export function renderPieceSilhouette(
   kind: PieceArtKind,
   p: PieceMedallionPalette,
   ctx: PieceSilhouetteStyleContext,
 ): React.ReactNode {
-  const { bodyGradId, outlineWidth, styleVariant } = ctx;
+  const { bodyGradId, outlineWidth } = ctx;
   const fillBody = `url(#${bodyGradId})`;
-  const sw = outlineWidth;
-  const thinSw = Number((outlineWidth * 0.72).toFixed(2));
+  const sw = Math.max(2.1, outlineWidth);
+  const innerSw = Number(Math.max(1.8, outlineWidth * 0.9).toFixed(2));
   const detailColor = p.glyphAccent;
   const edgeStroke = p.glyphStroke;
-  const highlightOpacity = styleVariant === 'monochrome' ? 0.35 : 0.45;
 
   switch (kind) {
     case 'roi':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Sovereign Cross */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="royal-crown-cross">
+          {/* Bold Royal Cross */}
           <path
-            d="M32 8 V19 M27.5 12.5 H36.5"
+            d="M32 6 V19 M25.5 11.5 H38.5"
             stroke={edgeStroke}
-            strokeWidth={sw + 1.2}
+            strokeWidth={sw + 2.2}
           />
           <path
-            d="M32 8 V19 M27.5 12.5 H36.5"
+            d="M32 6 V19 M25.5 11.5 H38.5"
             stroke={detailColor}
-            strokeWidth={thinSw}
+            strokeWidth={innerSw + 0.6}
           />
-          {/* Sculpted Royal Crown */}
+          {/* Wide 3-Point Sovereign Crown */}
           <path
-            d="M16 44 L13.5 22 L23.5 30 L32 18.5 L40.5 30 L50.5 22 L48 44 Z"
+            d="M11 54 L8 21 L22 33 L32 18 L42 33 L56 21 L53 54 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <circle cx="32" cy="33.5" r="3" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
-          {/* Pedestal Collar */}
-          <rect
-            x="15"
-            y="45.5"
-            width="34"
-            height="7"
-            rx="3"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
-          <line
-            x1="19"
-            y1="49"
-            x2="45"
-            y2="49"
-            stroke={detailColor}
-            strokeWidth={1.6}
-            strokeOpacity={0.9}
-          />
+          <circle cx="32" cy="40" r="4.2" fill={detailColor} stroke={edgeStroke} strokeWidth={1.6} />
         </g>
       );
 
     case 'reine':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Coronet Points */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="radiant-tiara">
+          {/* 5-Spire Radiant Tiara Fan (sharper & taller profile vs King) */}
           <path
-            d="M16 44 L13 21 L22.5 31 L27.5 16.5 L32 28.5 L36.5 16.5 L41.5 31 L51 21 L48 44 Z"
+            d="M14 54 L7 23 L19.5 34 L25 14 L32 30 L39 14 L44.5 34 L57 23 L50 54 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <circle cx="13" cy="18" r="2.7" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
-          <circle cx="27.5" cy="13.5" r="2.7" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
-          <circle cx="36.5" cy="13.5" r="2.7" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
-          <circle cx="51" cy="18" r="2.7" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
-          <polygon points="32,31 35,35.5 32,40 29,35.5" fill={detailColor} opacity={0.95} />
-          <rect
-            x="15.5"
-            y="45.5"
-            width="33"
-            height="7"
-            rx="3"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <circle cx="7.5" cy="18.5" r="3" fill={detailColor} stroke={edgeStroke} strokeWidth={1.5} />
+          <circle cx="25" cy="10.5" r="3.2" fill={detailColor} stroke={edgeStroke} strokeWidth={1.5} />
+          <circle cx="39" cy="10.5" r="3.2" fill={detailColor} stroke={edgeStroke} strokeWidth={1.5} />
+          <circle cx="56.5" cy="18.5" r="3" fill={detailColor} stroke={edgeStroke} strokeWidth={1.5} />
+          <polygon points="32,35 36.5,42 32,49 27.5,42" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
         </g>
       );
 
     case 'colosse':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Heavy Battlement Monolith */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="heavy-fortress">
+          {/* Massive Armored Bastion Block */}
           <path
-            d="M16 12 H22.5 V18 H28.5 V12 H35.5 V18 H41.5 V12 H48 V25 L44.5 29.5 V45 L49 52.5 H15 L19.5 45 V29.5 L16 25 Z"
+            d="M11 10 H21 V18 H27 V10 H37 V18 H43 V10 H53 V26 L56 32 V56 H8 V32 L11 26 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          {/* Reinforced Gate Arch */}
+          {/* Solid Reinforced Gate Arch */}
           <path
-            d="M25.5 45.5 V34 C25.5 29.5 38.5 29.5 38.5 34 V45.5 Z"
+            d="M23 56 V39 C23 32 41 32 41 39 V56 Z"
             fill={detailColor}
             stroke={edgeStroke}
-            strokeWidth={thinSw}
+            strokeWidth={innerSw}
           />
-          <line x1="32" y1="31.5" x2="32" y2="45" stroke={edgeStroke} strokeWidth={thinSw} />
-          <line x1="21" y1="25" x2="43" y2="25" stroke={p.rimInner} strokeWidth={1.4} strokeOpacity={highlightOpacity} />
         </g>
       );
 
     case 'cavalier':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Sculpted Warhorse Profile */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="angular-horse">
+          {/* Sharp Geometric Knight Head Profile */}
           <path
-            d="M19 45.5 L21.5 37.5 L27.5 30.5 C23.5 30 18.5 29.5 16.5 25 C15.2 21 21 15.5 27.5 13 L30.5 8.5 L35 13.5 C43.5 15 48.5 23.5 47 35.5 L45 45.5 Z"
+            d="M16 56 L19 42 L29 33 L15 31 L10 24 L25 13 L31 7 L39 13 C49 17 55 28 53 46 L50 56 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <path
-            d="M33.5 19 C39 21.5 42 27.5 41 37.5"
-            fill="none"
-            stroke={detailColor}
-            strokeWidth={2.4}
-          />
-          <circle cx="25" cy="20.5" r="1.9" fill={edgeStroke} />
-          <rect
-            x="15.5"
-            y="46"
-            width="33"
-            height="6.5"
-            rx="3"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <path d="M36 19 C43 23 46 31 44 45" fill="none" stroke={detailColor} strokeWidth={3.2} />
+          <circle cx="23.5" cy="21" r="2.5" fill={detailColor} stroke={edgeStroke} strokeWidth={1.2} />
         </g>
       );
 
     case 'berserker':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Twin War-Axes Crossed */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="twin-battle-axe">
+          {/* Heavy Crossed Haubes */}
+          <path d="M13 55 L51 11 M51 55 L13 11" stroke={edgeStroke} strokeWidth={sw + 2.8} />
+          <path d="M13 55 L51 11 M51 55 L13 11" stroke={detailColor} strokeWidth={2.8} />
+          {/* Broad Twin Crescent Axe Heads */}
           <path
-            d="M18 48 L46 16 M46 48 L18 16"
-            stroke={edgeStroke}
-            strokeWidth={sw + 2.2}
-          />
-          <path
-            d="M18 48 L46 16 M46 48 L18 16"
-            stroke={detailColor}
-            strokeWidth={2.4}
-          />
-          <path
-            d="M14 25 C14 16 20 11 28 13 L25 26 Z M50 25 C50 16 44 11 36 13 L39 26 Z"
+            d="M8 31 C7 16 15 9 26 12 L23 32 Z M56 31 C57 16 49 9 38 12 L41 32 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <circle
-            cx="32"
-            cy="33"
-            r="6.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
-          <circle cx="32" cy="33" r="2.7" fill={detailColor} />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <circle cx="32" cy="36" r="8.5" fill={fillBody} stroke={edgeStroke} strokeWidth={sw} />
+          <circle cx="32" cy="36" r="3.6" fill={detailColor} />
         </g>
       );
 
     case 'assassin':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Twin Flank Sabers */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="piercing-dagger">
+          {/* Tall Vertical Stiletto Diamond Blade */}
           <path
-            d="M15 22 L26 34 M49 22 L38 34"
-            stroke={edgeStroke}
-            strokeWidth={sw + 1.4}
-          />
-          <path
-            d="M15 22 L26 34 M49 22 L38 34"
-            stroke={detailColor}
-            strokeWidth={thinSw}
-          />
-          {/* Piercing Center Stiletto Blade */}
-          <path
-            d="M32 8.5 L39 36 L32 46 L25 36 Z"
+            d="M32 6 L43 35 L32 57 L21 35 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <line x1="32" y1="15" x2="32" y2="39" stroke={detailColor} strokeWidth={2} />
-          {/* Guard & Pommel Base */}
+          {/* Sharp Swept Crossguard */}
           <path
-            d="M19 36 Q32 41.5 45 36"
-            fill="none"
+            d="M11 33 L32 41 L53 33 L32 35 Z"
+            fill={detailColor}
             stroke={edgeStroke}
-            strokeWidth={sw + 1.4}
+            strokeWidth={innerSw}
           />
-          <path
-            d="M19 36 Q32 41.5 45 36"
-            fill="none"
-            stroke={detailColor}
-            strokeWidth={thinSw}
-          />
-          <rect
-            x="19"
-            y="47"
-            width="26"
-            height="5.5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <line x1="32" y1="14" x2="32" y2="33" stroke={detailColor} strokeWidth={2.6} />
         </g>
       );
 
     case 'guetteur_h':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Orthogonal Cardinal Beacons */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="orthogonal-eye-plus">
+          {/* Strong Cardinal N/S/E/W Beacons (+) */}
           <path
-            d="M32 9 V17 M32 41 V47 M10 29 H17 M47 29 H54"
+            d="M32 6 V58 M6 32 H58"
             stroke={edgeStroke}
-            strokeWidth={sw + 1.2}
+            strokeWidth={6.5}
           />
           <path
-            d="M32 9 V17 M32 41 V47 M10 29 H17 M47 29 H54"
+            d="M32 6 V58 M6 32 H58"
             stroke={detailColor}
-            strokeWidth={2.2}
+            strokeWidth={3.2}
           />
-          {/* Vigilant Eye Body */}
+          {/* Wide Horizontal Vigilant Eye */}
           <path
-            d="M14 29 C21.5 18 42.5 18 50 29 C42.5 40 21.5 40 14 29 Z"
+            d="M14 32 C22 19 42 19 50 32 C42 45 22 45 14 32 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <circle cx="32" cy="29" r="5.5" fill={detailColor} stroke={edgeStroke} strokeWidth={thinSw} />
-          <circle cx="32" cy="29" r="2.2" fill={edgeStroke} />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <circle cx="32" cy="32" r="6" fill={detailColor} stroke={edgeStroke} strokeWidth={1.7} />
+          <circle cx="32" cy="32" r="2.4" fill={edgeStroke} />
         </g>
       );
 
     case 'guetteur_d':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Diagonal Sight Rays */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="diagonal-prism-cross">
+          {/* Bold Diagonal Rays (×) */}
           <path
-            d="M13 13 L21 21 M51 13 L43 21 M13 45 L21 37 M51 45 L43 37"
+            d="M9 9 L55 55 M55 9 L9 55"
             stroke={edgeStroke}
-            strokeWidth={sw + 1.2}
+            strokeWidth={6.5}
           />
           <path
-            d="M13 13 L21 21 M51 13 L43 21 M13 45 L21 37 M51 45 L43 37"
+            d="M9 9 L55 55 M55 9 L9 55"
             stroke={detailColor}
-            strokeWidth={2.2}
+            strokeWidth={3.2}
           />
-          {/* Diamond Recon Prism */}
+          {/* Centered Recon Diamond */}
           <polygon
-            points="32,12 49,29 32,46 15,29"
+            points="32,12 52,32 32,52 12,32"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <circle cx="32" cy="29" r="5.5" fill={detailColor} stroke={edgeStroke} strokeWidth={thinSw} />
-          <circle cx="32" cy="29" r="2.2" fill={edgeStroke} />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <circle cx="32" cy="32" r="6" fill={detailColor} stroke={edgeStroke} strokeWidth={1.7} />
+          <circle cx="32" cy="32" r="2.4" fill={edgeStroke} />
         </g>
       );
 
     case 'traqueur':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Predator Crosshair Crest */}
-          <circle
-            cx="32"
-            cy="28"
-            r="14.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
-          <circle cx="32" cy="28" r="7.5" fill="none" stroke={detailColor} strokeWidth={2.2} />
-          <path
-            d="M32 9 V19 M32 37 V47 M13 28 H23 M41 28 H51"
-            stroke={edgeStroke}
-            strokeWidth={sw + 0.8}
-          />
-          <path
-            d="M32 9 V19 M32 37 V47 M13 28 H23 M41 28 H51"
-            stroke={detailColor}
-            strokeWidth={1.9}
-          />
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="hunter-reticle-arrow">
+          {/* Forward Pursuit Spear Crest */}
           <polygon
-            points="32,22.5 36.5,28 32,33.5 27.5,28"
+            points="32,6 44,21 20,21"
             fill={detailColor}
             stroke={edgeStroke}
-            strokeWidth={1.3}
+            strokeWidth={innerSw}
           />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
-            rx="2.5"
+          {/* Hunter Sight Ring */}
+          <circle
+            cx="32"
+            cy="37"
+            r="17"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
+          <circle cx="32" cy="37" r="9.5" fill="none" stroke={detailColor} strokeWidth={3} />
+          <path
+            d="M32 22 V52 M17 37 H47"
+            stroke={edgeStroke}
+            strokeWidth={2.5}
+          />
+          <circle cx="32" cy="37" r="3.4" fill={detailColor} stroke={edgeStroke} strokeWidth={1.3} />
         </g>
       );
 
     case 'executeur':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Halberd Spearhead & Shaft */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="asymmetric-halberd">
+          {/* Vertical Pole & Spear Tip */}
           <rect
-            x="29.5"
-            y="11"
-            width="5"
-            height="36"
-            rx="2"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
-          <polygon points="32,8 36.5,14.5 27.5,14.5" fill={detailColor} stroke={edgeStroke} strokeWidth={1.4} />
-          {/* Heavy Executioner Crescent Blade */}
-          <path
-            d="M34.5 15.5 C46.5 15.5 52 24 50 33 C44.5 29.5 39.5 29.5 34.5 31.5 Z"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
-          <path
-            d="M29.5 20 L16 24 L25 30 L29.5 28.5 Z"
-            fill={detailColor}
-            stroke={edgeStroke}
-            strokeWidth={thinSw}
-          />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
+            x="20"
+            y="14"
+            width="6.5"
+            height="43"
             rx="2.5"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
+          />
+          <polygon
+            points="23.25,6 30.5,16.5 16,16.5"
+            fill={detailColor}
+            stroke={edgeStroke}
+            strokeWidth={1.8}
+          />
+          {/* Sweeping Crescent Executioner Blade */}
+          <path
+            d="M26.5 17 C47 16 56 27 53 43 C44 37 36 37 26.5 40 Z"
+            fill={fillBody}
+            stroke={edgeStroke}
+            strokeWidth={sw}
+          />
+          {/* Counter-Hook */}
+          <path
+            d="M20 24 L9 29 L16 35 L20 33 Z"
+            fill={detailColor}
+            stroke={edgeStroke}
+            strokeWidth={1.7}
           />
         </g>
       );
 
     case 'arbaletrier':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Steel Crossbow Arc */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="crossbow-bolt">
+          {/* Broad Horizontal Steel Limbs */}
           <path
-            d="M14 25 C22 14.5 42 14.5 50 25"
+            d="M8 29 C18 15 46 15 56 29"
             fill="none"
             stroke={edgeStroke}
-            strokeWidth={sw + 2}
+            strokeWidth={sw + 4}
           />
           <path
-            d="M14 25 C22 14.5 42 14.5 50 25"
+            d="M8 29 C18 15 46 15 56 29"
             fill="none"
             stroke={fillBody}
-            strokeWidth={3.2}
+            strokeWidth={4.2}
           />
-          {/* Bowstring */}
-          <path d="M15 25.5 L32 37.5 L49 25.5" fill="none" stroke={detailColor} strokeWidth={2.2} />
-          {/* Stock & Quarrel Bolt */}
+          {/* Taut Bowstring */}
+          <path d="M9.5 29.5 L32 45 L54.5 29.5" fill="none" stroke={detailColor} strokeWidth={2.6} />
+          {/* Central Stock & Broadhead Quarrel */}
           <rect
-            x="29.5"
-            y="17"
-            width="5"
-            height="30"
-            rx="2"
+            x="28.5"
+            y="18"
+            width="7"
+            height="38"
+            rx="3"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
           <polygon
-            points="32,8.5 38,18.5 26,18.5"
+            points="32,7 41,20 23,20"
             fill={detailColor}
             stroke={edgeStroke}
-            strokeWidth={thinSw}
-          />
-          <rect
-            x="17"
-            y="47"
-            width="30"
-            height="5.5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
+            strokeWidth={1.8}
           />
         </g>
       );
 
     case 'soldat':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Vanguard Shield */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="vanguard-shield">
+          {/* Clean Iconic Shield */}
           <path
-            d="M18.5 13 H45.5 V29.5 C45.5 39 39 45.5 32 49 C25 45.5 18.5 39 18.5 29.5 Z"
+            d="M15 9 H49 V31 C49 44.5 32 56 32 56 C32 56 15 44.5 15 31 Z"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          {/* Promotion Chevron */}
+          {/* Bold Vanguard Chevron */}
           <path
-            d="M24 31 L32 21.5 L40 31"
+            d="M22 33 L32 21 L42 33"
             fill="none"
             stroke={edgeStroke}
-            strokeWidth={sw + 1.5}
+            strokeWidth={sw + 2.4}
           />
           <path
-            d="M24 31 L32 21.5 L40 31"
+            d="M22 33 L32 21 L42 33"
             fill="none"
             stroke={detailColor}
-            strokeWidth={2.6}
-          />
-          <path
-            d="M26 38.5 L32 31.5 L38 38.5"
-            fill="none"
-            stroke={edgeStroke}
-            strokeWidth={2}
-          />
-          <rect
-            x="18.5"
-            y="47.5"
-            width="27"
-            height="5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
+            strokeWidth={3.4}
           />
         </g>
       );
 
     case 'secret':
       return (
-        <g strokeLinejoin="round" strokeLinecap="round">
-          {/* Veiled Enigma Seal — purely sculpted token on transparent background */}
+        <g strokeLinejoin="round" strokeLinecap="round" data-geometry="enigma-question-seal">
+          {/* Crisp Octagonal Mystery Seal */}
           <polygon
-            points="32,10 49.5,20 49.5,39.5 32,49.5 14.5,39.5 14.5,20"
+            points="21,8 43,8 56,21 56,43 43,56 21,56 8,43 8,21"
             fill={fillBody}
             stroke={edgeStroke}
             strokeWidth={sw}
           />
-          <polygon
-            points="32,14.5 45.5,22.2 45.5,37.3 32,45 18.5,37.3 18.5,22.2"
-            fill="none"
-            stroke={detailColor}
-            strokeWidth={1.6}
-            strokeDasharray="3.5 2"
-          />
-          {/* Masked Hood Crest */}
-          <circle cx="32" cy="26" r="4.8" fill={detailColor} stroke={edgeStroke} strokeWidth={1.4} />
+          {/* High-Contrast Question Mark Emblem */}
           <path
-            d="M23.5 38 C24 32.5 40 32.5 40.5 38"
+            d="M25.5 24 C25.5 19.5 29 17.5 32.5 17.5 C36.2 17.5 39 19.8 39 23.2 C39 26.8 35.5 28.4 33 30.2 C31.8 31.1 31.8 32.5 31.8 34.5"
+            fill="none"
+            stroke={edgeStroke}
+            strokeWidth={sw + 2.6}
+          />
+          <path
+            d="M25.5 24 C25.5 19.5 29 17.5 32.5 17.5 C36.2 17.5 39 19.8 39 23.2 C39 26.8 35.5 28.4 33 30.2 C31.8 31.1 31.8 32.5 31.8 34.5"
             fill="none"
             stroke={detailColor}
-            strokeWidth={2.6}
+            strokeWidth={3.4}
           />
-          <rect
-            x="18"
-            y="47.5"
-            width="28"
-            height="5"
-            rx="2.5"
-            fill={fillBody}
-            stroke={edgeStroke}
-            strokeWidth={sw}
-          />
+          <circle cx="32" cy="43.5" r="3" fill={detailColor} stroke={edgeStroke} strokeWidth={1.5} />
         </g>
       );
   }

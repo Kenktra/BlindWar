@@ -1476,10 +1476,10 @@ textarea {
   z-index: 3;
 }
 
-/* Pièces sur le plateau — Médaillons originaux adaptatifs avec liseré d'appartenance */
+/* Pièces minimalistes agrandies (~82% de la case) à fond transparent */
 .bw-piece {
-  width: 92%;
-  height: 92%;
+  width: 96%;
+  height: 96%;
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -1490,6 +1490,7 @@ textarea {
   background: transparent;
   border: none;
   box-shadow: none;
+  padding: 2px;
   transition: transform 0.16s ease, filter 0.16s ease;
 }
 
@@ -1518,29 +1519,45 @@ textarea {
   align-items: center;
   justify-content: center;
   width: 100%;
+  height: 100%;
   flex: 1 1 auto;
   min-height: 0;
   line-height: 1;
 }
 
+.bw-piece-symbol .bw-piece-artwork-wrap {
+  width: 84%;
+  height: 84%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .bw-piece-symbol .bw-piece-artwork-svg {
-  width: clamp(22px, 68%, 38px);
-  height: clamp(22px, 68%, 38px);
+  width: 100%;
+  height: 100%;
+  max-width: 60px;
+  max-height: 60px;
 }
 
 .bw-piece-label {
-  font-size: 0.52rem;
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.48rem;
   font-weight: 800;
-  max-width: 96%;
+  max-width: 94%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  margin-top: 1px;
   padding: 0 3px;
   border-radius: 3px;
   background: var(--bw-ally-badge-bg);
   color: var(--bw-ally-badge-text);
-  line-height: 1.25;
+  line-height: 1.22;
+  opacity: 0.9;
+  pointer-events: none;
 }
 
 .bw-piece-badges {

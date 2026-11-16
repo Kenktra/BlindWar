@@ -114,6 +114,25 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       expect(stripDynamicIds(svgs.get('executeur')!)).not.toEqual(
         stripDynamicIds(svgs.get('colosse')!),
       );
+
+      // Every single piece (all 13 kinds) must have its own distinct geometric silhouette tag
+      const geometries = new Set<string>();
+      for (const [, markup] of svgs) {
+        const match = markup.match(/data-geometry="([^"]+)"/);
+        expect(match).not.toBeNull();
+        geometries.add(match![1]!);
+      }
+      expect(geometries.size).toBe(13);
+
+      // Large square fill proportion in board CSS & large sprite sizing in PhaserBoardCanvas
+      const css = fs.readFileSync(path.resolve(process.cwd(), 'client/src/styles.css'), 'utf8');
+      expect(css).toContain('width: 84%');
+      expect(css).toContain('height: 84%');
+      const boardCanvasSrc = fs.readFileSync(
+        path.resolve(process.cwd(), 'client/src/board/PhaserBoardCanvas.tsx'),
+        'utf8',
+      );
+      expect(boardCanvasSrc).toContain('size="lg"');
     });
 
     it('supports custom uploaded avatar photo in PieceAvatar and falls back to transparent PieceArtwork otherwise', () => {

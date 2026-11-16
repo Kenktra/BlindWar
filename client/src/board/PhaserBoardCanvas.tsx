@@ -423,7 +423,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                         owner={viewerColor}
                         coord={coord}
                         theme={themeState.boardTheme}
-                        size="md"
+                        size="lg"
                       />
                     </span>
                     <span className="bw-piece-label">
@@ -454,7 +454,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                         owner={boardPiece.owner}
                         coord={coord}
                         theme={themeState.boardTheme}
-                        size="md"
+                        size="lg"
                       />
                     </span>
                     <span className="bw-piece-label">
