@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Pool } from 'pg';
@@ -7,8 +8,11 @@ import {
   computeEloUpdate,
   computeProfileCosmetics,
   createZeroNewMechanicsStats,
+  isDesignatedAdminUsername,
   sanitizeDisplayName,
   sanitizeUserPreferences,
+  type AccountStatus,
+  type AdminAuditLogEntry,
   type CustomRulesetConfig,
   type GameMode,
   type MatchOutcomeReason,
@@ -18,6 +22,7 @@ import {
   type ProfileBannerId,
   type ProfileTitleId,
   type UserPreferences,
+  type UserRole,
 } from '../../../shared/src/index.js';
 import { validateAvatarImageDataUrl } from '../auth/avatarValidation.js';
 import {
@@ -78,6 +83,11 @@ export interface StoredUserRecord {
   readonly selectedTitle?: ProfileTitleId;
   readonly selectedBadge?: ProfileAchievementId | null;
   readonly preferences?: UserPreferences;
+  readonly role?: UserRole;
+  readonly accountStatus?: AccountStatus;
+  readonly suspendedReason?: string | null;
+  readonly suspendedAt?: string | null;
+  readonly sessionVersion?: number;
   readonly eloRating: number;
   readonly wins: number;
   readonly losses: number;
@@ -100,6 +110,10 @@ export interface PublicUserProfile {
   readonly selectedTitle: ProfileTitleId;
   readonly selectedBadge: ProfileAchievementId | null;
   readonly preferences: UserPreferences;
+  readonly role: UserRole;
+  readonly accountStatus: AccountStatus;
+  readonly suspendedReason: string | null;
+  readonly suspendedAt: string | null;
   readonly eloRating: number;
   readonly wins: number;
   readonly losses: number;
@@ -146,6 +160,11 @@ interface DiskStoreFormat {
   users: StoredUserRecord[];
   matches: StoredMatchRecord[];
   eloHistory: EloHistoryEntry[];
+  adminLogs: AdminAuditLogEntry[];
+}
+
+export function resolveAccountRole(username: string): UserRole {
+  return isDesignatedAdminUsername(username) ? 'admin' : 'player';
 }
 
 export function normalizeUsernameKey(username: string): string {
@@ -189,6 +208,11 @@ function mapPgRowToStoredUser(row: Record<string, any>): StoredUserRecord {
     selectedTitle: (row.selected_title as ProfileTitleId) || 'recrue',
     selectedBadge: (row.selected_badge as ProfileAchievementId | null) ?? null,
     preferences: sanitizeUserPreferences(row.preferences_json as Partial<UserPreferences> | undefined),
+    role: resolveAccountRole(String(row.username ?? '')),
+    accountStatus: row.account_status === 'suspended' ? 'suspended' : 'active',
+    suspendedReason: typeof row.suspended_reason === 'string' ? row.suspended_reason : null,
+    suspendedAt: row.suspended_at ? new Date(row.suspended_at).toISOString() : null,
+    sessionVersion: Number(row.session_version ?? 1),
     eloRating: Number(row.elo_rating),
     wins: Number(row.wins),
     losses: Number(row.losses),
@@ -237,6 +261,10 @@ export function toPublicProfile(user: StoredUserRecord): PublicUserProfile {
     selectedTitle: titleUnlocked && user.selectedTitle ? user.selectedTitle : 'recrue',
     selectedBadge: badgeUnlocked ? (user.selectedBadge ?? null) : null,
     preferences: sanitizeUserPreferences(user.preferences),
+    role: resolveAccountRole(user.username),
+    accountStatus: user.accountStatus === 'suspended' ? 'suspended' : 'active',
+    suspendedReason: user.suspendedReason ?? null,
+    suspendedAt: user.suspendedAt ?? null,
     eloRating: user.eloRating,
     wins: user.wins,
     losses: user.losses,
@@ -257,6 +285,7 @@ export class BlindWarDatabase {
     users: [],
     matches: [],
     eloHistory: [],
+    adminLogs: [],
   };
 
   constructor(options?: { databaseUrl?: string; diskFilePath?: string }) {
@@ -292,13 +321,28 @@ export class BlindWarDatabase {
       throw new Error('Structure de base de données corrompue.');
     }
     return {
-      users: deduplicateUsersByUsername(Array.isArray(parsed.users) ? parsed.users : []),
+      users: deduplicateUsersByUsername(Array.isArray(parsed.users) ? parsed.users : []).map((u) => ({
+        ...u,
+        role: resolveAccountRole(u.username),
+        accountStatus: u.accountStatus === 'suspended' ? 'suspended' : 'active',
+        suspendedReason: u.suspendedReason ?? null,
+        suspendedAt: u.suspendedAt ?? null,
+        sessionVersion:
+          typeof u.sessionVersion === 'number' && Number.isFinite(u.sessionVersion) && u.sessionVersion >= 1
+            ? u.sessionVersion
+            : 1,
+      })),
       matches: Array.isArray(parsed.matches)
         ? parsed.matches.filter((m) => Boolean(m && typeof m.id === 'string'))
         : [],
       eloHistory: Array.isArray(parsed.eloHistory)
         ? parsed.eloHistory.filter(
             (e) => Boolean(e && typeof e.userId === 'string' && typeof e.matchId === 'string'),
+          )
+        : [],
+      adminLogs: Array.isArray(parsed.adminLogs)
+        ? parsed.adminLogs.filter(
+            (l) => Boolean(l && typeof l.id === 'string' && typeof l.adminUsername === 'string'),
           )
         : [],
     };
@@ -344,12 +388,12 @@ export class BlindWarDatabase {
       console.error(
         `[BLIND WAR DB] Le fichier ${this.diskFilePath} est illisible et aucune sauvegarde .bak valide n'a été trouvée.`,
       );
-      this.store = { users: [], matches: [], eloHistory: [] };
+      this.store = { users: [], matches: [], eloHistory: [], adminLogs: [] };
       return;
     }
 
     // Premier démarrage absolu : initialise le fichier unique sans sauvegarde .bak superflue
-    this.store = { users: [], matches: [], eloHistory: [] };
+    this.store = { users: [], matches: [], eloHistory: [], adminLogs: [] };
     this.saveDiskStore(false);
   }
 
@@ -408,9 +452,10 @@ export class BlindWarDatabase {
           `Ce nom d'utilisateur est déjà utilisé. Impossible d'avoir deux comptes avec le même nom.`,
         );
       }
+      const role = resolveAccountRole(normalizedUsername);
       const res = await this.pgPool.query(
-        `INSERT INTO users (id, username, display_name, password_hash, avatar_badge, elo_rating, preferences_json)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `INSERT INTO users (id, username, display_name, password_hash, avatar_badge, elo_rating, preferences_json, role, account_status, session_version)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', 1)
          RETURNING *`,
         [
           params.id,
@@ -420,6 +465,7 @@ export class BlindWarDatabase {
           params.avatarBadge ?? '♔',
           INITIAL_ELO_RATING,
           JSON.stringify(DEFAULT_USER_PREFERENCES),
+          role,
         ],
       );
       return mapPgRowToStoredUser(res.rows[0]);
@@ -446,6 +492,11 @@ export class BlindWarDatabase {
       selectedTitle: 'recrue',
       selectedBadge: null,
       preferences: DEFAULT_USER_PREFERENCES,
+      role: resolveAccountRole(normalizedUsername),
+      accountStatus: 'active',
+      suspendedReason: null,
+      suspendedAt: null,
+      sessionVersion: 1,
       eloRating: INITIAL_ELO_RATING,
       wins: 0,
       losses: 0,
@@ -770,6 +821,320 @@ export class BlindWarDatabase {
   }
 
   /**
+   * Retourne tous les profils utilisateurs sans jamais exposer aucun hash de mot de passe (§4.1, §5.2).
+   */
+  async listAllUsersForAdmin(): Promise<PublicUserProfile[]> {
+    if (this.pgPool) {
+      const res = await this.pgPool.query(`SELECT * FROM users ORDER BY elo_rating DESC, created_at ASC`);
+      return res.rows.map((r) => toPublicProfile(mapPgRowToStoredUser(r)));
+    }
+    return [...this.store.users]
+      .sort((a, b) => (b.eloRating !== a.eloRating ? b.eloRating - a.eloRating : a.username.localeCompare(b.username)))
+      .map(toPublicProfile);
+  }
+
+  async getAdminAuditLogs(limit: number = 100): Promise<AdminAuditLogEntry[]> {
+    if (this.pgPool) {
+      const res = await this.pgPool.query(
+        `SELECT * FROM admin_audit_logs ORDER BY created_at DESC LIMIT $1`,
+        [limit],
+      );
+      return res.rows.map((r) => ({
+        id: String(r.id),
+        adminUserId: String(r.admin_user_id),
+        adminUsername: String(r.admin_username),
+        actionType: r.action_type,
+        targetUserId: String(r.target_user_id),
+        targetUsername: String(r.target_username),
+        summary: String(r.summary),
+        changes: (r.changes_json as Record<string, unknown>) ?? {},
+        createdAtIso: new Date(r.created_at).toISOString(),
+      }));
+    }
+    return this.store.adminLogs.slice(0, limit);
+  }
+
+  private async appendAdminAuditLog(entry: AdminAuditLogEntry): Promise<void> {
+    if (this.pgPool) {
+      await this.pgPool.query(
+        `INSERT INTO admin_audit_logs (id, admin_user_id, admin_username, action_type, target_user_id, target_username, summary, changes_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          entry.id,
+          entry.adminUserId,
+          entry.adminUsername,
+          entry.actionType,
+          entry.targetUserId,
+          entry.targetUsername,
+          entry.summary,
+          JSON.stringify(entry.changes),
+          entry.createdAtIso,
+        ],
+      );
+      return;
+    }
+    this.store.adminLogs.unshift(entry);
+    if (this.store.adminLogs.length > 500) {
+      this.store.adminLogs = this.store.adminLogs.slice(0, 500);
+    }
+  }
+
+  private async assertVerifiedAdmin(adminUserId: string): Promise<StoredUserRecord> {
+    const adminUser = await this.findUserById(adminUserId);
+    if (
+      !adminUser ||
+      resolveAccountRole(adminUser.username) !== 'admin' ||
+      adminUser.accountStatus === 'suspended'
+    ) {
+      throw new Error('Action refusée : permissions administrateur requises.');
+    }
+    return adminUser;
+  }
+
+  /**
+   * Modification administrateur du classement Elo et des statistiques d'un joueur (§4.1, §4.2).
+   */
+  async adminUpdateUserStats(
+    adminUserId: string,
+    targetUserId: string,
+    updates: {
+      eloRating?: number;
+      wins?: number;
+      losses?: number;
+      draws?: number;
+      gamesPlayed?: number;
+      totalEliminations?: number;
+      newMechanicsStats?: Partial<NewMechanicsStats>;
+      reason?: string;
+    },
+  ): Promise<{ readonly profile: PublicUserProfile; readonly logEntry: AdminAuditLogEntry }> {
+    return this.withMutationLock(async () => {
+      const adminUser = await this.assertVerifiedAdmin(adminUserId);
+      const targetUser = await this.findUserById(targetUserId);
+      if (!targetUser) {
+        throw new Error('Joueur cible introuvable.');
+      }
+
+      const validateInt = (val: unknown, fallback: number, min: number, max: number, label: string): number => {
+        if (val === undefined) return fallback;
+        if (typeof val !== 'number' || !Number.isFinite(val)) {
+          throw new Error(`Valeur invalide pour ${label}.`);
+        }
+        const rounded = Math.round(val);
+        if (rounded < min || rounded > max) {
+          throw new Error(`${label} doit être compris entre ${min} et ${max}.`);
+        }
+        return rounded;
+      };
+
+      const nextElo = validateInt(updates.eloRating, targetUser.eloRating, 0, 5000, 'ELO');
+      const nextWins = validateInt(updates.wins, targetUser.wins, 0, 100000, 'Victoires');
+      const nextLosses = validateInt(updates.losses, targetUser.losses, 0, 100000, 'Défaites');
+      const nextDraws = validateInt(updates.draws, targetUser.draws, 0, 100000, 'Matchs nuls');
+      const minGames = nextWins + nextLosses + nextDraws;
+      const nextGames =
+        updates.gamesPlayed !== undefined
+          ? validateInt(updates.gamesPlayed, targetUser.gamesPlayed, 0, 300000, 'Matchs joués')
+          : Math.max(targetUser.gamesPlayed, minGames);
+      const nextElims = validateInt(
+        updates.totalEliminations,
+        targetUser.totalEliminations,
+        0,
+        1000000,
+        'Éliminations',
+      );
+      const baseNm = normalizeNewMechanicsStats(targetUser.newMechanicsStats);
+      const nextNm: NewMechanicsStats = updates.newMechanicsStats
+        ? {
+            traqueurMoves: validateInt(updates.newMechanicsStats.traqueurMoves, baseNm.traqueurMoves, 0, 1000000, 'Traqueur dépl.'),
+            traqueurMarks: validateInt(updates.newMechanicsStats.traqueurMarks, baseNm.traqueurMarks, 0, 1000000, 'Traqueur marques'),
+            traqueurPursuitsSucceeded: validateInt(updates.newMechanicsStats.traqueurPursuitsSucceeded, baseNm.traqueurPursuitsSucceeded, 0, 1000000, 'Traqueur poursuites'),
+            traqueurEliminations: validateInt(updates.newMechanicsStats.traqueurEliminations, baseNm.traqueurEliminations, 0, 1000000, 'Traqueur élim.'),
+            executeurPiercingStrikes: validateInt(updates.newMechanicsStats.executeurPiercingStrikes, baseNm.executeurPiercingStrikes, 0, 1000000, 'Exécuteur frappes'),
+            executeurEliminations: validateInt(updates.newMechanicsStats.executeurEliminations, baseNm.executeurEliminations, 0, 1000000, 'Exécuteur élim.'),
+            arbaletrierShotsTotal: validateInt(updates.newMechanicsStats.arbaletrierShotsTotal, baseNm.arbaletrierShotsTotal, 0, 1000000, 'Arbalétrier tirs'),
+            arbaletrierShotsSucceeded: validateInt(updates.newMechanicsStats.arbaletrierShotsSucceeded, baseNm.arbaletrierShotsSucceeded, 0, 1000000, 'Arbalétrier tirs réussis'),
+            arbaletrierShotsBlocked: validateInt(updates.newMechanicsStats.arbaletrierShotsBlocked, baseNm.arbaletrierShotsBlocked, 0, 1000000, 'Arbalétrier tirs bloqués'),
+            colossiEliminatedByKamikaze: validateInt(updates.newMechanicsStats.colossiEliminatedByKamikaze, baseNm.colossiEliminatedByKamikaze, 0, 1000000, 'Colosses Kamikaze'),
+          }
+        : baseNm;
+
+      const changes: Record<string, unknown> = {};
+      if (nextElo !== targetUser.eloRating) changes.eloRating = { from: targetUser.eloRating, to: nextElo };
+      if (nextWins !== targetUser.wins) changes.wins = { from: targetUser.wins, to: nextWins };
+      if (nextLosses !== targetUser.losses) changes.losses = { from: targetUser.losses, to: nextLosses };
+      if (nextDraws !== targetUser.draws) changes.draws = { from: targetUser.draws, to: nextDraws };
+      if (nextGames !== targetUser.gamesPlayed) changes.gamesPlayed = { from: targetUser.gamesPlayed, to: nextGames };
+      if (nextElims !== targetUser.totalEliminations) changes.totalEliminations = { from: targetUser.totalEliminations, to: nextElims };
+      if (updates.newMechanicsStats) changes.newMechanicsStats = nextNm;
+      if (updates.reason) changes.reason = String(updates.reason).slice(0, 160);
+
+      const nowIso = new Date().toISOString();
+      const logEntry: AdminAuditLogEntry = {
+        id: `adm-${crypto.randomUUID()}`,
+        adminUserId: adminUser.id,
+        adminUsername: adminUser.username,
+        actionType: 'update_stats',
+        targetUserId: targetUser.id,
+        targetUsername: targetUser.username,
+        summary: `Modification stats/ELO de ${targetUser.username} (ELO ${targetUser.eloRating} → ${nextElo}, ${nextWins}V/${nextLosses}D/${nextDraws}N)`,
+        changes,
+        createdAtIso: nowIso,
+      };
+
+      if (this.pgPool) {
+        await this.pgPool.query(
+          `UPDATE users
+           SET elo_rating = $1,
+               wins = $2,
+               losses = $3,
+               draws = $4,
+               games_played = $5,
+               total_eliminations = $6,
+               new_mechanics_stats = $7,
+               updated_at = NOW()
+           WHERE id = $8`,
+          [nextElo, nextWins, nextLosses, nextDraws, nextGames, nextElims, JSON.stringify(nextNm), targetUserId],
+        );
+        await this.appendAdminAuditLog(logEntry);
+        const refreshed = await this.findUserById(targetUserId);
+        return { profile: toPublicProfile(refreshed!), logEntry };
+      }
+
+      const updated: StoredUserRecord = {
+        ...targetUser,
+        eloRating: nextElo,
+        wins: nextWins,
+        losses: nextLosses,
+        draws: nextDraws,
+        gamesPlayed: nextGames,
+        totalEliminations: nextElims,
+        newMechanicsStats: nextNm,
+        updatedAt: nowIso,
+      };
+      this.store.users = this.store.users.map((u) => (u.id === targetUserId ? updated : u));
+      await this.appendAdminAuditLog(logEntry);
+      this.saveDiskStore();
+      return { profile: toPublicProfile(updated), logEntry };
+    });
+  }
+
+  /**
+   * Gestion administrateur d'un compte joueur (nom affiché, bio, suspension ou réactivation).
+   * Protège le compte administrateur désigné contre toute auto-suspension accidentelle.
+   */
+  async adminManageUserAccount(
+    adminUserId: string,
+    targetUserId: string,
+    updates: {
+      accountStatus?: AccountStatus;
+      suspendedReason?: string | null;
+      displayName?: string;
+      bio?: string;
+    },
+  ): Promise<{ readonly profile: PublicUserProfile; readonly logEntry: AdminAuditLogEntry }> {
+    return this.withMutationLock(async () => {
+      const adminUser = await this.assertVerifiedAdmin(adminUserId);
+      const targetUser = await this.findUserById(targetUserId);
+      if (!targetUser) {
+        throw new Error('Compte utilisateur introuvable.');
+      }
+
+      const targetIsAdmin = resolveAccountRole(targetUser.username) === 'admin';
+      const currentStatus: AccountStatus =
+        targetUser.accountStatus === 'suspended' ? 'suspended' : 'active';
+      const nextStatus: AccountStatus =
+        updates.accountStatus === 'suspended' || updates.accountStatus === 'active'
+          ? updates.accountStatus
+          : currentStatus;
+
+      if (targetIsAdmin && nextStatus === 'suspended') {
+        throw new Error('Le compte administrateur principal ne peut pas être suspendu.');
+      }
+
+      const nowIso = new Date().toISOString();
+      const nextDisplayName =
+        updates.displayName !== undefined
+          ? sanitizeDisplayName(updates.displayName) ?? targetUser.username
+          : (targetUser.displayName ?? targetUser.username);
+      const nextBio = updates.bio !== undefined ? updates.bio.slice(0, 240) : targetUser.bio;
+      const nextSuspendedReason =
+        nextStatus === 'suspended'
+          ? (updates.suspendedReason?.trim() || targetUser.suspendedReason || 'Suspendu par l’administrateur').slice(0, 200)
+          : null;
+      const nextSuspendedAt =
+        nextStatus === 'suspended' ? (targetUser.suspendedAt ?? nowIso) : null;
+      const statusChanged = nextStatus !== currentStatus;
+      const nextSessionVersion = statusChanged && nextStatus === 'suspended'
+        ? (targetUser.sessionVersion ?? 1) + 1
+        : (targetUser.sessionVersion ?? 1);
+
+      const actionType =
+        statusChanged && nextStatus === 'suspended'
+          ? 'suspend_account'
+          : statusChanged && nextStatus === 'active'
+            ? 'reactivate_account'
+            : 'update_account_info';
+
+      const summary =
+        actionType === 'suspend_account'
+          ? `Suspension du compte ${targetUser.username} (${nextSuspendedReason})`
+          : actionType === 'reactivate_account'
+            ? `Réactivation du compte ${targetUser.username}`
+            : `Mise à jour du profil administratif de ${targetUser.username}`;
+
+      const logEntry: AdminAuditLogEntry = {
+        id: `adm-${crypto.randomUUID()}`,
+        adminUserId: adminUser.id,
+        adminUsername: adminUser.username,
+        actionType,
+        targetUserId: targetUser.id,
+        targetUsername: targetUser.username,
+        summary,
+        changes: {
+          accountStatus: nextStatus,
+          suspendedReason: nextSuspendedReason,
+          displayName: nextDisplayName,
+        },
+        createdAtIso: nowIso,
+      };
+
+      if (this.pgPool) {
+        await this.pgPool.query(
+          `UPDATE users
+           SET account_status = $1,
+               suspended_reason = $2,
+               suspended_at = $3,
+               display_name = $4,
+               bio = $5,
+               session_version = $6,
+               updated_at = NOW()
+           WHERE id = $7`,
+          [nextStatus, nextSuspendedReason, nextSuspendedAt, nextDisplayName, nextBio, nextSessionVersion, targetUserId],
+        );
+        await this.appendAdminAuditLog(logEntry);
+        const refreshed = await this.findUserById(targetUserId);
+        return { profile: toPublicProfile(refreshed!), logEntry };
+      }
+
+      const updated: StoredUserRecord = {
+        ...targetUser,
+        accountStatus: nextStatus,
+        suspendedReason: nextSuspendedReason,
+        suspendedAt: nextSuspendedAt,
+        displayName: nextDisplayName,
+        bio: nextBio,
+        sessionVersion: nextSessionVersion,
+        updatedAt: nowIso,
+      };
+      this.store.users = this.store.users.map((u) => (u.id === targetUserId ? updated : u));
+      await this.appendAdminAuditLog(logEntry);
+      this.saveDiskStore();
+      return { profile: toPublicProfile(updated), logEntry };
+    });
+  }
+
+  /**
    * Exporte un instantané des comptes, parties et variations ELO pour la synchronisation
    * décentralisée P2P entre plusieurs PC exécutant le jeu en local.
    */
@@ -810,6 +1175,9 @@ export class BlindWarDatabase {
           this.store.users.push({
             ...ru,
             username: ru.username.trim().replace(/\s+/g, ' '),
+            role: resolveAccountRole(ru.username),
+            accountStatus: 'active',
+            sessionVersion: 1,
             newMechanicsStats: normalizeNewMechanicsStats(ru.newMechanicsStats),
           });
           changed = true;
@@ -819,12 +1187,17 @@ export class BlindWarDatabase {
             ru.gamesPlayed > cur.gamesPlayed ||
             new Date(ru.updatedAt).getTime() > new Date(cur.updatedAt).getTime()
           ) {
-            // On conserve l'identifiant et le nom du compte existant si le nom correspondait déjà
+            // On conserve l'identifiant, le nom, les préférences, le rôle et la version de session locaux
             this.store.users[idx] = {
               ...cur,
               ...ru,
               id: cur.id,
               username: cur.username,
+              role: resolveAccountRole(cur.username),
+              accountStatus: cur.accountStatus ?? 'active',
+              suspendedReason: cur.suspendedReason ?? null,
+              suspendedAt: cur.suspendedAt ?? null,
+              sessionVersion: cur.sessionVersion ?? 1,
               preferences: cur.preferences ?? DEFAULT_USER_PREFERENCES,
               newMechanicsStats: normalizeNewMechanicsStats(
                 ru.newMechanicsStats ?? cur.newMechanicsStats,

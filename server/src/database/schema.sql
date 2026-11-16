@@ -19,6 +19,11 @@ CREATE TABLE IF NOT EXISTS users (
   selected_title VARCHAR(32) NOT NULL DEFAULT 'recrue',
   selected_badge VARCHAR(32),
   preferences_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  role VARCHAR(16) NOT NULL DEFAULT 'player',
+  account_status VARCHAR(16) NOT NULL DEFAULT 'active',
+  suspended_reason TEXT,
+  suspended_at TIMESTAMPTZ,
+  session_version INTEGER NOT NULL DEFAULT 1,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -30,6 +35,24 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_banner VARCHAR(32) NOT NULL D
 ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_title VARCHAR(32) NOT NULL DEFAULT 'recrue';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS selected_badge VARCHAR(32);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences_json JSONB NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(16) NOT NULL DEFAULT 'player';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status VARCHAR(16) NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_reason TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS suspended_at TIMESTAMPTZ;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 1;
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id VARCHAR(64) PRIMARY KEY,
+  admin_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  admin_username VARCHAR(32) NOT NULL,
+  action_type VARCHAR(32) NOT NULL,
+  target_user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  target_username VARCHAR(32) NOT NULL,
+  summary TEXT NOT NULL,
+  changes_json JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created ON admin_audit_logs(created_at DESC);
 
 CREATE TABLE IF NOT EXISTS matches (
   id VARCHAR(64) PRIMARY KEY,

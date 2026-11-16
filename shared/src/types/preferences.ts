@@ -363,3 +363,36 @@ export interface ClientNotificationItem {
   readonly read: boolean;
   readonly targetScreen?: string;
 }
+
+// ============================================================================
+// ADMIN PERMISSIONS, ACCOUNT STATUS & AUDIT LOGS (§4)
+// ============================================================================
+
+export type UserRole = 'player' | 'admin';
+export type AccountStatus = 'active' | 'suspended';
+
+export const DESIGNATED_ADMIN_USERNAME = 'Kenktra_7003';
+
+/** Canonical exact match for the sole designated administrator account (`Kenktra_7003`). */
+export function isDesignatedAdminUsername(username?: string | null): boolean {
+  if (typeof username !== 'string') return false;
+  return username.trim().replace(/\s+/g, ' ').toLowerCase() === 'kenktra_7003';
+}
+
+export type AdminActionType =
+  | 'update_stats'
+  | 'suspend_account'
+  | 'reactivate_account'
+  | 'update_account_info';
+
+export interface AdminAuditLogEntry {
+  readonly id: string;
+  readonly adminUserId: string;
+  readonly adminUsername: string;
+  readonly actionType: AdminActionType;
+  readonly targetUserId: string;
+  readonly targetUsername: string;
+  readonly summary: string;
+  readonly changes: Readonly<Record<string, unknown>>;
+  readonly createdAtIso: string;
+}

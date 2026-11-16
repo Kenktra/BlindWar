@@ -1089,4 +1089,8 @@ export class GameRoomManager {
       room.players.black.eloRating = matchRecord.blackEloAfter;
     }
   }
+
+  getActiveRoomsCount(): number {
+    return [...this.roomsById.values()].filter((r) => r.matchState?.phase !== 'finished').length;
+  }
 }

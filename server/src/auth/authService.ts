@@ -4,6 +4,7 @@ import path from 'node:path';
 import {
   type BlindWarDatabase,
   type PublicUserProfile,
+  type StoredUserRecord,
   toPublicProfile,
 } from '../database/db.js';
 import {
@@ -78,6 +79,7 @@ export interface SessionTokenPayload {
   readonly userId: string;
   readonly username: string;
   readonly issuedAt: number;
+  readonly sessionVersion?: number;
 }
 
 export function signSessionToken(payload: SessionTokenPayload): string {
@@ -156,6 +158,7 @@ export class AuthService {
       userId: user.id,
       username: user.username,
       issuedAt: Date.now(),
+      sessionVersion: user.sessionVersion ?? 1,
     });
 
     return { token, profile };
@@ -169,14 +172,36 @@ export class AuthService {
     if (!user || !verifyPassword(password, user.passwordHash)) {
       throw new Error(`Identifiants invalides.`);
     }
+    if (user.accountStatus === 'suspended') {
+      const reasonSuffix = user.suspendedReason ? ` Motif : ${user.suspendedReason}` : '';
+      throw new Error(`Ce compte est suspendu.${reasonSuffix}`);
+    }
 
     const profile = toPublicProfile(user);
     const token = signSessionToken({
       userId: user.id,
       username: user.username,
       issuedAt: Date.now(),
+      sessionVersion: user.sessionVersion ?? 1,
     });
 
     return { token, profile };
   }
+}
+
+export async function authenticateSession(
+  db: BlindWarDatabase,
+  token: string | null,
+): Promise<{ readonly session: SessionTokenPayload; readonly user: StoredUserRecord } | null> {
+  if (!token) return null;
+  const session = verifySessionToken(token);
+  if (!session) return null;
+  const user = await db.findUserById(session.userId);
+  if (!user) return null;
+  const tokenVer = session.sessionVersion ?? 1;
+  const currentVer = user.sessionVersion ?? 1;
+  if (tokenVer !== currentVer) {
+    return null;
+  }
+  return { session, user };
 }

@@ -19,8 +19,13 @@ import {
   type MoveCandidateKind,
   type PlacementEntry,
 } from '../../shared/src/index.js';
-import { AuthService, verifySessionToken } from './auth/authService.js';
-import { BlindWarDatabase, toPublicProfile } from './database/db.js';
+import { AuthService, authenticateSession, verifySessionToken } from './auth/authService.js';
+import {
+  BlindWarDatabase,
+  resolveAccountRole,
+  toPublicProfile,
+  type StoredUserRecord,
+} from './database/db.js';
 import { resolveDataFilePath } from './database/dataPaths.js';
 import { BlindWarP2PMesh } from './p2p/p2pMesh.js';
 import { GameRoomManager, type ManagedRoom } from './rooms/roomManager.js';
@@ -122,29 +127,60 @@ export async function createBlindWarServer(options?: {
     }
   });
 
-  app.get('/api/auth/me', async (req: Request, res: Response) => {
+  const requireActiveUser = async (
+    req: Request,
+    res: Response,
+  ): Promise<StoredUserRecord | null> => {
     const token = extractBearerToken(req);
     const session = token ? verifySessionToken(token) : null;
     if (!session) {
       res.status(401).json({ error: 'Non authentifié.' });
-      return;
+      return null;
     }
-    const user = await db.findUserById(session.userId);
+    const authCtx = await authenticateSession(db, token);
+    if (!authCtx) {
+      // Distinguer compte suspendu vs session révoquée/expirée
+      const userById = await db.findUserById(session.userId);
+      if (userById && userById.accountStatus === 'suspended') {
+        res.status(403).json({
+          error: userById.suspendedReason
+            ? `Ce compte est suspendu : ${userById.suspendedReason}`
+            : 'Ce compte est actuellement suspendu.',
+        });
+        return null;
+      }
+      res.status(401).json({ error: 'Session expirée ou révoquée. Reconnectez-vous.' });
+      return null;
+    }
+    return authCtx.user;
+  };
+
+  const requireAdmin = async (
+    req: Request,
+    res: Response,
+  ): Promise<StoredUserRecord | null> => {
+    const user = await requireActiveUser(req, res);
     if (!user) {
-      res.status(404).json({ error: 'Utilisateur introuvable.' });
-      return;
+      return null;
     }
+    if (resolveAccountRole(user.username) !== 'admin') {
+      res.status(403).json({ error: 'Accès refusé : droits administrateur requis.' });
+      return null;
+    }
+    return user;
+  };
+
+  app.get('/api/auth/me', async (req: Request, res: Response) => {
+    const user = await requireActiveUser(req, res);
+    if (!user) return;
     res.json({ profile: toPublicProfile(user) });
   });
 
   app.patch('/api/profile', async (req: Request, res: Response) => {
     try {
-      const token = extractBearerToken(req);
-      const session = token ? verifySessionToken(token) : null;
-      if (!session) {
-        res.status(401).json({ error: 'Non authentifié.' });
-        return;
-      }
+      const user = await requireActiveUser(req, res);
+      if (!user) return;
+      // N'autorise jamais la modification du rôle, du statut ni de l'ELO depuis /api/profile
       const {
         displayName,
         avatarBadge,
@@ -156,7 +192,7 @@ export async function createBlindWarServer(options?: {
         selectedBadge,
         preferences,
       } = req.body as Record<string, any>;
-      const profile = await db.updateUserProfile(session.userId, {
+      const profile = await db.updateUserProfile(user.id, {
         displayName,
         avatarBadge,
         avatarImage,
@@ -172,6 +208,105 @@ export async function createBlindWarServer(options?: {
     } catch (err) {
       res.status(400).json({ error: err instanceof Error ? err.message : 'Mise à jour impossible.' });
     }
+  });
+
+  // ===========================================================================
+  // ROUTES D'ADMINISTRATION PROTÉGÉES (exclusivement Kenktra_7003 / rôle admin)
+  // ===========================================================================
+
+  app.get('/api/admin/overview', async (req: Request, res: Response) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const [users, matches, adminLogs] = await Promise.all([
+      db.listAllUsersForAdmin(),
+      db.getMatchHistoryForUser(undefined, 120),
+      db.getAdminAuditLogs(120),
+    ]);
+    res.json({
+      users,
+      matches,
+      adminLogs,
+      storage: db.getStorageHealth(),
+      activeRoomsCount: roomManager.getActiveRoomsCount(),
+    });
+  });
+
+  app.get('/api/admin/users/:userId', async (req: Request, res: Response) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const targetId = String(req.params.userId);
+    const targetUser = await db.findUserById(targetId);
+    if (!targetUser) {
+      res.status(404).json({ error: 'Utilisateur introuvable.' });
+      return;
+    }
+    const [matches, eloHistory] = await Promise.all([
+      db.getMatchHistoryForUser(targetId, 50),
+      db.getEloHistoryForUser(targetId, 50),
+    ]);
+    res.json({
+      profile: toPublicProfile(targetUser),
+      matches,
+      eloHistory,
+    });
+  });
+
+  app.patch('/api/admin/users/:userId/stats', async (req: Request, res: Response) => {
+    try {
+      const admin = await requireAdmin(req, res);
+      if (!admin) return;
+      const targetId = String(req.params.userId);
+      const {
+        eloRating,
+        wins,
+        losses,
+        draws,
+        gamesPlayed,
+        totalEliminations,
+        newMechanicsStats,
+        reason,
+      } = req.body as Record<string, any>;
+      const result = await db.adminUpdateUserStats(admin.id, targetId, {
+        eloRating,
+        wins,
+        losses,
+        draws,
+        gamesPlayed,
+        totalEliminations,
+        newMechanicsStats,
+        reason,
+      });
+      p2pMeshRef?.broadcastDatabaseSync();
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Modification impossible.' });
+    }
+  });
+
+  app.patch('/api/admin/users/:userId/account', async (req: Request, res: Response) => {
+    try {
+      const admin = await requireAdmin(req, res);
+      if (!admin) return;
+      const targetId = String(req.params.userId);
+      const { accountStatus, suspendedReason, displayName, bio } = req.body as Record<string, any>;
+      const result = await db.adminManageUserAccount(admin.id, targetId, {
+        accountStatus,
+        suspendedReason,
+        displayName,
+        bio,
+      });
+      p2pMeshRef?.broadcastDatabaseSync();
+      res.json(result);
+    } catch (err) {
+      res.status(400).json({ error: err instanceof Error ? err.message : 'Action impossible.' });
+    }
+  });
+
+  app.get('/api/admin/logs', async (req: Request, res: Response) => {
+    const admin = await requireAdmin(req, res);
+    if (!admin) return;
+    const logs = await db.getAdminAuditLogs(150);
+    res.json({ logs });
   });
 
   app.get('/api/leaderboard', async (_req: Request, res: Response) => {
@@ -268,10 +403,27 @@ export async function createBlindWarServer(options?: {
   );
   p2pMeshRef = p2pMesh;
 
-  io.on('connection', (socket: Socket) => {
+  io.use(async (socket, next) => {
     const authHeaderToken =
       typeof socket.handshake.auth?.token === 'string' ? socket.handshake.auth.token : null;
-    const verifiedSession = authHeaderToken ? verifySessionToken(authHeaderToken) : null;
+    if (!authHeaderToken) {
+      socket.data.verifiedSession = null;
+      next();
+      return;
+    }
+    const authCtx = await authenticateSession(db, authHeaderToken);
+    if (!authCtx) {
+      next(new Error('Session expirée, invalide ou compte suspendu.'));
+      return;
+    }
+    socket.data.verifiedSession = authCtx.session;
+    next();
+  });
+
+  io.on('connection', (socket: Socket) => {
+    const verifiedSession = (socket.data.verifiedSession ?? null) as
+      | ReturnType<typeof verifySessionToken>
+      | null;
     const isGuest = verifiedSession === null;
 
     // Identité invité : toujours préfixée « guest- » côté serveur, pour qu'un client ne puisse
