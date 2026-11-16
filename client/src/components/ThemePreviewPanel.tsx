@@ -204,6 +204,46 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
               border: `1px solid ${ui.border}`,
             }}
           >
+            <div style={{ fontWeight: 800, fontSize: '0.84rem', marginBottom: '0.35rem' }}>
+              Assets des pièces du thème ({boardTheme.name})
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
+              {(['roi', 'reine', 'cavalier', 'traqueur', 'arbaletrier'] as const).map((ch) => (
+                <React.Fragment key={ch}>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      padding: '3px',
+                      borderRadius: '6px',
+                      backgroundColor: boardTheme.board.squareA,
+                    }}
+                    title={`${ch} (version contrastée sur case ${boardTheme.board.squareALabel})`}
+                  >
+                    <PieceArtwork character={ch} squareSlot="a" theme={boardTheme} size="xs" />
+                  </span>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      padding: '3px',
+                      borderRadius: '6px',
+                      backgroundColor: boardTheme.board.squareB,
+                    }}
+                    title={`${ch} (version contrastée sur case ${boardTheme.board.squareBLabel})`}
+                  >
+                    <PieceArtwork character={ch} squareSlot="b" theme={boardTheme} size="xs" />
+                  </span>
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+
+          <div
+            className="bw-preview-sample-card"
+            style={{
+              backgroundColor: ui.bgPanelAlt,
+              border: `1px solid ${ui.border}`,
+            }}
+          >
             <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '0.2rem' }}>
               Panneau Tactique & Typographie
             </div>

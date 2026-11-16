@@ -38,6 +38,11 @@ import {
   PieceAvatar,
   PieceDualVariantPreview,
 } from '../client/src/components/PieceArtwork.js';
+import { ALL_PIECE_ART_KINDS } from '../client/src/assets/pieces/silhouettes.js';
+import {
+  THEME_ASSET_PACKS,
+  resolvePieceThemeAsset,
+} from '../client/src/assets/themes/index.js';
 
 function makeTempDbFile(name: string): { dir: string; filePath: string } {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `bw-theme-test-${name}-`));
@@ -141,6 +146,41 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       expect(html).toContain(BLIND_WAR_THEMES.vert_et_beige.board.squareA);
       expect(html).toContain(BLIND_WAR_THEMES.vert_et_beige.board.squareB);
       expect(html).toContain('Sur case');
+    });
+
+    it('provides complete, non-missing themed piece assets (light & dark variants) across all 6 themes and 13 piece kinds', () => {
+      expect(ALL_PIECE_ART_KINDS).toHaveLength(13);
+
+      for (const theme of THEME_LIST) {
+        const pack = THEME_ASSET_PACKS[theme.id];
+        expect(pack).toBeDefined();
+        expect(Object.keys(pack.pieces)).toHaveLength(13);
+
+        for (const kind of ALL_PIECE_ART_KINDS) {
+          const desc = resolvePieceThemeAsset(theme.id, kind);
+          expect(desc.pieceKind).toBe(kind);
+          expect(desc.themeId).toBe(theme.id);
+          expect(desc.palettes.light.bgTop).not.toBe(desc.palettes.dark.bgTop);
+
+          const html = renderToStaticMarkup(
+            React.createElement(PieceArtwork, {
+              character: kind,
+              coord: { row: 0, col: 0 },
+              theme,
+              size: 'md',
+            }),
+          );
+          expect(html).toContain(`data-piece-kind="${kind}"`);
+          expect(html).toContain(`data-piece-theme="${theme.id}"`);
+          expect(html).toContain(`data-asset-style="${desc.styleVariant}"`);
+          expect(html).toContain('viewBox="0 0 64 64"');
+        }
+      }
+
+      expect(resolvePieceThemeAsset('classique', 'roi').styleVariant).toBe('classic');
+      expect(resolvePieceThemeAsset('vert_et_beige', 'roi').styleVariant).toBe('chesscom');
+      expect(resolvePieceThemeAsset('noir_et_blanc', 'roi').styleVariant).toBe('monochrome');
+      expect(resolvePieceThemeAsset('bleu_et_argent', 'roi').styleVariant).toBe('blue');
     });
   });
 
