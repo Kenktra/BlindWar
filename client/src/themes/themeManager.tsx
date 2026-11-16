@@ -5,12 +5,15 @@ import {
   getThemeDefinition,
   sanitizeUserPreferences,
   type BlindWarThemeDefinition,
+  type ColorMode,
   type ThemeId,
   type UserPreferences,
+  resolveThemeUiForColorMode,
 } from '../../../shared/src/index.js';
 
 export interface ResolvedThemeState {
   readonly preferences: UserPreferences;
+  readonly colorMode: ColorMode;
   readonly siteTheme: BlindWarThemeDefinition;
   readonly boardTheme: BlindWarThemeDefinition;
   readonly effectiveMotionReduced: boolean;
@@ -20,6 +23,7 @@ const DEFAULT_THEME = getThemeDefinition('rouge_et_noir');
 
 const DEFAULT_RESOLVED_THEME: ResolvedThemeState = {
   preferences: DEFAULT_USER_PREFERENCES,
+  colorMode: DEFAULT_USER_PREFERENCES.colorMode,
   siteTheme: DEFAULT_THEME,
   boardTheme: DEFAULT_THEME,
   effectiveMotionReduced: false,
@@ -40,6 +44,7 @@ export function resolveThemeState(
 
   return {
     preferences,
+    colorMode: preferences.colorMode,
     siteTheme,
     boardTheme,
     effectiveMotionReduced:
@@ -51,8 +56,8 @@ export function resolveThemeState(
 export function buildThemeCssVariables(
   rawPrefs?: Partial<UserPreferences> | null,
 ): Readonly<Record<string, string>> {
-  const { preferences, siteTheme, boardTheme } = resolveThemeState(rawPrefs);
-  const { ui } = siteTheme;
+  const { preferences, colorMode, siteTheme, boardTheme } = resolveThemeState(rawPrefs);
+  const ui = resolveThemeUiForColorMode(siteTheme, colorMode);
   const { board } = boardTheme;
 
   const isBright = preferences.brightness === 'bright';
@@ -71,6 +76,7 @@ export function buildThemeCssVariables(
         : '1';
 
   return {
+    '--bw-color-scheme': colorMode,
     '--bw-bg-deep': ui.bgDeep,
     '--bw-bg-radial': ui.bgRadialGlow,
     '--bw-bg-navbar': ui.bgNavbar,
@@ -165,10 +171,13 @@ export function applyThemePreferencesToDocument(
   );
 
   root.classList.add(
-    `bw-theme-${state.siteTheme.id}`,
-    `bw-board-theme-${state.boardTheme.id}`,
-    `bw-brightness-${state.preferences.brightness}`,
+    'bw-theme-' + state.siteTheme.id,
+    'bw-board-theme-' + state.boardTheme.id,
+    'bw-color-' + state.colorMode,
+    'bw-brightness-' + state.preferences.brightness,
   );
+  root.classList.remove(state.colorMode === 'light' ? 'bw-color-dark' : 'bw-color-light');
+  root.style.colorScheme = state.colorMode;
 
   if (state.preferences.textScale === 'large') {
     root.classList.add('bw-a11y-text-large');
@@ -190,6 +199,7 @@ export function applyThemePreferencesToDocument(
 
   root.dataset.bwTheme = state.siteTheme.id;
   root.dataset.bwBoardTheme = state.boardTheme.id;
+  root.dataset.bwColorMode = state.colorMode;
   root.dataset.bwAnimSpeed = state.preferences.animationSpeed;
 
   return state;

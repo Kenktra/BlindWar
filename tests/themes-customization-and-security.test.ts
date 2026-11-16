@@ -18,6 +18,7 @@ import {
   getBoardSquareSlot,
   getThemeDefinition,
   getThemedPiecePaletteAtCoord,
+  resolveThemeUiForColorMode,
   sanitizeDisplayName,
   sanitizeUserPreferences,
   type Coord,
@@ -213,6 +214,23 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       // Noir et blanc must enforce dark text on its bright primary CTA button
       const monoVars = buildThemeCssVariables({ siteThemeId: 'noir_et_blanc' });
       expect(monoVars['--bw-btn-primary-text']).toBe('#141417');
+
+      // Dark mode vs Light mode UI surfaces and persistence readiness
+      const lightResolved = resolveThemeState({
+        colorMode: 'light',
+        siteThemeId: 'bleu_et_argent',
+        boardThemeId: 'vert_et_beige',
+      });
+      expect(lightResolved.colorMode).toBe('light');
+      expect(lightResolved.boardTheme.id).toBe('vert_et_beige');
+      const lightVars = buildThemeCssVariables(lightResolved.preferences);
+      expect(lightVars['--bw-color-scheme']).toBe('light');
+      expect(lightVars['--bw-bg-panel']).toBe('#ffffff');
+      expect(lightVars['--bw-text-primary']).toBe('#0f172a');
+      expect(lightVars['--bw-board-square-a']).toBe(BLIND_WAR_THEMES.vert_et_beige.board.squareA);
+      const darkUi = resolveThemeUiForColorMode(BLIND_WAR_THEMES.rouge_et_noir, 'dark');
+      const lightUi = resolveThemeUiForColorMode(BLIND_WAR_THEMES.rouge_et_noir, 'light');
+      expect(darkUi.bgPanel).not.toBe(lightUi.bgPanel);
     });
   });
 
@@ -275,6 +293,7 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
           profileBanner: 'tactical_grid',
           selectedTitle: 'recrue',
           preferences: {
+            colorMode: 'light',
             siteThemeId: 'ambre_et_ebene',
             boardThemeId: 'vert_et_beige',
             soundVolume: 42,
@@ -286,6 +305,7 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
 
         expect(updated.displayName).toBe('AlphaPrime');
         expect(updated.avatarImage).toBe(png);
+        expect(updated.preferences.colorMode).toBe('light');
         expect(updated.preferences.siteThemeId).toBe('ambre_et_ebene');
         expect(updated.preferences.boardThemeId).toBe('vert_et_beige');
         expect(updated.preferences.soundVolume).toBe(42);
@@ -300,6 +320,7 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
         const reloadedPublic = toPublicProfile(reloadedUser!);
         expect(reloadedPublic.displayName).toBe('AlphaPrime');
         expect(reloadedPublic.avatarImage).toBe(png);
+        expect(reloadedPublic.preferences.colorMode).toBe('light');
         expect(reloadedPublic.preferences.siteThemeId).toBe('ambre_et_ebene');
 
         // Exported sync snapshots must strip private preferences (opponent theme isolation)

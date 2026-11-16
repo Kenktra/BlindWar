@@ -70,6 +70,7 @@ body {
   padding: 0;
   background-color: var(--bw-bg-deep);
   color: var(--bw-white);
+  color-scheme: var(--bw-color-scheme, dark);
   font-family: var(--bw-font);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -3960,4 +3961,81 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   .bw-theme-preview-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ============================================================================
+ * MODE SOMBRE / MODE CLAIR (§1.1)
+ * ============================================================================ */
+
+.bw-color-mode-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.bw-color-light .bw-elo-pill {
+  background: rgba(180, 83, 9, 0.14);
+  color: #92400e;
+}
+
+.bw-color-light .bw-btn-danger {
+  background: rgba(220, 38, 38, 0.12);
+  color: #991b1b;
+}
+
+.bw-color-light .bw-error-toast,
+.bw-color-light .bw-error-box {
+  background: rgba(220, 38, 38, 0.12);
+  color: #991b1b;
+}
+
+.bw-color-light .bw-success-box,
+.bw-color-light .bw-success-note {
+  background: rgba(16, 185, 129, 0.15);
+  color: #065f46;
+}
+
+.bw-color-light .bw-turn-clarity-pill.yours {
+  background: rgba(16, 185, 129, 0.18);
+  color: #065f46;
+}
+
+.bw-color-light .bw-collection-tab.active {
+  background: var(--bw-accent-soft);
+  color: var(--bw-text-primary);
+}
+
+.bw-color-light .bw-mini-cell.kind-leap,
+.bw-color-light .bw-mini-cell.kind-jump {
+  color: #78350f;
+}
+
+.bw-color-light .bw-mini-cell.kind-recon {
+  color: #0c4a6e;
+}
+
+.bw-color-light .bw-mini-cell.kind-shoot,
+.bw-color-light .bw-mini-cell.kind-pierce,
+.bw-color-light .bw-mini-cell.kind-pursuit {
+  color: #7f1d1d;
+}
+
+.bw-color-light .bw-mini-cell.kind-mark {
+  color: #581c87;
+}
+
+.bw-color-light .bw-notif-popover,
+.bw-color-light .bw-modal-dialog,
+.bw-color-light .bw-panel,
+.bw-color-light .bw-feature-card,
+.bw-color-light .bw-menu-card {
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.bw-color-light .bw-profile-banner-hero {
+  color: #f8fafc;
+}
+
+.bw-color-light .bw-profile-banner-hero .bw-muted-small {
+  color: #cbd5e1;
 }

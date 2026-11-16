@@ -49,23 +49,28 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   const handleApplyDraftTheme = async () => {
     const next: UserPreferences = {
       ...preferences,
+      colorMode: draftAppearance.colorMode,
       siteThemeId: draftAppearance.siteThemeId,
       boardThemeId: draftAppearance.boardThemeId,
       brightness: draftAppearance.brightness,
     };
     const chosen = getThemeDefinition(next.siteThemeId);
-    await commitPreferences(next, `Thème « ${chosen.name} » appliqué à toute votre interface !`);
+    await commitPreferences(
+      next,
+      `Thème « ${chosen.name} » (${next.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'}) appliqué immédiatement !`,
+    );
   };
 
   const handleResetThemeToDefault = async () => {
     const next: UserPreferences = {
       ...preferences,
+      colorMode: DEFAULT_USER_PREFERENCES.colorMode,
       siteThemeId: DEFAULT_USER_PREFERENCES.siteThemeId,
       boardThemeId: DEFAULT_USER_PREFERENCES.boardThemeId,
       brightness: DEFAULT_USER_PREFERENCES.brightness,
     };
     setDraftAppearance(next);
-    await commitPreferences(next, 'Thème d’origine « Rouge et noir » rétabli.');
+    await commitPreferences(next, 'Apparence d’origine (Mode sombre • Rouge et noir) rétablie.');
   };
 
   return (
@@ -191,7 +196,37 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       {activeTab === 'appearance' && (
         <>
           <div className="bw-panel">
-            <h3>1. Choisissez le thème global du site et du jeu</h3>
+            <h3>1. Mode d’affichage principal (Sombre / Clair)</h3>
+            <p className="bw-muted-small">
+              Basculez instantanément entre le mode sombre et le mode clair sans recharger la page.
+              Votre choix est enregistré automatiquement dans vos préférences.
+            </p>
+            <div className="bw-color-mode-switch" role="group" aria-label="Mode d’affichage sombre ou clair" style={{ marginTop: '0.65rem', marginBottom: '1.1rem' }}>
+              <button
+                type="button"
+                className={`bw-btn ${preferences.colorMode === 'dark' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+                onClick={() => {
+                  const next: UserPreferences = { ...preferences, colorMode: 'dark' };
+                  setDraftAppearance((prev) => ({ ...prev, colorMode: 'dark' }));
+                  void commitPreferences(next, 'Mode sombre activé et sauvegardé.');
+                }}
+              >
+                🌙 Mode sombre {preferences.colorMode === 'dark' ? '• Actif' : ''}
+              </button>
+              <button
+                type="button"
+                className={`bw-btn ${preferences.colorMode === 'light' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+                onClick={() => {
+                  const next: UserPreferences = { ...preferences, colorMode: 'light' };
+                  setDraftAppearance((prev) => ({ ...prev, colorMode: 'light' }));
+                  void commitPreferences(next, 'Mode clair activé et sauvegardé.');
+                }}
+              >
+                ☀️ Mode clair {preferences.colorMode === 'light' ? '• Actif' : ''}
+              </button>
+            </div>
+
+            <h3>2. Choisissez le thème global du site et du jeu</h3>
             <p className="bw-muted-small">
               Cliquez sur un thème pour le prévisualiser ci-dessous, puis cliquez sur{' '}
               <strong>Appliquer ce thème</strong> pour transformer immédiatement toute l’interface

@@ -10,12 +10,14 @@ import {
  * and verifiable profile cosmetics (banners, titles, achievement badges).
  */
 
+export type ColorMode = 'dark' | 'light';
 export type BrightnessMode = 'standard' | 'bright' | 'dim';
 export type AnimationSpeedMode = 'normal' | 'fast' | 'reduced';
 export type TextScaleMode = 'normal' | 'large' | 'xlarge';
 
 export interface UserPreferences {
   // Apparence
+  readonly colorMode: ColorMode;
   readonly siteThemeId: ThemeId;
   readonly boardThemeId: ThemeId | 'match_site';
   readonly brightness: BrightnessMode;
@@ -45,6 +47,7 @@ export interface UserPreferences {
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
+  colorMode: 'dark',
   siteThemeId: DEFAULT_THEME_ID,
   boardThemeId: 'match_site',
   brightness: 'standard',
@@ -93,6 +96,11 @@ export function sanitizeUserPreferences(
   const clampedVol = Number.isFinite(rawVol) ? Math.max(0, Math.min(100, Math.round(rawVol))) : 75;
 
   return {
+    colorMode: asEnum(
+      obj.colorMode,
+      ['dark', 'light'] as const,
+      DEFAULT_USER_PREFERENCES.colorMode
+    ),
     siteThemeId: isValidThemeId(obj.siteThemeId)
       ? obj.siteThemeId
       : DEFAULT_USER_PREFERENCES.siteThemeId,

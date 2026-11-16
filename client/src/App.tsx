@@ -637,6 +637,25 @@ export const App: React.FC = () => {
         <button
           type="button"
           className="bw-btn bw-btn-ghost bw-btn-sm"
+          onClick={() =>
+            void handleUpdateSettings({
+              ...settings,
+              colorMode: settings.colorMode === 'dark' ? 'light' : 'dark',
+            })
+          }
+          title={
+            settings.colorMode === 'dark'
+              ? 'Passer en mode clair immédiatement'
+              : 'Passer en mode sombre immédiatement'
+          }
+          aria-label="Basculer entre mode sombre et mode clair"
+        >
+          {settings.colorMode === 'dark' ? '☀️ Clair' : '🌙 Sombre'}
+        </button>
+
+        <button
+          type="button"
+          className="bw-btn bw-btn-ghost bw-btn-sm"
           onClick={() => setShowGlobalHelpModal(true)}
           title="Aide rapide, FAQ et Règles à tout moment"
         >

@@ -533,6 +533,168 @@ export function isValidThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && THEME_ID_SET.has(value);
 }
 
+/** Resolve UI surface palette for dark or light display mode cleanly per theme. */
+export function resolveThemeUiForColorMode(
+  theme: BlindWarThemeDefinition,
+  colorMode: 'dark' | 'light' = 'dark'
+): ThemeUiPalette {
+  if (colorMode === 'dark') {
+    return theme.ui;
+  }
+
+  const lightAccents: Readonly<
+    Record<
+      ThemeId,
+      {
+        readonly bgDeep: string;
+        readonly bgRadialGlow: string;
+        readonly bgPanelAlt: string;
+        readonly bgElevated: string;
+        readonly border: string;
+        readonly borderBright: string;
+        readonly accentBadgeText: string;
+        readonly btnPrimaryStart: string;
+        readonly btnPrimaryEnd: string;
+        readonly btnPrimaryHoverStart: string;
+        readonly btnPrimaryHoverEnd: string;
+        readonly btnPrimaryText: string;
+        readonly btnPrimaryBorder: string;
+        readonly dangerText: string;
+        readonly gold: string;
+        readonly green: string;
+        readonly cyan: string;
+      }
+    >
+  > = {
+    rouge_et_noir: {
+      bgDeep: '#f7f5f6',
+      bgRadialGlow: '#fce7ea',
+      bgPanelAlt: '#f2ecee',
+      bgElevated: '#e6dce0',
+      border: '#d6c6cc',
+      borderBright: '#b38d97',
+      accentBadgeText: '#88131d',
+      btnPrimaryStart: '#B51F2B',
+      btnPrimaryEnd: '#88131d',
+      btnPrimaryHoverStart: '#dc2626',
+      btnPrimaryHoverEnd: '#991b1b',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#9f1239',
+      dangerText: '#991b1b',
+      gold: '#b45309',
+      green: '#047857',
+      cyan: '#0e7490',
+    },
+    vert_et_beige: {
+      bgDeep: '#f5f6f1',
+      bgRadialGlow: '#e7f0de',
+      bgPanelAlt: '#edf0e6',
+      bgElevated: '#dde3d2',
+      border: '#c6d1b8',
+      borderBright: '#8da677',
+      accentBadgeText: '#2f451d',
+      btnPrimaryStart: '#5d7c40',
+      btnPrimaryEnd: '#435d2c',
+      btnPrimaryHoverStart: '#6c8f4b',
+      btnPrimaryHoverEnd: '#4f6d34',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#435d2c',
+      dangerText: '#991b1b',
+      gold: '#b45309',
+      green: '#15803d',
+      cyan: '#0369a1',
+    },
+    noir_et_blanc: {
+      bgDeep: '#f4f4f5',
+      bgRadialGlow: '#e4e4e7',
+      bgPanelAlt: '#ececef',
+      bgElevated: '#dfe0e5',
+      border: '#cbd0d8',
+      borderBright: '#949aa6',
+      accentBadgeText: '#18181b',
+      btnPrimaryStart: '#27272a',
+      btnPrimaryEnd: '#09090b',
+      btnPrimaryHoverStart: '#3f3f46',
+      btnPrimaryHoverEnd: '#18181b',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#09090b',
+      dangerText: '#991b1b',
+      gold: '#b45309',
+      green: '#15803d',
+      cyan: '#0369a1',
+    },
+    bleu_et_argent: {
+      bgDeep: '#f2f6fb',
+      bgRadialGlow: '#dbeafe',
+      bgPanelAlt: '#e7eef7',
+      bgElevated: '#d5e2f2',
+      border: '#bfcfe4',
+      borderBright: '#7da1cb',
+      accentBadgeText: '#163c68',
+      btnPrimaryStart: '#2864A5',
+      btnPrimaryEnd: '#1b4778',
+      btnPrimaryHoverStart: '#3175bf',
+      btnPrimaryHoverEnd: '#21548d',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#163c68',
+      dangerText: '#991b1b',
+      gold: '#b45309',
+      green: '#047857',
+      cyan: '#0369a1',
+    },
+    ambre_et_ebene: {
+      bgDeep: '#faf6ef',
+      bgRadialGlow: '#f6ead7',
+      bgPanelAlt: '#f2eadc',
+      bgElevated: '#e6d9c3',
+      border: '#d6c3a5',
+      borderBright: '#ac8854',
+      accentBadgeText: '#66400d',
+      btnPrimaryStart: '#9a671f',
+      btnPrimaryEnd: '#734a11',
+      btnPrimaryHoverStart: '#b37927',
+      btnPrimaryHoverEnd: '#875715',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#734a11',
+      dangerText: '#991b1b',
+      gold: '#92400e',
+      green: '#047857',
+      cyan: '#0e7490',
+    },
+  };
+
+  const light = lightAccents[theme.id];
+  return {
+    ...theme.ui,
+    bgDeep: light.bgDeep,
+    bgRadialGlow: light.bgRadialGlow,
+    bgNavbar: 'rgba(255, 255, 255, 0.94)',
+    bgPanel: '#ffffff',
+    bgPanelAlt: light.bgPanelAlt,
+    bgElevated: light.bgElevated,
+    border: light.border,
+    borderBright: light.borderBright,
+    accentSoftBg: 'rgba(15, 23, 42, 0.06)',
+    accentBadgeText: light.accentBadgeText,
+    btnPrimaryStart: light.btnPrimaryStart,
+    btnPrimaryEnd: light.btnPrimaryEnd,
+    btnPrimaryHoverStart: light.btnPrimaryHoverStart,
+    btnPrimaryHoverEnd: light.btnPrimaryHoverEnd,
+    btnPrimaryText: light.btnPrimaryText,
+    btnPrimaryBorder: light.btnPrimaryBorder,
+    textPrimary: '#0f172a',
+    textSecondary: '#334155',
+    textMuted: '#64748b',
+    notifBg: 'rgba(255, 255, 255, 0.98)',
+    notifBorder: light.borderBright,
+    notifAccent: light.accentBadgeText,
+    gold: light.gold,
+    green: light.green,
+    cyan: light.cyan,
+    dangerText: light.dangerText,
+  };
+}
+
 /** Resolve any theme ID safely, falling back cleanly to `'rouge_et_noir'`. */
 export function getThemeDefinition(themeId?: string | null): BlindWarThemeDefinition {
   if (isValidThemeId(themeId)) {

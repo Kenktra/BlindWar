@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   getThemeDefinition,
+  resolveThemeUiForColorMode,
   type CharacterType,
   type Coord,
   type UserPreferences,
@@ -34,12 +35,14 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
   onResetDefaults,
 }) => {
   const siteTheme = getThemeDefinition(previewPrefs.siteThemeId);
+  const ui = resolveThemeUiForColorMode(siteTheme, previewPrefs.colorMode);
   const boardTheme =
     previewPrefs.boardThemeId === 'match_site'
       ? siteTheme
       : getThemeDefinition(previewPrefs.boardThemeId);
 
   const hasPendingChanges =
+    previewPrefs.colorMode !== activePrefs.colorMode ||
     previewPrefs.siteThemeId !== activePrefs.siteThemeId ||
     previewPrefs.boardThemeId !== activePrefs.boardThemeId ||
     previewPrefs.brightness !== activePrefs.brightness;
@@ -63,9 +66,9 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
     <div
       className="bw-theme-preview-box"
       style={{
-        background: `radial-gradient(circle at 30% 0%, ${siteTheme.ui.bgRadialGlow} 0%, ${siteTheme.ui.bgPanel} 70%)`,
-        borderColor: siteTheme.ui.borderBright,
-        color: siteTheme.ui.textPrimary,
+        background: `radial-gradient(circle at 30% 0%, ${ui.bgRadialGlow} 0%, ${ui.bgPanel} 70%)`,
+        borderColor: ui.borderBright,
+        color: ui.textPrimary,
         filter: previewFilter,
       }}
       aria-label="Aperçu visuel avant application du thème"
@@ -73,10 +76,10 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
       <div className="bw-theme-preview-header">
         <div>
           <strong style={{ fontSize: '0.96rem' }}>
-            Aperçu du thème : {siteTheme.name}
-            {boardTheme.id !== siteTheme.id ? ` (Plateau : ${boardTheme.name})` : ''}
+            Aperçu : {siteTheme.name} ({previewPrefs.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'})
+            {boardTheme.id !== siteTheme.id ? ` • Échiquier : ${boardTheme.name}` : ''}
           </strong>
-          <div style={{ fontSize: '0.76rem', color: siteTheme.ui.textMuted }}>
+          <div style={{ fontSize: '0.76rem', color: ui.textMuted }}>
             {siteTheme.subtitle} — Cases {boardTheme.board.squareALabel} /{' '}
             {boardTheme.board.squareBLabel} • Médaillons originaux adaptatifs
           </div>
@@ -128,7 +131,7 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                   style={{
                     backgroundColor: bg,
                     outline: isHighlightedMove
-                      ? `2px solid ${siteTheme.ui.green}`
+                      ? `2px solid ${ui.green}`
                       : undefined,
                   }}
                 >
@@ -143,7 +146,7 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                   ) : isHighlightedMove ? (
                     <span
                       style={{
-                        color: siteTheme.ui.textPrimary,
+                        color: ui.textPrimary,
                         fontWeight: 900,
                         fontSize: '0.75rem',
                         textShadow: '0 1px 3px rgba(0,0,0,0.85)',
@@ -163,14 +166,14 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
           <div
             className="bw-preview-sample-card"
             style={{
-              backgroundColor: siteTheme.ui.bgPanelAlt,
-              border: `1px solid ${siteTheme.ui.border}`,
+              backgroundColor: ui.bgPanelAlt,
+              border: `1px solid ${ui.border}`,
             }}
           >
             <div style={{ fontWeight: 800, fontSize: '0.88rem', marginBottom: '0.2rem' }}>
               Panneau Tactique & Typographie
             </div>
-            <div style={{ fontSize: '0.78rem', color: siteTheme.ui.textSecondary }}>
+            <div style={{ fontSize: '0.78rem', color: ui.textSecondary }}>
               Les textes secondaires, bordures, menus et badges adoptent exactement cette harmonie.
             </div>
           </div>
@@ -178,9 +181,9 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
           <div
             className="bw-preview-sample-notif"
             style={{
-              background: siteTheme.ui.notifBg,
-              border: `1.5px solid ${siteTheme.ui.notifBorder}`,
-              color: siteTheme.ui.notifAccent,
+              background: ui.notifBg,
+              border: `1.5px solid ${ui.notifBorder}`,
+              color: ui.notifAccent,
             }}
           >
             🔔 Exemple de notification : Nouvelle carte obtenue ou tour actif !
@@ -191,9 +194,9 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
               type="button"
               className="bw-btn bw-btn-sm"
               style={{
-                background: `linear-gradient(135deg, ${siteTheme.ui.btnPrimaryStart} 0%, ${siteTheme.ui.btnPrimaryEnd} 100%)`,
-                color: siteTheme.ui.btnPrimaryText,
-                border: `1px solid ${siteTheme.ui.btnPrimaryBorder}`,
+                background: `linear-gradient(135deg, ${ui.btnPrimaryStart} 0%, ${ui.btnPrimaryEnd} 100%)`,
+                color: ui.btnPrimaryText,
+                border: `1px solid ${ui.btnPrimaryBorder}`,
               }}
               onClick={onApplyDraft}
             >
@@ -203,9 +206,9 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
               type="button"
               className="bw-btn bw-btn-sm"
               style={{
-                backgroundColor: siteTheme.ui.bgElevated,
-                color: siteTheme.ui.textPrimary,
-                border: `1px solid ${siteTheme.ui.borderBright}`,
+                backgroundColor: ui.bgElevated,
+                color: ui.textPrimary,
+                border: `1px solid ${ui.borderBright}`,
               }}
               onClick={onResetDefaults}
             >
