@@ -57,6 +57,9 @@
   --bw-cyan: #06b6d4;
   --bw-danger-text: #fca5a5;
   --bw-danger-border: #dc2626;
+  --bw-radius-sm: 8px;
+  --bw-radius-md: 12px;
+  --bw-radius-lg: 16px;
   --bw-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -68,6 +71,8 @@ html,
 body {
   margin: 0;
   padding: 0;
+  overflow-x: clip;
+  line-height: 1.5;
   background-color: var(--bw-bg-deep);
   color: var(--bw-white);
   color-scheme: var(--bw-color-scheme, dark);
@@ -165,6 +170,13 @@ textarea {
   border-color: var(--bw-border-bright);
 }
 
+.bw-nav-link:focus-visible,
+.bw-user-chip:focus-visible,
+.bw-nav-brand:focus-visible {
+  outline: 2px solid var(--bw-gold);
+  outline-offset: 2px;
+}
+
 .bw-nav-auth {
   display: flex;
   align-items: center;
@@ -207,19 +219,34 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.05rem;
-  border-radius: 6px;
+  gap: 0.42rem;
+  padding: 0.56rem 1.08rem;
+  border-radius: var(--bw-radius-sm);
   font-weight: 700;
   font-size: 0.88rem;
   cursor: pointer;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: transform 0.14s ease, background 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, opacity 0.14s ease;
+}
+
+.bw-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.982);
+}
+
+.bw-btn:focus-visible {
+  outline: 2px solid var(--bw-gold);
+  outline-offset: 2px;
 }
 
 .bw-btn:disabled {
-  opacity: 0.45;
+  opacity: 0.48;
   cursor: not-allowed;
+  transform: none;
+}
+
+.bw-btn[aria-busy='true'] {
+  cursor: progress;
+  opacity: 0.78;
 }
 
 .bw-btn-sm {
@@ -736,18 +763,24 @@ textarea {
 }
 
 .bw-auth-card {
-  max-width: 460px;
-  margin: 1.5rem auto;
+  max-width: 470px;
+  margin: 1.75rem auto;
   background: var(--bw-bg-panel);
-  border: 1px solid var(--bw-border);
-  border-radius: 10px;
-  padding: 1.75rem;
+  border: 1px solid var(--bw-border-bright);
+  border-radius: var(--bw-radius-lg);
+  padding: 1.85rem;
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.bw-auth-card h2 {
+  margin-top: 0;
+  margin-bottom: 0.4rem;
 }
 
 .bw-field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.42rem;
   margin-bottom: 1rem;
   font-size: 0.88rem;
   color: var(--bw-silver);
@@ -759,9 +792,18 @@ textarea {
   background: var(--bw-bg-deep);
   border: 1px solid var(--bw-border-bright);
   color: var(--bw-white);
-  padding: 0.62rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.95rem;
+  padding: 0.64rem 0.84rem;
+  border-radius: var(--bw-radius-sm);
+  font-size: 0.94rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bw-field input:focus,
+.bw-field select:focus,
+.bw-field textarea:focus {
+  outline: none;
+  border-color: var(--bw-accent);
+  box-shadow: 0 0 0 3px var(--bw-accent-soft);
 }
 
 .bw-form-actions {
@@ -802,8 +844,8 @@ textarea {
 .bw-panel {
   background: var(--bw-bg-panel);
   border: 1px solid var(--bw-border);
-  border-radius: 10px;
-  padding: 1.15rem;
+  border-radius: var(--bw-radius-md);
+  padding: 1.2rem;
 }
 
 .bw-two-col-grid {
@@ -4554,6 +4596,42 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   .bw-theme-preview-grid {
     grid-template-columns: 1fr;
   }
+
+  .bw-two-col-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bw-inline-form {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 480px) {
+  .bw-navbar {
+    padding: 0.6rem 0.75rem;
+    gap: 0.45rem;
+  }
+
+  .bw-brand-tag {
+    display: none;
+  }
+
+  .bw-page-container {
+    padding: 0.85rem 0.65rem calc(4.8rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bw-auth-card {
+    padding: 1.2rem;
+    margin: 0.75rem auto;
+  }
+
+  .bw-landing-units-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bw-landing-cta-primary .bw-btn {
+    width: 100%;
+  }
 }
 
 /* ============================================================================
@@ -4620,8 +4698,11 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
 .bw-color-light .bw-notif-popover,
 .bw-color-light .bw-modal-dialog,
 .bw-color-light .bw-panel,
+.bw-color-light .bw-auth-card,
 .bw-color-light .bw-feature-card,
-.bw-color-light .bw-menu-card {
+.bw-color-light .bw-menu-card,
+.bw-color-light .bw-landing-pillar-card,
+.bw-color-light .bw-landing-arsenal-box {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
