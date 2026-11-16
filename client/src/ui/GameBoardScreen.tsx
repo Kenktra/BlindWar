@@ -1365,6 +1365,20 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     }
   };
 
+  const rightHelpMatches = useMemo(() => {
+    const pieces = filterTutorialsByQuery(
+      CHARACTER_TYPES.map((c) => PIECE_TUTORIALS[c]),
+      rightHelpQuery,
+      (p) => `${p.role} ${p.movements} ${p.specialAbilities}`,
+    );
+    const rules = filterTutorialsByQuery(
+      SPECIAL_RULE_TUTORIALS,
+      rightHelpQuery,
+      (r) => `${r.summary} ${r.whenToUse}`,
+    );
+    return { pieces, rules };
+  }, [rightHelpQuery]);
+
   // Local Privacy Transition Screen (§12.1)
   if (mode === 'local' && privacyCurtainFor !== null) {
     return (
@@ -1435,20 +1449,6 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       avatarImage: null,
     },
   };
-
-  const rightHelpMatches = useMemo(() => {
-    const pieces = filterTutorialsByQuery(
-      CHARACTER_TYPES.map((c) => PIECE_TUTORIALS[c]),
-      rightHelpQuery,
-      (p) => `${p.role} ${p.movements} ${p.specialAbilities}`,
-    );
-    const rules = filterTutorialsByQuery(
-      SPECIAL_RULE_TUTORIALS,
-      rightHelpQuery,
-      (r) => `${r.summary} ${r.whenToUse}`,
-    );
-    return { pieces, rules };
-  }, [rightHelpQuery]);
 
   return (
     <div className="bw-game-layout">
@@ -1816,37 +1816,6 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               </button>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Single-Window Contextual In-Game Guide (Auto-triggers cleanly in local/online matches) */}
-      {activeContextualTip && (
-        <div className="bw-contextual-tip-bar" role="status" aria-live="polite">
-          <div className="bw-contextual-tip-left">
-            {activeContextualTip.relatedCharacter && (
-              <PieceArtwork
-                character={activeContextualTip.relatedCharacter}
-                owner={viewerColor}
-                size="sm"
-              />
-            )}
-            <div className="bw-contextual-tip-copy">
-              <div className="bw-contextual-tip-meta">
-                <span className="bw-contextual-tip-pill">{activeContextualTip.badge}</span>
-                <strong>{activeContextualTip.title}</strong>
-              </div>
-              <p>{activeContextualTip.message}</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            className="bw-btn bw-btn-secondary bw-btn-sm"
-            onClick={() =>
-              setDismissedContextualIds(dismissContextualTip(activeContextualTip.id))
-            }
-          >
-            ✓ Compris
-          </button>
         </div>
       )}
 
@@ -2575,6 +2544,37 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               </div>
             )}
           </div>
+
+          {/* Single-Window Contextual In-Game Guide placed below board so board stays top-center */}
+          {activeContextualTip && (
+            <div className="bw-contextual-tip-bar" role="status" aria-live="polite">
+              <div className="bw-contextual-tip-left">
+                {activeContextualTip.relatedCharacter && (
+                  <PieceArtwork
+                    character={activeContextualTip.relatedCharacter}
+                    owner={viewerColor}
+                    size="sm"
+                  />
+                )}
+                <div className="bw-contextual-tip-copy">
+                  <div className="bw-contextual-tip-meta">
+                    <span className="bw-contextual-tip-pill">{activeContextualTip.badge}</span>
+                    <strong>{activeContextualTip.title}</strong>
+                  </div>
+                  <p>{activeContextualTip.message}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="bw-btn bw-btn-secondary bw-btn-sm"
+                onClick={() =>
+                  setDismissedContextualIds(dismissContextualTip(activeContextualTip.id))
+                }
+              >
+                ✓ Compris
+              </button>
+            </div>
+          )}
         </main>
 
         {/* Right Sidebar: Tabbed Information Hub (§4.4 — Partie | Historique | Aide, plus Pièce/Cartes en tablette) */}

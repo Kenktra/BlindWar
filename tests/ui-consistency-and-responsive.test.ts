@@ -18,9 +18,12 @@ describe('Cohérence UI/UX, États interactifs & Adaptation Responsive (§6, §8
     expect(css).toContain('.bw-field input:focus');
     expect(css).toContain('@media (prefers-reduced-motion: reduce)');
     expect(css).toContain('@media (max-width: 1120px)');
+    expect(css).toContain('@media (max-width: 1040px) and (min-width: 901px)');
     expect(css).toContain('@media (max-width: 900px)');
     expect(css).toContain('@media (max-width: 720px)');
     expect(css).toContain('@media (max-width: 480px)');
+    expect(css).toContain('.bw-tablet-only-tab');
+    expect(css).toContain('.bw-piece-symbol .bw-piece-artwork-wrap');
     expect(css).toContain('.bw-landing-units-strip');
   });
 

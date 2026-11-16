@@ -127,10 +127,10 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
       }
       expect(geometries.size).toBe(13);
 
-      // Large square fill proportion in board CSS & large sprite sizing in PhaserBoardCanvas
+      // Large square fill proportion in board CSS (~80% real cell coverage) & large sprite sizing in PhaserBoardCanvas
       const css = fs.readFileSync(path.resolve(process.cwd(), 'client/src/styles.css'), 'utf8');
-      expect(css).toContain('width: 84%');
-      expect(css).toContain('height: 84%');
+      expect(css).toContain('width: 90%;');
+      expect(css).toContain('height: 90%;');
       const boardCanvasSrc = fs.readFileSync(
         path.resolve(process.cwd(), 'client/src/board/PhaserBoardCanvas.tsx'),
         'utf8',
