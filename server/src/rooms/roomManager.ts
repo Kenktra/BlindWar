@@ -38,6 +38,9 @@ import { atomicWriteTextFileSync } from '../database/dataPaths.js';
 export interface RoomParticipant {
   readonly userId: string;
   readonly username: string;
+  readonly displayName?: string;
+  readonly avatarBadge?: string;
+  readonly avatarImage?: string | null;
   eloRating: number;
   socketId: string | null;
   connected: boolean;
@@ -72,6 +75,9 @@ export interface RoomLobbySnapshot {
   readonly redPlayer: {
     readonly userId: string;
     readonly username: string;
+    readonly displayName?: string;
+    readonly avatarBadge?: string;
+    readonly avatarImage?: string | null;
     readonly eloRating: number;
     readonly ready: boolean;
     readonly connected: boolean;
@@ -79,6 +85,9 @@ export interface RoomLobbySnapshot {
   readonly blackPlayer: {
     readonly userId: string;
     readonly username: string;
+    readonly displayName?: string;
+    readonly avatarBadge?: string;
+    readonly avatarImage?: string | null;
     readonly eloRating: number;
     readonly ready: boolean;
     readonly connected: boolean;
@@ -91,6 +100,9 @@ export interface RoomLobbySnapshot {
 export interface QueueCandidate {
   readonly userId: string;
   readonly username: string;
+  readonly displayName?: string;
+  readonly avatarBadge?: string;
+  readonly avatarImage?: string | null;
   readonly eloRating: number;
   readonly socketId: string;
   readonly mode: 'matchmaking_quick' | 'matchmaking_ranked' | 'matchmaking_unranked';
@@ -340,7 +352,15 @@ export class GameRoomManager {
   }
 
   createCustomRoom(
-    host: { userId: string; username: string; eloRating: number; socketId: string | null },
+    host: {
+      userId: string;
+      username: string;
+      displayName?: string;
+      avatarBadge?: string;
+      avatarImage?: string | null;
+      eloRating: number;
+      socketId: string | null;
+    },
     customRuleset: Partial<CustomRulesetConfig> = {},
   ): ManagedRoom {
     this.prepareUserForNewRoom(host.userId);
@@ -362,6 +382,9 @@ export class GameRoomManager {
         red: {
           userId: host.userId,
           username: host.username,
+          displayName: host.displayName,
+          avatarBadge: host.avatarBadge,
+          avatarImage: host.avatarImage,
           eloRating: host.eloRating,
           socketId: host.socketId,
           connected: true,
@@ -386,7 +409,15 @@ export class GameRoomManager {
 
   joinCustomRoomByCode(
     roomCode: string,
-    guest: { userId: string; username: string; eloRating: number; socketId: string | null },
+    guest: {
+      userId: string;
+      username: string;
+      displayName?: string;
+      avatarBadge?: string;
+      avatarImage?: string | null;
+      eloRating: number;
+      socketId: string | null;
+    },
   ): ManagedRoom {
     const normalized = roomCode.trim().toUpperCase();
     const roomId = this.roomIdByCode.get(normalized);
@@ -417,6 +448,9 @@ export class GameRoomManager {
     room.players.black = {
       userId: guest.userId,
       username: guest.username,
+      displayName: guest.displayName,
+      avatarBadge: guest.avatarBadge,
+      avatarImage: guest.avatarImage,
       eloRating: guest.eloRating,
       socketId: guest.socketId,
       connected: true,
@@ -648,6 +682,9 @@ export class GameRoomManager {
         red: {
           userId: waiting.userId,
           username: waiting.username,
+          displayName: waiting.displayName,
+          avatarBadge: waiting.avatarBadge,
+          avatarImage: waiting.avatarImage,
           eloRating: waiting.eloRating,
           socketId: waiting.socketId,
           connected: true,
@@ -657,6 +694,9 @@ export class GameRoomManager {
         black: {
           userId: arriving.userId,
           username: arriving.username,
+          displayName: arriving.displayName,
+          avatarBadge: arriving.avatarBadge,
+          avatarImage: arriving.avatarImage,
           eloRating: arriving.eloRating,
           socketId: arriving.socketId,
           connected: true,
@@ -717,6 +757,9 @@ export class GameRoomManager {
         ? {
             userId: room.players.red.userId,
             username: room.players.red.username,
+            displayName: room.players.red.displayName,
+            avatarBadge: room.players.red.avatarBadge,
+            avatarImage: room.players.red.avatarImage,
             eloRating: room.players.red.eloRating,
             ready: room.players.red.readyInLobby,
             connected: room.players.red.connected,
@@ -726,6 +769,9 @@ export class GameRoomManager {
         ? {
             userId: room.players.black.userId,
             username: room.players.black.username,
+            displayName: room.players.black.displayName,
+            avatarBadge: room.players.black.avatarBadge,
+            avatarImage: room.players.black.avatarImage,
             eloRating: room.players.black.eloRating,
             ready: room.players.black.readyInLobby,
             connected: room.players.black.connected,

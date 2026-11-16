@@ -534,6 +534,9 @@ export async function createBlindWarServer(options?: {
             {
               userId,
               username,
+              displayName: dbUser?.displayName ?? username,
+              avatarBadge: dbUser?.avatarBadge ?? '♔',
+              avatarImage: dbUser?.avatarImage ?? null,
               eloRating: dbUser?.eloRating ?? 200,
               socketId: socket.id,
             },
@@ -559,6 +562,9 @@ export async function createBlindWarServer(options?: {
             const room = roomManager.joinCustomRoomByCode(payload.roomCode, {
               userId,
               username,
+              displayName: dbUser?.displayName ?? username,
+              avatarBadge: dbUser?.avatarBadge ?? '♚',
+              avatarImage: dbUser?.avatarImage ?? null,
               eloRating: dbUser?.eloRating ?? 200,
               socketId: socket.id,
             });
@@ -667,6 +673,9 @@ export async function createBlindWarServer(options?: {
           const matchedRoom = roomManager.enqueueMatchmaking({
             userId,
             username,
+            displayName: dbUser?.displayName ?? username,
+            avatarBadge: dbUser?.avatarBadge ?? '♔',
+            avatarImage: dbUser?.avatarImage ?? null,
             eloRating: dbUser?.eloRating ?? 200,
             socketId: socket.id,
             mode: payload.mode,

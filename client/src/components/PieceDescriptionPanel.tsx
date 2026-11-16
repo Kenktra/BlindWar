@@ -38,7 +38,6 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
   compact = false,
   onClearSelection,
 }) => {
-  // In placement phase without a clicked board piece, inspect the currently selected brush character
   const activePlacementChar = phase === 'placement' && !piece ? placementBrushChar : null;
 
   if (!piece && !activePlacementChar) {
@@ -52,7 +51,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
           <div>
             <h3 className="bw-piece-dossier-heading">Fiche de pièce</h3>
             <p className="bw-piece-dossier-empty-text">
-              Cliquez sur un pion de l’échiquier pour consulter ses déplacements, attaques, capacités spéciales et restrictions.
+              Cliquez sur un pion pour afficher ses déplacements, attaques et capacités.
             </p>
           </div>
         </div>
@@ -60,7 +59,6 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
     );
   }
 
-  // Strictly hide unrevealed enemy identities (§4.3)
   if (piece && piece.character === null) {
     const coord = inspectedCoord ?? piece.position;
     const isEnemyRed = piece.owner === 'red';
@@ -75,7 +73,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
               character="secret"
               owner={piece.owner}
               coord={coord}
-              size={compact ? 'md' : 'lg'}
+              size={compact ? 'sm' : 'md'}
               title="Unité adverse à identité secrète"
             />
           </div>
@@ -93,7 +91,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
                 </button>
               )}
             </div>
-            <p className="bw-piece-dossier-role">Identité non révélée à votre camp</p>
+            <p className="bw-piece-dossier-role">Identité non révélée</p>
             <div className="bw-piece-dossier-badges">
               <span className="bw-dossier-pill">Case {coordToNotation(coord)}</span>
               <span className="bw-dossier-pill">{isEnemyRed ? 'Camp Rouge' : 'Camp Noir'}</span>
@@ -102,25 +100,30 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
           </div>
         </div>
 
-        <div className="bw-piece-dossier-status-row">
-          {piece.isInvincible && (
-            <span className="bw-dossier-status bw-status-warn">Invincible</span>
-          )}
-          {piece.isImmobilized && (
-            <span className="bw-dossier-status bw-status-danger">Immobilisée</span>
-          )}
-          {piece.traqueurMarkedByViewer && (
-            <span className="bw-dossier-status bw-status-info">Marquée par votre Traqueur</span>
-          )}
-          {piece.isExposedByEnemyEspionage && (
-            <span className="bw-dossier-status bw-status-info">Espionnée</span>
-          )}
-        </div>
+        {(piece.isInvincible ||
+          piece.isImmobilized ||
+          piece.traqueurMarkedByViewer ||
+          piece.isExposedByEnemyEspionage) && (
+          <div className="bw-piece-dossier-status-row">
+            {piece.isInvincible && (
+              <span className="bw-dossier-status bw-status-warn">Invincible</span>
+            )}
+            {piece.isImmobilized && (
+              <span className="bw-dossier-status bw-status-danger">Immobilisée</span>
+            )}
+            {piece.traqueurMarkedByViewer && (
+              <span className="bw-dossier-status bw-status-info">Marquée par votre Traqueur</span>
+            )}
+            {piece.isExposedByEnemyEspionage && (
+              <span className="bw-dossier-status bw-status-info">Espionnée</span>
+            )}
+          </div>
+        )}
 
         <div className="bw-piece-dossier-section">
-          <div className="bw-dossier-label">Confidentialité en jeu</div>
+          <div className="bw-dossier-label">Confidentialité</div>
           <p className="bw-dossier-text">
-            Le type, les déplacements, les attaques et les protections secrètes de ce pion restent masqués tant qu’il n’est pas révélé (reconnaissance alliée, carte Espionnage ou Révélation).
+            Type, mouvements et protections secrètes masqués jusqu’à révélation (reconnaissance alliée, Espionnage ou Révélation).
           </p>
         </div>
       </section>
@@ -145,7 +148,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
             character={charId}
             owner={owner}
             coord={coord ?? undefined}
-            size={compact ? 'md' : 'lg'}
+            size={compact ? 'sm' : 'md'}
             title={dossier.name}
           />
         </div>
@@ -165,16 +168,14 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
           </div>
           <p className="bw-piece-dossier-role">{dossier.roleSummary}</p>
           <div className="bw-piece-dossier-badges">
-            {coord ? (
-              <span className="bw-dossier-pill">Case {coordToNotation(coord)}</span>
-            ) : (
-              <span className="bw-dossier-pill">Aperçu de placement</span>
-            )}
             <span className="bw-dossier-pill">
-              {owner === 'red' ? 'Camp Rouge' : 'Camp Noir'}
+              {coord ? `Case ${coordToNotation(coord)}` : 'Placement'}
+            </span>
+            <span className="bw-dossier-pill">
+              {owner === 'red' ? 'Rouge' : 'Noir'}
             </span>
             <span className="bw-dossier-pill bw-dossier-pill-muted">
-              {dossier.initialQuantity} / armée • {dossier.maxBoardCapLabel}
+              {dossier.initialQuantity}/27
             </span>
           </div>
         </div>
@@ -183,7 +184,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
       {piece && (
         <div className="bw-piece-dossier-status-row">
           <span className="bw-dossier-status bw-status-neutral">
-            {isAlly ? 'Pièce alliée' : REVEAL_KIND_LABELS[piece.revealKind]}
+            {isAlly ? 'Alliée' : REVEAL_KIND_LABELS[piece.revealKind]}
           </span>
           {piece.isInvincible && (
             <span className="bw-dossier-status bw-status-warn">Invincible</span>
@@ -216,7 +217,7 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
               {piece.traqueurHasActiveMarkVisible
                 ? piece.traqueurPursuitReadyVisible
                   ? 'Poursuite (+1) prête'
-                  : 'Marquage posé (Poursuite au tour suivant)'
+                  : 'Poursuite au tour suivant'
                 : 'Marquage (0 action) prêt'}
             </span>
           )}
@@ -231,16 +232,17 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
       )}
 
       <div className="bw-piece-dossier-grid">
-        <div className="bw-piece-dossier-section">
-          <div className="bw-dossier-label">Déplacements</div>
-          <p className="bw-dossier-text">{dossier.movementSummary}</p>
-        </div>
-
-        <div className="bw-piece-dossier-section">
-          <div className="bw-dossier-label">
-            Attaques {catalog.canKillColossus ? '• Peut abattre le Colosse' : ''}
+        <div className="bw-piece-dossier-duo">
+          <div className="bw-piece-dossier-section">
+            <div className="bw-dossier-label">Déplacements</div>
+            <p className="bw-dossier-text">{dossier.movementSummary}</p>
           </div>
-          <p className="bw-dossier-text">{dossier.attackSummary}</p>
+          <div className="bw-piece-dossier-section">
+            <div className="bw-dossier-label">
+              Attaques {catalog.canKillColossus ? '• Tue Colosse' : ''}
+            </div>
+            <p className="bw-dossier-text">{dossier.attackSummary}</p>
+          </div>
         </div>
 
         <div className="bw-piece-dossier-section">
@@ -248,18 +250,37 @@ export const PieceDescriptionPanel: React.FC<PieceDescriptionPanelProps> = ({
           <p className="bw-dossier-text">{dossier.specialAbility}</p>
         </div>
 
-        {!compact && dossier.interactionsSummary.length > 0 && (
-          <div className="bw-piece-dossier-section">
-            <div className="bw-dossier-label">Particularités & interactions</div>
-            <ul className="bw-dossier-list">
-              {dossier.interactionsSummary.map((item, idx) => (
-                <li key={idx}>{item}</li>
-              ))}
-            </ul>
-          </div>
+        {!compact && (dossier.interactionsSummary.length > 0 || dossier.restrictions.length > 0) && (
+          <details className="bw-piece-dossier-details">
+            <summary className="bw-dossier-details-summary">
+              Règles, interactions & restrictions ({dossier.interactionsSummary.length + dossier.restrictions.length})
+            </summary>
+            <div className="bw-piece-dossier-details-body">
+              {dossier.interactionsSummary.length > 0 && (
+                <div className="bw-piece-dossier-section">
+                  <div className="bw-dossier-label">Particularités & interactions</div>
+                  <ul className="bw-dossier-list">
+                    {dossier.interactionsSummary.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {dossier.restrictions.length > 0 && (
+                <div className="bw-piece-dossier-section">
+                  <div className="bw-dossier-label">Restrictions</div>
+                  <ul className="bw-dossier-list">
+                    {dossier.restrictions.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </details>
         )}
 
-        {dossier.restrictions.length > 0 && (
+        {compact && dossier.restrictions.length > 0 && (
           <div className="bw-piece-dossier-section">
             <div className="bw-dossier-label">Restrictions</div>
             <ul className="bw-dossier-list">

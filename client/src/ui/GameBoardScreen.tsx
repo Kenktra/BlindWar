@@ -6,6 +6,8 @@ import {
   CHARACTER_CATALOG,
   CHARACTER_DOSSIERS,
   CHARACTER_TYPES,
+  PIECE_TUTORIALS,
+  SPECIAL_RULE_TUTORIALS,
   TOTAL_PIECES_PER_PLAYER,
   autoCompletePlacement,
   canPlayerPlayCard,
@@ -14,6 +16,7 @@ import {
   coordToNotation,
   countCharacters,
   executePieceMove,
+  filterTutorialsByQuery,
   finalizePlacementOnTimerExpired,
   generateCavalierJumpCandidates,
   generateMoveCandidatesForPiece,
@@ -68,7 +71,7 @@ import {
 import { PhaserBoardCanvas } from '../board/PhaserBoardCanvas.js';
 import { selectContextualTip } from '../board/contextualTutorials.js';
 import { InGameHelpModal } from '../components/InGameHelpModal.js';
-import { PieceArtwork } from '../components/PieceArtwork.js';
+import { PieceArtwork, PieceAvatar } from '../components/PieceArtwork.js';
 import { PieceDescriptionPanel } from '../components/PieceDescriptionPanel.js';
 import {
   type UserSettings,
@@ -303,6 +306,18 @@ function buildPseudoServerPiecesAndContext(
   return { pieces, visContext };
 }
 
+export interface MatchPlayerHudMeta {
+  readonly displayName: string;
+  readonly eloRating: number | null;
+  readonly avatarBadge: string;
+  readonly avatarImage?: string | null;
+}
+
+export interface MatchPlayersMeta {
+  readonly red: MatchPlayerHudMeta;
+  readonly black: MatchPlayerHudMeta;
+}
+
 export interface GameBoardScreenProps {
   readonly mode: 'local' | 'online' | 'tutorial';
   readonly initialLocalState?: ServerMatchState;
@@ -310,6 +325,7 @@ export interface GameBoardScreenProps {
   readonly onlineRoomId?: string | null;
   readonly onlinePrepRemainingSec?: number | null;
   readonly tutorialScenario?: TutorialScenarioSpec | null;
+  readonly playersMeta?: MatchPlayersMeta;
   readonly settings: UserSettings;
   readonly onOnlineAction?: {
     readonly submitPlacement: (entries: readonly PlacementEntry[]) => void;
@@ -351,6 +367,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   onlineView,
   onlinePrepRemainingSec,
   tutorialScenario,
+  playersMeta,
   settings,
   onOnlineAction,
   onMatchConcluded,
@@ -444,6 +461,10 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   const [activeAnnotationColor, setActiveAnnotationColor] = useState<AnnotationColor>('red');
   const [pendingArrowStart, setPendingArrowStart] = useState<Coord | null>(null);
   const [autoClearAnnotationsOnMove, setAutoClearAnnotationsOnMove] = useState<boolean>(false);
+  const [rightPanelTab, setRightPanelTab] = useState<'match' | 'history' | 'help'>('match');
+  const [tabletSideTab, setTabletSideTab] = useState<'piece' | 'cards' | 'match' | 'history' | 'help'>('match');
+  const [annotationsOpen, setAnnotationsOpen] = useState<boolean>(false);
+  const [rightHelpQuery, setRightHelpQuery] = useState<string>('');
 
   // Determine current viewer color and projected view
   const viewerColor: PlayerColor = useMemo(() => {
@@ -476,6 +497,23 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   );
   const currentViewerAnnotations = annotationsByPlayer[viewerColor];
   const currentViewerAnnotationCount = countPersonalAnnotations(currentViewerAnnotations);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+    const mq = window.matchMedia('(min-width: 1041px)');
+    const syncDesktopRightTab = () => {
+      if (mq.matches) {
+        setTabletSideTab((curr) => (curr === 'piece' || curr === 'cards' ? rightPanelTab : curr));
+      }
+    };
+    syncDesktopRightTab();
+    mq.addEventListener?.('change', syncDesktopRightTab);
+    return () => {
+      mq.removeEventListener?.('change', syncDesktopRightTab);
+    };
+  }, [rightPanelTab]);
 
   // Detect new opponent card notification and display high-visibility animated alert (§2.2 - §2.4)
   useEffect(() => {
@@ -1378,14 +1416,48 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     setConfirmingCard(cardId);
   };
 
+  const resolvedPlayersMeta: MatchPlayersMeta = playersMeta ?? {
+    red: {
+      displayName: mode === 'tutorial' ? 'Apprenti (Rouge)' : 'Joueur Rouge',
+      eloRating: mode === 'online' ? 200 : null,
+      avatarBadge: '♔',
+      avatarImage: null,
+    },
+    black: {
+      displayName:
+        mode === 'tutorial'
+          ? 'Instructeur'
+          : mode === 'local'
+            ? 'Joueur Noir (Local)'
+            : 'Adversaire Noir',
+      eloRating: mode === 'online' ? 200 : null,
+      avatarBadge: '♚',
+      avatarImage: null,
+    },
+  };
+
+  const rightHelpMatches = useMemo(() => {
+    const pieces = filterTutorialsByQuery(
+      CHARACTER_TYPES.map((c) => PIECE_TUTORIALS[c]),
+      rightHelpQuery,
+      (p) => `${p.role} ${p.movements} ${p.specialAbilities}`,
+    );
+    const rules = filterTutorialsByQuery(
+      SPECIAL_RULE_TUTORIALS,
+      rightHelpQuery,
+      (r) => `${r.summary} ${r.whenToUse}`,
+    );
+    return { pieces, rules };
+  }, [rightHelpQuery]);
+
   return (
     <div className="bw-game-layout">
-      {/* Top Tactical HUD Bar */}
+      {/* Top Strategic HUD Bar : Joueurs, Avatars, Elo, Horloges, État du tour & Commandes */}
       <header className="bw-game-topbar">
         <div className="bw-topbar-left">
           <button
             type="button"
-            className="bw-btn bw-btn-ghost"
+            className="bw-btn bw-btn-ghost bw-btn-sm"
             onClick={() => {
               if (settings.confirmImportantActions && view.phase === 'playing' && mode !== 'tutorial') {
                 setPendingImportantConfirm('exit');
@@ -1398,67 +1470,90 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           </button>
           <span className="bw-mode-pill">
             {mode === 'tutorial'
-              ? `TUTORIEL — ${tutorialScenario?.title ?? ''}`
+              ? 'TUTORIEL'
               : mode === 'local'
-                ? 'MODE LOCAL 2 JOUEURS'
-                : `MULTIJOUEUR (${view.mode})`}
+                ? 'LOCAL 2J'
+                : view.mode === 'matchmaking_ranked'
+                  ? 'CLASSÉ ELO'
+                  : 'EN LIGNE'}
           </span>
-          {view.phase === 'playing' && (
-            <span
-              className={`bw-turn-clarity-pill ${view.turn.activePlayer === viewerColor ? 'yours' : ''}`}
-              title={
-                view.turn.activePlayer === viewerColor
-                  ? 'C’est à vous de jouer'
-                  : 'En attente de l’action adverse'
-              }
-            >
-              {view.turn.activePlayer === viewerColor
-                ? `🟢 À vous (${view.turn.remainingActions} action${view.turn.remainingActions > 1 ? 's' : ''})`
-                : '⏳ Tour adverse'}
-            </span>
-          )}
-          {view.repetitionWarningActive && (
-            <span className="bw-warning-pill" title="5 répétitions = Match nul automatique">
-              ⚠️ Alerte Répétition ({view.maxRepetitionCountSeen}/5)
-            </span>
-          )}
         </div>
 
-        {/* Dual 10-Minute Authoritative Chess Clocks (§11) */}
-        <div className="bw-clocks-bar">
+        {/* Joueurs avec Avatar, Pseudo, ELO, Horloge + État du tour au centre */}
+        <div className="bw-clocks-bar" role="region" aria-label="Joueurs, classement Elo, tour et horloges">
           <div
-            className={`bw-clock-box bw-clock-red ${view.turn.activePlayer === 'red' && view.phase === 'playing' ? 'bw-clock-active' : ''}`}
+            className={`bw-player-banner bw-player-banner-red${view.turn.activePlayer === 'red' && view.phase === 'playing' ? ' bw-clock-active' : ''}`}
           >
-            <span className="bw-clock-team">🔴 ROUGE</span>
-            <span className="bw-clock-time">{formatClockMs(view.clock.remainingMs.red)}</span>
+            <PieceAvatar
+              badge={resolvedPlayersMeta.red.avatarBadge}
+              avatarImage={resolvedPlayersMeta.red.avatarImage}
+              alt={resolvedPlayersMeta.red.displayName}
+              owner="red"
+              size="sm"
+            />
+            <div className="bw-player-banner-meta">
+              <div className="bw-player-banner-name-row">
+                <strong className="bw-player-banner-name">{resolvedPlayersMeta.red.displayName}</strong>
+                {resolvedPlayersMeta.red.eloRating !== null && (
+                  <span className="bw-elo-mini">{resolvedPlayersMeta.red.eloRating} ELO</span>
+                )}
+              </div>
+              <span className="bw-player-banner-sub">Camp Rouge • Tps : <b className="bw-clock-time-inline">{formatClockMs(view.clock.remainingMs.red)}</b></span>
+            </div>
           </div>
 
           <div className="bw-turn-center-badge">
             {view.phase === 'placement' ? (
-              <span>
-                PRÉPARATION :{' '}
+              <div className="bw-turn-center-stack">
+                <span>
+                  PRÉP. <strong>{mode === 'online' ? `${onlinePrepRemainingSec ?? 90}s` : `${localPrepSecondsLeft}s`}</strong>
+                </span>
+                <small>
+                  🔴 {view.placementStatus.redConfirmed ? 'Prêt' : '…'} • ⚫{' '}
+                  {view.placementStatus.blackConfirmed ? 'Prêt' : '…'}
+                </small>
+              </div>
+            ) : view.phase === 'finished' ? (
+              <div className="bw-turn-center-stack">
                 <strong>
-                  {mode === 'online'
-                    ? `${onlinePrepRemainingSec ?? 90}s`
-                    : `${localPrepSecondsLeft}s`}
+                  🏁 Fin : {view.winner === 'draw' ? 'Match nul' : view.winner === 'red' ? 'Victoire Rouge' : 'Victoire Noir'}
                 </strong>
-              </span>
+                <small>Tour #{view.turn.turnNumber}</small>
+              </div>
             ) : (
-              <span>
-                TOUR #{view.turn.turnNumber} —{' '}
-                <strong className={view.turn.activePlayer === 'red' ? 'bw-text-red' : ''}>
-                  {view.turn.activePlayer === 'red' ? 'ROUGE' : 'NOIR'}
-                </strong>{' '}
-                ({view.turn.remainingActions} action{view.turn.remainingActions > 1 ? 's' : ''})
-              </span>
+              <div className="bw-turn-center-stack">
+                <span className={`bw-turn-clarity-pill ${view.turn.activePlayer === viewerColor ? 'yours' : ''}`}>
+                  {view.turn.activePlayer === viewerColor
+                    ? `🟢 À vous (${view.turn.remainingActions} PA)`
+                    : '⏳ Tour adverse'}
+                </span>
+                <small>
+                  Tour #{view.turn.turnNumber}
+                  {view.repetitionWarningActive ? ` • ⚠️ Rép. ${view.maxRepetitionCountSeen}/5` : ''}
+                </small>
+              </div>
             )}
           </div>
 
           <div
-            className={`bw-clock-box bw-clock-black ${view.turn.activePlayer === 'black' && view.phase === 'playing' ? 'bw-clock-active' : ''}`}
+            className={`bw-player-banner bw-player-banner-black${view.turn.activePlayer === 'black' && view.phase === 'playing' ? ' bw-clock-active' : ''}`}
           >
-            <span className="bw-clock-team">⚫ NOIR</span>
-            <span className="bw-clock-time">{formatClockMs(view.clock.remainingMs.black)}</span>
+            <PieceAvatar
+              badge={resolvedPlayersMeta.black.avatarBadge}
+              avatarImage={resolvedPlayersMeta.black.avatarImage}
+              alt={resolvedPlayersMeta.black.displayName}
+              owner="black"
+              size="sm"
+            />
+            <div className="bw-player-banner-meta">
+              <div className="bw-player-banner-name-row">
+                <strong className="bw-player-banner-name">{resolvedPlayersMeta.black.displayName}</strong>
+                {resolvedPlayersMeta.black.eloRating !== null && (
+                  <span className="bw-elo-mini">{resolvedPlayersMeta.black.eloRating} ELO</span>
+                )}
+              </div>
+              <span className="bw-player-banner-sub">Camp Noir • Tps : <b className="bw-clock-time-inline">{formatClockMs(view.clock.remainingMs.black)}</b></span>
+            </div>
           </div>
         </div>
 
@@ -1466,25 +1561,25 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           {view.cardNotifications.length > 0 && (
             <button
               type="button"
-              className="bw-btn bw-btn-secondary"
+              className="bw-btn bw-btn-secondary bw-btn-sm"
               onClick={() => setShowCardHistoryModal(true)}
               title="Consulter les dernières cartes jouées"
             >
-              🔔 Cartes ({view.cardNotifications.length})
+              🔔 {view.cardNotifications.length}
             </button>
           )}
           <button
             type="button"
-            className="bw-btn bw-btn-secondary"
+            className="bw-btn bw-btn-secondary bw-btn-sm"
             onClick={() => setShowInGameRulesModal(true)}
           >
-            📖 Règles
+            📖 Aide & Règles
           </button>
           {view.phase === 'playing' && mode !== 'tutorial' && (
             <>
               <button
                 type="button"
-                className="bw-btn bw-btn-secondary"
+                className="bw-btn bw-btn-secondary bw-btn-sm"
                 onClick={() => {
                   if (settings.confirmImportantActions) {
                     setPendingImportantConfirm('draw');
@@ -1499,11 +1594,11 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               >
                 {view.drawOfferFrom && view.drawOfferFrom !== viewerColor
                   ? '🤝 Accepter Nul'
-                  : '🤝 Proposer Nul'}
+                  : '🤝 Nul'}
               </button>
               <button
                 type="button"
-                className="bw-btn bw-btn-danger"
+                className="bw-btn bw-btn-danger bw-btn-sm"
                 onClick={() => {
                   if (settings.confirmImportantActions) {
                     setConfirmingResign(true);
@@ -1514,7 +1609,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                   }
                 }}
               >
-                🏳️ Abandonner
+                🏳️ Abandon
               </button>
             </>
           )}
@@ -1630,43 +1725,22 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
       )}
 
-      {/* Piece Placement Validation Status & Waiting Confirmation Indicator (§2 Validation placement) */}
-      {view.phase === 'placement' && (
+      {/* Compact Validation Wait Banner ONLY when own placement is locked (progress pills sit in topbar) */}
+      {view.phase === 'placement' && ownPlacementConfirmed && (
         <div className="bw-placement-sync-section">
-          <div className="bw-placement-player-pills" role="status" aria-label="Statut de validation du placement">
-            <div
-              className={`bw-placement-player-pill ${view.placementStatus.redConfirmed ? 'bw-placement-pill-ready' : 'bw-placement-pill-pending'}`}
-            >
-              <span>🔴 Joueur Rouge</span>
-              <strong>
-                {view.placementStatus.redConfirmed ? '✅ Validé' : '⏳ Placement en cours…'}
-              </strong>
+          <div className="bw-placement-validated-banner" role="status" aria-live="polite">
+            <div className="bw-placement-check-orb" aria-hidden="true">
+              ✅
             </div>
-            <div
-              className={`bw-placement-player-pill ${view.placementStatus.blackConfirmed ? 'bw-placement-pill-ready' : 'bw-placement-pill-pending'}`}
-            >
-              <span>⚫ Joueur Noir</span>
-              <strong>
-                {view.placementStatus.blackConfirmed ? '✅ Validé' : '⏳ Placement en cours…'}
-              </strong>
+            <div className="bw-placement-validated-text">
+              <h3>Placement validé (27/27)</h3>
+              <p>Votre armée est verrouillée. En attente de l’autre joueur…</p>
+            </div>
+            <div className="bw-placement-wait-spinner" aria-label="En attente de l'adversaire">
+              <span className="bw-spinner-ring" />
+              <span>Synchronisation…</span>
             </div>
           </div>
-
-          {ownPlacementConfirmed && (
-            <div className="bw-placement-validated-banner" role="status" aria-live="polite">
-              <div className="bw-placement-check-orb" aria-hidden="true">
-                ✅
-              </div>
-              <div className="bw-placement-validated-text">
-                <h3>Placement validé</h3>
-                <p>Votre placement est terminé. En attente de l’autre joueur…</p>
-              </div>
-              <div className="bw-placement-wait-spinner" aria-label="En attente de l'adversaire">
-                <span className="bw-spinner-ring" />
-                <span>Synchronisation en attente…</span>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
@@ -2106,84 +2180,6 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                   </div>
                 )}
               </div>
-
-              {/* Active Effects & Reconnaissance Status (§12, §15) */}
-              <div className="bw-panel">
-                <div className="bw-panel-header-row">
-                  <h3>📡 Effets & Reconnaissance</h3>
-                  {view.cardNotifications.length > 0 && (
-                    <button
-                      type="button"
-                      className="bw-btn bw-btn-ghost bw-btn-sm"
-                      onClick={() => setShowCardHistoryModal(true)}
-                    >
-                      🔔 Cartes ({view.cardNotifications.length})
-                    </button>
-                  )}
-                </div>
-                <ul className="bw-status-list">
-                  <li>
-                    Brouillard Rouge :{' '}
-                    <strong>{view.fogActiveByPlayer.red ? '🌫️ ACTIF' : 'Inactif'}</strong>
-                  </li>
-                  <li>
-                    Brouillard Noir :{' '}
-                    <strong>{view.fogActiveByPlayer.black ? '🌫️ ACTIF' : 'Inactif'}</strong>
-                  </li>
-                  <li>
-                    Cases surveillées par vos Guetteurs :{' '}
-                    <strong>{view.guetteurReconCoords.length}</strong>
-                  </li>
-                  <li>
-                    Alertes Pièges posés dans la partie :{' '}
-                    <strong>{view.totalActiveTrapNotifications}</strong>
-                  </li>
-                  <li>
-                    Cartes en main adverse : <strong>{view.opponentHandCount}/3</strong>
-                  </li>
-                  {view.ownBlockCooldownTurns > 0 && (
-                    <li>
-                      Recharge Block : <strong>{view.ownBlockCooldownTurns} tour(s)</strong>
-                    </li>
-                  )}
-                  {(() => {
-                    const ownTraq = view.pieces.find(
-                      (p) => p.owner === viewerColor && p.character === 'traqueur',
-                    );
-                    const markedEnemy = view.pieces.find(
-                      (p) => p.owner !== viewerColor && p.traqueurMarkedByViewer,
-                    );
-                    const ownArb = view.pieces.find(
-                      (p) => p.owner === viewerColor && p.character === 'arbaletrier',
-                    );
-                    return (
-                      <>
-                        {ownTraq && (
-                          <li>
-                            Traqueur :{' '}
-                            <strong>
-                              {markedEnemy
-                                ? `Cible ${coordToNotation(markedEnemy.position)} (${ownTraq.traqueurPursuitReadyVisible ? 'Poursuite +1 PRÊTE (élimination)' : 'Poursuite active au tour suivant'})`
-                                : 'Aucune cible marquée (0 action)'}
-                            </strong>
-                          </li>
-                        )}
-                        {ownArb && (
-                          <li>
-                            Arbalétrier :{' '}
-                            <strong>
-                              {ownArb.arbaletrierCooldownTurnsVisible &&
-                              ownArb.arbaletrierCooldownTurnsVisible > 0
-                                ? `Recharge : encore ${ownArb.arbaletrierCooldownTurnsVisible} tour(s) perso`
-                                : 'Tir PRÊT (1–3 cases • 1 tir / 3 tours)'}
-                            </strong>
-                          </li>
-                        )}
-                      </>
-                    );
-                  })()}
-                </ul>
-              </div>
             </>
           )}
         </aside>
@@ -2365,134 +2361,114 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               </div>
             )}
 
-          {/* Strictly Personal Tactical Annotations Toolbar (Chess.com style, Desktop & Mobile) */}
-          <div
-            className={`bw-annotation-toolbar ${annotationModeActive ? 'bw-annotation-toolbar-active' : ''}`}
-            role="region"
-            aria-label="Barre d'annotations tactiques personnelles"
-          >
-            <div className="bw-anno-row-main">
-              <button
-                type="button"
-                className={`bw-btn bw-btn-sm ${annotationModeActive ? 'bw-btn-primary bw-anno-toggle-on' : 'bw-btn-secondary'}`}
-                onClick={() => {
-                  setAnnotationModeActive((prev) => !prev);
-                  setPendingArrowStart(null);
-                }}
-              >
-                {annotationModeActive ? '✏️ Annotations : ACTIF (Quitter)' : '✏️ Annotations'}
-              </button>
-
-              <div className="bw-anno-tools" role="group" aria-label="Outil d'annotation tactile">
-                <button
-                  type="button"
-                  className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'arrow' ? 'bw-anno-tool-active' : ''}`}
-                  onClick={() => {
-                    setAnnotationTool('arrow');
-                    setAnnotationModeActive(true);
-                    setPendingArrowStart(null);
-                  }}
-                  title="Dessiner une flèche en touchant Départ puis Arrivée"
-                >
-                  ↗️ Flèche
-                </button>
-                <button
-                  type="button"
-                  className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'square' ? 'bw-anno-tool-active' : ''}`}
-                  onClick={() => {
-                    setAnnotationTool('square');
-                    setAnnotationModeActive(true);
-                    setPendingArrowStart(null);
-                  }}
-                  title="Colorer / décolorer une case"
-                >
-                  🟩 Case
-                </button>
-                <button
-                  type="button"
-                  className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'erase' ? 'bw-anno-tool-active' : ''}`}
-                  onClick={() => {
-                    setAnnotationTool('erase');
-                    setAnnotationModeActive(true);
-                    setPendingArrowStart(null);
-                  }}
-                  title="Effacer une case ou flèche"
-                >
-                  🧹 Gomme
-                </button>
-              </div>
-
-              <div className="bw-anno-colors" role="group" aria-label="Couleur tactique">
-                {(
-                  [
-                    { id: 'red', label: 'Rouge (Attaque)' },
-                    { id: 'green', label: 'Vert (Déplacement)' },
-                    { id: 'blue', label: 'Bleu (Stratégie)' },
-                    { id: 'yellow', label: 'Jaune (Attention)' },
-                  ] as const
-                ).map((c) => (
+          {/* Collapsible Personal Tactical Annotations Popover triggered from bottom command bar */}
+          {annotationsOpen && (
+            <div
+              className="bw-annotation-toolbar bw-annotation-popover bw-annotation-toolbar-active"
+              role="region"
+              aria-label="Barre d'annotations tactiques personnelles"
+            >
+              <div className="bw-anno-row-main">
+                <div className="bw-anno-tools" role="group" aria-label="Outil d'annotation tactile">
                   <button
-                    key={c.id}
                     type="button"
-                    aria-label={c.label}
-                    title={c.label}
-                    className={`bw-anno-color-dot bw-anno-dot-${c.id} ${activeAnnotationColor === c.id ? 'bw-anno-dot-selected' : ''}`}
-                    onClick={() => setActiveAnnotationColor(c.id)}
-                  />
-                ))}
-              </div>
+                    className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'arrow' ? 'bw-anno-tool-active' : ''}`}
+                    onClick={() => {
+                      setAnnotationTool('arrow');
+                      setAnnotationModeActive(true);
+                      setPendingArrowStart(null);
+                    }}
+                  >
+                    ↗️ Flèche
+                  </button>
+                  <button
+                    type="button"
+                    className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'square' ? 'bw-anno-tool-active' : ''}`}
+                    onClick={() => {
+                      setAnnotationTool('square');
+                      setAnnotationModeActive(true);
+                      setPendingArrowStart(null);
+                    }}
+                  >
+                    🟩 Case
+                  </button>
+                  <button
+                    type="button"
+                    className={`bw-anno-tool-btn ${annotationModeActive && annotationTool === 'erase' ? 'bw-anno-tool-active' : ''}`}
+                    onClick={() => {
+                      setAnnotationTool('erase');
+                      setAnnotationModeActive(true);
+                      setPendingArrowStart(null);
+                    }}
+                  >
+                    🧹 Gomme
+                  </button>
+                </div>
 
-              <button
-                type="button"
-                className={`bw-anno-autoclear-btn ${autoClearAnnotationsOnMove ? 'bw-anno-autoclear-on' : ''}`}
-                onClick={() => setAutoClearAnnotationsOnMove((v) => !v)}
-                title="Effacer automatiquement vos annotations dès que vous jouez un coup"
-              >
-                {autoClearAnnotationsOnMove ? '✅ Auto-effacer' : '↺ Garder après coup'}
-              </button>
+                <div className="bw-anno-colors" role="group" aria-label="Couleur tactique">
+                  {(
+                    [
+                      { id: 'red', label: 'Rouge (Attaque)' },
+                      { id: 'green', label: 'Vert (Déplacement)' },
+                      { id: 'blue', label: 'Bleu (Stratégie)' },
+                      { id: 'yellow', label: 'Jaune (Attention)' },
+                    ] as const
+                  ).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      aria-label={c.label}
+                      title={c.label}
+                      className={`bw-anno-color-dot bw-anno-dot-${c.id} ${activeAnnotationColor === c.id ? 'bw-anno-dot-selected' : ''}`}
+                      onClick={() => setActiveAnnotationColor(c.id)}
+                    />
+                  ))}
+                </div>
 
-              <button
-                type="button"
-                className="bw-btn bw-btn-ghost bw-btn-sm"
-                disabled={currentViewerAnnotationCount === 0}
-                onClick={handleClearViewerAnnotations}
-              >
-                🗑️ Tout effacer ({currentViewerAnnotationCount})
-              </button>
-            </div>
-
-            {annotationModeActive ? (
-              <div className="bw-anno-active-banner" role="status">
-                <span>
-                  ✏️ <strong>Mode annotation privé actif :</strong>{' '}
-                  {annotationTool === 'arrow'
-                    ? pendingArrowStart
-                      ? `Départ ${coordToNotation(pendingArrowStart)} choisi — touchez la case d’arrivée.`
-                      : 'Touchez la case de départ puis la case d’arrivée de votre flèche.'
-                    : annotationTool === 'square'
-                      ? 'Touchez une case pour appliquer ou retirer la couleur.'
-                      : 'Touchez une case ou une flèche pour l’effacer.'}
-                </span>
                 <button
                   type="button"
-                  className="bw-btn bw-btn-primary bw-btn-sm"
+                  className={`bw-anno-autoclear-btn ${autoClearAnnotationsOnMove ? 'bw-anno-autoclear-on' : ''}`}
+                  onClick={() => setAutoClearAnnotationsOnMove((v) => !v)}
+                >
+                  {autoClearAnnotationsOnMove ? '✅ Auto-effacer' : '↺ Garder'}
+                </button>
+
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-ghost bw-btn-xs"
+                  disabled={currentViewerAnnotationCount === 0}
+                  onClick={handleClearViewerAnnotations}
+                >
+                  🗑️ ({currentViewerAnnotationCount})
+                </button>
+
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-ghost bw-btn-xs"
                   onClick={() => {
+                    setAnnotationsOpen(false);
                     setAnnotationModeActive(false);
                     setPendingArrowStart(null);
                   }}
                 >
-                  ✅ Quitter
+                  ✕
                 </button>
               </div>
-            ) : (
               <div className="bw-anno-hint-row">
                 <span>
-                  🔒 Visibles uniquement par vous • PC : <strong>clic droit glissé</strong> = flèche,{' '}
-                  <strong>clic droit</strong> = case, <strong>clic sur flèche</strong> = supprimer
+                  {annotationModeActive
+                    ? annotationTool === 'arrow'
+                      ? pendingArrowStart
+                        ? `Départ ${coordToNotation(pendingArrowStart)} choisi — touchez la case d’arrivée.`
+                        : 'Touchez Départ puis Arrivée sur le plateau.'
+                      : annotationTool === 'square'
+                        ? 'Touchez une case pour appliquer/retirer la couleur.'
+                        : 'Touchez une case ou flèche à effacer.'
+                    : 'PC : clic droit glissé = flèche • clic droit = case • clic sur flèche = effacer.'}
                 </span>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
           {/* Mobile & Tablet Compact Piece Dossier Slot (desktop shows full dossier in left sidebar) */}
           <div className="bw-mobile-piece-dossier-slot">
@@ -2601,105 +2577,504 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           </div>
         </main>
 
-        {/* Right Sidebar: Confidential Graveyard (§4.4) & Enhanced Action Log (§2.6) */}
+        {/* Right Sidebar: Tabbed Information Hub (§4.4 — Partie | Historique | Aide, plus Pièce/Cartes en tablette) */}
         <aside className="bw-sidebar bw-sidebar-right">
-          <div className="bw-panel">
-            <h3>⚰️ Cimetière Confidentiel (§4.4)</h3>
-            <div className="bw-graveyard-section">
-              <h4>Pertes Adverses ({enemyGraveyard.length})</h4>
-              {enemyGraveyard.length === 0 ? (
-                <p className="bw-muted-small">Aucune pièce adverse éliminée.</p>
-              ) : (
-                <div className="bw-graveyard-chips">
-                  {enemyGraveyard.map((g) => (
-                    <span
-                      key={g.pieceId}
-                      className={`bw-grave-chip ${g.known ? 'bw-grave-known' : 'bw-grave-anonymous'}`}
-                    >
-                      <PieceArtwork
-                        character={g.known && g.character ? g.character : 'secret'}
-                        owner={viewerColor === 'red' ? 'black' : 'red'}
-                        size="xs"
-                      />{' '}
-                      <span>{g.known && g.character ? g.label : 'Pièce éliminée'}</span>
-                    </span>
-                  ))}
-                </div>
-              )}
+          <div className="bw-panel bw-right-hub-panel">
+            <div className="bw-right-hub-tabs" role="tablist" aria-label="Onglets d'information de la partie">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tabletSideTab === 'piece'}
+                className={`bw-right-tab-btn bw-tablet-only-tab${tabletSideTab === 'piece' ? ' active' : ''}`}
+                onClick={() => setTabletSideTab('piece')}
+              >
+                ♟️ Pièce
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tabletSideTab === 'cards'}
+                className={`bw-right-tab-btn bw-tablet-only-tab${tabletSideTab === 'cards' ? ' active' : ''}`}
+                onClick={() => setTabletSideTab('cards')}
+              >
+                {view.phase === 'placement' ? `♟️ Armée (${effectiveStagedPlacement.length}/27)` : `🃏 Cartes (${view.ownHand.length}/3)`}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightPanelTab === 'match' && tabletSideTab === 'match'}
+                className={`bw-right-tab-btn${(rightPanelTab === 'match' && tabletSideTab === 'match') || (tabletSideTab !== 'piece' && tabletSideTab !== 'cards' && rightPanelTab === 'match') ? ' active' : ''}`}
+                onClick={() => {
+                  setRightPanelTab('match');
+                  setTabletSideTab('match');
+                }}
+              >
+                📊 Partie
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightPanelTab === 'history' || tabletSideTab === 'history'}
+                className={`bw-right-tab-btn${(rightPanelTab === 'history' && tabletSideTab !== 'piece' && tabletSideTab !== 'cards') || tabletSideTab === 'history' ? ' active' : ''}`}
+                onClick={() => {
+                  setRightPanelTab('history');
+                  setTabletSideTab('history');
+                }}
+              >
+                📜 Historique ({view.actionLog.length})
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={rightPanelTab === 'help' || tabletSideTab === 'help'}
+                className={`bw-right-tab-btn${(rightPanelTab === 'help' && tabletSideTab !== 'piece' && tabletSideTab !== 'cards') || tabletSideTab === 'help' ? ' active' : ''}`}
+                onClick={() => {
+                  setRightPanelTab('help');
+                  setTabletSideTab('help');
+                }}
+              >
+                📖 Aide
+              </button>
             </div>
 
-            <div className="bw-graveyard-section">
-              <h4>Vos Pertes ({ownGraveyard.length})</h4>
-              {ownGraveyard.length === 0 ? (
-                <p className="bw-muted-small">Aucune perte dans votre armée.</p>
-              ) : (
-                <div className="bw-graveyard-chips">
-                  {ownGraveyard.map((g) => {
-                    const selectableForRes =
-                      activeCardInUse === 'resurrection' &&
-                      g.character !== null &&
-                      isCardAllowedOnCharacter('resurrection', g.character);
-                    return (
-                      <button
-                        key={g.pieceId}
-                        type="button"
-                        disabled={!selectableForRes}
-                        className={`bw-grave-chip bw-grave-own ${selectedGraveyardPieceId === g.pieceId ? 'bw-grave-selected' : ''}`}
-                        onClick={() => {
-                          if (selectableForRes) {
-                            setSelectedGraveyardPieceId(g.pieceId);
-                          }
-                        }}
-                      >
-                        {g.character && (
-                          <PieceArtwork character={g.character} owner={viewerColor} size="xs" />
-                        )}{' '}
-                        <span>{g.label}</span>
-                      </button>
-                    );
-                  })}
+            <div className="bw-right-hub-body">
+              {/* Tablet-only quick subviews for Pièce & Cartes/Placement when left sidebar collapses */}
+              {tabletSideTab === 'piece' && (
+                <div className="bw-tablet-only-pane">
+                  <PieceDescriptionPanel
+                    viewerColor={viewerColor}
+                    phase={view.phase}
+                    inspectedCoord={inspectedSquare}
+                    piece={inspectedPiece}
+                    placementBrushChar={selectedBrushCharacter}
+                    onClearSelection={() => {
+                      setSelectedSquare(null);
+                      setInspectedSquare(null);
+                    }}
+                  />
                 </div>
               )}
-            </div>
-          </div>
 
-          <div className="bw-panel bw-log-panel">
-            <div className="bw-panel-header-row">
-              <h3>📜 Historique des Actions</h3>
-              <span className="bw-muted-small">{view.actionLog.length} évén.</span>
-            </div>
-            <div className="bw-action-log">
-              {view.actionLog.length === 0 ? (
-                <p className="bw-muted-small">En attente du déploiement...</p>
-              ) : (
-                [...view.actionLog].reverse().map((entry) => {
-                  const evMeta = EVENT_TYPE_META[entry.eventType ?? 'PIECE_MOVED'];
-                  const timeStr = new Date(entry.timestampMs).toLocaleTimeString('fr-FR', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                  });
-                  return (
-                    <div key={entry.seq} className={`bw-log-entry ${evMeta.colorClass}`}>
-                      <div className="bw-log-entry-head">
-                        <span className="bw-log-seq">#{entry.seq}</span>
-                        <span className="bw-log-type-badge">
-                          {evMeta.icon} {evMeta.label}
-                        </span>
-                        <span className={`bw-log-actor bw-log-${entry.actor}`}>
-                          {entry.actor === 'red' ? '🔴 Rouge' : '⚫ Noir'} • T{entry.turnNumber}
-                        </span>
-                        <span className="bw-log-time">{timeStr}</span>
+              {tabletSideTab === 'cards' && (
+                <div className="bw-tablet-only-pane">
+                  {view.phase === 'placement' ? (
+                    <div>
+                      <p className="bw-muted-small">
+                        Pièces placées : <strong>{effectiveStagedPlacement.length}/27</strong>
+                      </p>
+                      <div className="bw-roster-palette">
+                        {CHARACTER_TYPES.map((ch) => {
+                          const remaining = ARMY_COMPOSITION[ch] - placedCounts[ch];
+                          return (
+                            <button
+                              key={`tab-${ch}`}
+                              type="button"
+                              disabled={ownPlacementConfirmed}
+                              className={`bw-palette-item ${selectedBrushCharacter === ch ? 'bw-palette-active' : ''} ${remaining === 0 ? 'bw-palette-done' : ''}`}
+                              onClick={() => setSelectedBrushCharacter(ch)}
+                            >
+                              <span className="bw-palette-symbol">
+                                <PieceArtwork character={ch} owner={viewerColor} size="xs" />
+                              </span>
+                              <span className="bw-palette-name">{CHARACTER_CATALOG[ch].name}</span>
+                              <span className="bw-palette-count">{remaining}</span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <div className="bw-log-entry-body">{entry.text}</div>
+                      <div className="bw-placement-buttons">
+                        <button
+                          type="button"
+                          className="bw-btn bw-btn-secondary bw-btn-sm"
+                          disabled={ownPlacementConfirmed}
+                          onClick={() =>
+                            setStagedPlacement(autoCompletePlacement(viewerColor, stagedPlacement))
+                          }
+                        >
+                          ⚡ Auto (27/27)
+                        </button>
+                        <button
+                          type="button"
+                          className="bw-btn bw-btn-primary bw-btn-sm"
+                          disabled={
+                            ownPlacementConfirmed ||
+                            effectiveStagedPlacement.length !== TOTAL_PIECES_PER_PLAYER
+                          }
+                          onClick={() => handleConfirmPlacementEntries(effectiveStagedPlacement)}
+                        >
+                          ✅ Valider ({effectiveStagedPlacement.length}/27)
+                        </button>
+                      </div>
                     </div>
-                  );
-                })
+                  ) : view.ownHand.length === 0 ? (
+                    <p className="bw-muted-small">
+                      Aucune carte en main. Éliminez 3 pièces ennemies pour piocher ({view.ownKillCounterTowardCard}/3).
+                    </p>
+                  ) : (
+                    <div className="bw-cards-list">
+                      {view.ownHand.map((cardId, idx) => {
+                        const dossier = CARD_DOSSIERS[cardId];
+                        const isSelectedCard = activeCardInUse === cardId;
+                        return (
+                          <div key={`tab-${cardId}-${idx}`} className="bw-card-item">
+                            <div className="bw-card-top">
+                              <span className="bw-card-title">
+                                {dossier.badge} {dossier.name}
+                              </span>
+                              <span className="bw-card-duration">{dossier.durationLabel}</span>
+                            </div>
+                            <p className="bw-card-desc">{dossier.effectDescription}</p>
+                            <button
+                              type="button"
+                              className={`bw-btn ${isSelectedCard ? 'bw-btn-ghost' : 'bw-btn-primary'} bw-btn-xs`}
+                              disabled={!view.turn.canPlayCardNow}
+                              onClick={() => handleOpenCardConfirm(cardId)}
+                            >
+                              {isSelectedCard ? '✕ Annuler' : '🃏 Utiliser'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ONGLET PARTIE : Infos en direct + Cimetière Confidentiel + Cartes jouées */}
+              {((tabletSideTab !== 'piece' && tabletSideTab !== 'cards' && rightPanelTab === 'match') ||
+                tabletSideTab === 'match') && (
+                <div className="bw-right-tab-pane">
+                  <div className="bw-compact-subblock">
+                    <div className="bw-panel-header-row">
+                      <h4>📡 État & Reconnaissance</h4>
+                      <span className="bw-kill-counter-badge">
+                        Pioche : {view.ownKillCounterTowardCard}/3
+                      </span>
+                    </div>
+                    <ul className="bw-status-list bw-status-list-compact">
+                      <li>
+                        Brouillard :{' '}
+                        <strong>
+                          Rouge {view.fogActiveByPlayer.red ? '🌫️ ACTIF' : 'Non'} • Noir{' '}
+                          {view.fogActiveByPlayer.black ? '🌫️ ACTIF' : 'Non'}
+                        </strong>
+                      </li>
+                      <li>
+                        Guetteurs : <strong>{view.guetteurReconCoords.length} case(s)</strong> • Pièges :{' '}
+                        <strong>{view.totalActiveTrapNotifications}</strong>
+                      </li>
+                      <li>
+                        Main adverse : <strong>{view.opponentHandCount}/3</strong>
+                        {view.ownBlockCooldownTurns > 0 && ` • Recharge Block : ${view.ownBlockCooldownTurns}T`}
+                      </li>
+                      {(() => {
+                        const ownTraq = view.pieces.find(
+                          (p) => p.owner === viewerColor && p.character === 'traqueur',
+                        );
+                        const markedEnemy = view.pieces.find(
+                          (p) => p.owner !== viewerColor && p.traqueurMarkedByViewer,
+                        );
+                        const ownArb = view.pieces.find(
+                          (p) => p.owner === viewerColor && p.character === 'arbaletrier',
+                        );
+                        return (
+                          <>
+                            {ownTraq && (
+                              <li>
+                                Traqueur :{' '}
+                                <strong>
+                                  {markedEnemy
+                                    ? `Cible ${coordToNotation(markedEnemy.position)} (${ownTraq.traqueurPursuitReadyVisible ? 'Poursuite +1 PRÊTE' : 'Tour suivant'})`
+                                    : 'Aucune cible (0 PA)'}
+                                </strong>
+                              </li>
+                            )}
+                            {ownArb && (
+                              <li>
+                                Arbalétrier :{' '}
+                                <strong>
+                                  {ownArb.arbaletrierCooldownTurnsVisible &&
+                                  ownArb.arbaletrierCooldownTurnsVisible > 0
+                                    ? `Recharge ${ownArb.arbaletrierCooldownTurnsVisible} tour(s)`
+                                    : 'Tir PRÊT (1 / 3 tours)'}
+                                </strong>
+                              </li>
+                            )}
+                          </>
+                        );
+                      })()}
+                    </ul>
+                  </div>
+
+                  <div className="bw-compact-subblock">
+                    <h4>⚰️ Cimetière Confidentiel (§4.4)</h4>
+                    <div className="bw-graveyard-section">
+                      <h5>Pertes Adverses ({enemyGraveyard.length})</h5>
+                      {enemyGraveyard.length === 0 ? (
+                        <p className="bw-muted-small">Aucune pièce adverse éliminée.</p>
+                      ) : (
+                        <div className="bw-graveyard-chips">
+                          {enemyGraveyard.map((g) => (
+                            <span
+                              key={g.pieceId}
+                              className={`bw-grave-chip ${g.known ? 'bw-grave-known' : 'bw-grave-anonymous'}`}
+                            >
+                              <PieceArtwork
+                                character={g.known && g.character ? g.character : 'secret'}
+                                owner={viewerColor === 'red' ? 'black' : 'red'}
+                                size="xs"
+                              />{' '}
+                              <span>{g.known && g.character ? g.label : 'Pièce éliminée'}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="bw-graveyard-section">
+                      <h5>Vos Pertes ({ownGraveyard.length})</h5>
+                      {ownGraveyard.length === 0 ? (
+                        <p className="bw-muted-small">Aucune perte dans votre armée.</p>
+                      ) : (
+                        <div className="bw-graveyard-chips">
+                          {ownGraveyard.map((g) => {
+                            const selectableForRes =
+                              activeCardInUse === 'resurrection' &&
+                              g.character !== null &&
+                              isCardAllowedOnCharacter('resurrection', g.character);
+                            return (
+                              <button
+                                key={g.pieceId}
+                                type="button"
+                                disabled={!selectableForRes}
+                                className={`bw-grave-chip bw-grave-own ${selectedGraveyardPieceId === g.pieceId ? 'bw-grave-selected' : ''}`}
+                                onClick={() => {
+                                  if (selectableForRes) {
+                                    setSelectedGraveyardPieceId(g.pieceId);
+                                  }
+                                }}
+                              >
+                                {g.character && (
+                                  <PieceArtwork character={g.character} owner={viewerColor} size="xs" />
+                                )}{' '}
+                                <span>{g.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {view.cardNotifications.length > 0 && (
+                    <div className="bw-compact-subblock">
+                      <div className="bw-panel-header-row">
+                        <h4>🔔 Cartes récentes ({view.cardNotifications.length})</h4>
+                        <button
+                          type="button"
+                          className="bw-btn bw-btn-ghost bw-btn-xs"
+                          onClick={() => setShowCardHistoryModal(true)}
+                        >
+                          Tout voir
+                        </button>
+                      </div>
+                      <p className="bw-muted-small" style={{ margin: 0 }}>
+                        {view.cardNotifications[view.cardNotifications.length - 1]?.badge}{' '}
+                        <strong>
+                          {view.cardNotifications[view.cardNotifications.length - 1]?.cardName}
+                        </strong>{' '}
+                        — {view.cardNotifications[view.cardNotifications.length - 1]?.consequenceText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ONGLET HISTORIQUE */}
+              {((tabletSideTab !== 'piece' && tabletSideTab !== 'cards' && rightPanelTab === 'history') ||
+                tabletSideTab === 'history') && (
+                <div className="bw-right-tab-pane">
+                  <div className="bw-action-log bw-action-log-tabbed">
+                    {view.actionLog.length === 0 ? (
+                      <p className="bw-muted-small">En attente du déploiement...</p>
+                    ) : (
+                      [...view.actionLog].reverse().map((entry) => {
+                        const evMeta = EVENT_TYPE_META[entry.eventType ?? 'PIECE_MOVED'];
+                        const timeStr = new Date(entry.timestampMs).toLocaleTimeString('fr-FR', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          second: '2-digit',
+                        });
+                        return (
+                          <div key={entry.seq} className={`bw-log-entry ${evMeta.colorClass}`}>
+                            <div className="bw-log-entry-head">
+                              <span className="bw-log-seq">#{entry.seq}</span>
+                              <span className="bw-log-type-badge">
+                                {evMeta.icon} {evMeta.label}
+                              </span>
+                              <span className={`bw-log-actor bw-log-${entry.actor}`}>
+                                {entry.actor === 'red' ? '🔴' : '⚫'} T{entry.turnNumber}
+                              </span>
+                              <span className="bw-log-time">{timeStr}</span>
+                            </div>
+                            <div className="bw-log-entry-body">{entry.text}</div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* ONGLET AIDE EN DIRECT */}
+              {((tabletSideTab !== 'piece' && tabletSideTab !== 'cards' && rightPanelTab === 'help') ||
+                tabletSideTab === 'help') && (
+                <div className="bw-right-tab-pane">
+                  <input
+                    type="search"
+                    className="bw-learn-search-input"
+                    value={rightHelpQuery}
+                    onChange={(e) => setRightHelpQuery(e.target.value)}
+                    placeholder="Chercher pièce ou règle (ex : Colosse, Tir…)"
+                    aria-label="Rechercher dans l'aide rapide"
+                  />
+                  <div className="bw-right-help-results">
+                    {rightHelpMatches.pieces.slice(0, rightHelpQuery.trim() ? 6 : 3).map((p) => (
+                      <div key={p.id} className="bw-right-help-card">
+                        <div className="bw-right-help-card-head">
+                          <PieceArtwork character={p.id} owner={viewerColor} size="xs" />
+                          <strong>{p.name}</strong>
+                        </div>
+                        <p className="bw-muted-small" style={{ margin: '0.18rem 0 0' }}>
+                          {p.movements}
+                        </p>
+                      </div>
+                    ))}
+                    {rightHelpMatches.rules.slice(0, rightHelpQuery.trim() ? 4 : 2).map((r) => (
+                      <div key={r.id} className="bw-right-help-card">
+                        <strong>
+                          {r.badge} {r.title}
+                        </strong>
+                        <p className="bw-muted-small" style={{ margin: '0.18rem 0 0' }}>
+                          {r.summary}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="bw-btn bw-btn-primary bw-btn-sm"
+                    onClick={() => setShowInGameRulesModal(true)}
+                  >
+                    🎓 Ouvrir le Guide Complet & Démos
+                  </button>
+                </div>
               )}
             </div>
           </div>
         </aside>
       </div>
+
+      {/* Bottom Contextual Commands Bar (§4.1 — quick commands, Traqueur/Arbalétrier/Annotations/Tutoriels) */}
+      <footer className="bw-game-bottombar" role="region" aria-label="Commandes contextuelles de partie">
+        <div className="bw-bottombar-context">
+          {view.phase === 'placement' ? (
+            ownPlacementConfirmed ? (
+              <span className="bw-muted-small">
+                ✅ Placement validé — en attente de votre adversaire…
+              </span>
+            ) : (
+              <>
+                <span className="bw-muted-small">
+                  Pièce active : <strong>{CHARACTER_CATALOG[selectedBrushCharacter].name}</strong> ({effectiveStagedPlacement.length}/27)
+                </span>
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-secondary bw-btn-xs"
+                  onClick={() =>
+                    setStagedPlacement(autoCompletePlacement(viewerColor, stagedPlacement))
+                  }
+                >
+                  ⚡ Auto
+                </button>
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-primary bw-btn-xs"
+                  disabled={effectiveStagedPlacement.length !== TOTAL_PIECES_PER_PLAYER}
+                  onClick={() => handleConfirmPlacementEntries(effectiveStagedPlacement)}
+                >
+                  ✅ Valider 27/27
+                </button>
+              </>
+            )
+          ) : view.phase === 'playing' && view.turn.activePlayer === viewerColor ? (
+            selectedOwnPieceView?.character === 'traqueur' ? (
+              <>
+                <span className="bw-muted-small">
+                  <strong>Traqueur :</strong>{' '}
+                  {selectedOwnPieceView.traqueurHasActiveMarkVisible
+                    ? selectedOwnPieceView.traqueurPursuitReadyVisible
+                      ? 'Poursuite 4 cases PRÊTE'
+                      : 'Cible marquée (tour suivant)'
+                    : `${traqueurMarkTargets.length} cible(s) révélée(s)`}
+                </span>
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-primary bw-btn-xs"
+                  disabled={
+                    traqueurMarkModePieceId !== selectedOwnPieceView.id &&
+                    traqueurMarkTargets.length === 0
+                  }
+                  onClick={() =>
+                    setTraqueurMarkModePieceId((curr) =>
+                      curr === selectedOwnPieceView.id ? null : selectedOwnPieceView.id,
+                    )
+                  }
+                >
+                  {traqueurMarkModePieceId === selectedOwnPieceView.id
+                    ? '✕ Annuler marquage'
+                    : '🎯 Marquer (0 PA)'}
+                </button>
+              </>
+            ) : selectedOwnPieceView?.character === 'arbaletrier' ? (
+              <span className="bw-muted-small">
+                <strong>Arbalétrier :</strong>{' '}
+                {selectedOwnPieceView.arbaletrierCooldownTurnsVisible &&
+                selectedOwnPieceView.arbaletrierCooldownTurnsVisible > 0
+                  ? `Tir en recharge (${selectedOwnPieceView.arbaletrierCooldownTurnsVisible} tour(s) perso restant(s))`
+                  : 'Tir à distance 1–3 cases PRÊT (1 / 3 tours)'}
+              </span>
+            ) : (
+              <span className="bw-muted-small">
+                🟢 À votre tour — cliquez sur un de vos pions pour déplacer, attaquer ou inspecter.
+              </span>
+            )
+          ) : (
+            <span className="bw-muted-small">
+              {view.phase === 'finished'
+                ? '🏁 Partie terminée.'
+                : '⏳ En attente du coup adverse — cliquez sur n’importe quel pion pour l’inspecter.'}
+            </span>
+          )}
+        </div>
+
+        <div className="bw-bottombar-actions">
+          <button
+            type="button"
+            className={`bw-btn bw-btn-xs ${annotationsOpen || annotationModeActive ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+            onClick={() => setAnnotationsOpen((v) => !v)}
+          >
+            ✏️ Annotations{currentViewerAnnotationCount > 0 ? ` (${currentViewerAnnotationCount})` : ''}
+          </button>
+          <button
+            type="button"
+            className="bw-btn bw-btn-secondary bw-btn-xs"
+            onClick={() => setShowInGameRulesModal(true)}
+          >
+            🎓 Tutoriels & Règles
+          </button>
+        </div>
+      </footer>
 
       {/* Dedicated Mobile Bottom Game Dock (§3.4 - §3.6) */}
       <nav className="bw-mobile-game-dock" aria-label="Menu tactique mobile">

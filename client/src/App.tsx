@@ -733,6 +733,76 @@ export const App: React.FC = () => {
   if (screen === 'board') {
     const activeTutorial = TUTORIAL_SCENARIOS[tutorialIndex] ?? TUTORIAL_SCENARIOS[0];
     const activeOnlineRoomId = lobbySnapshot?.roomId ?? onlineMatchView?.matchId ?? null;
+    const redOnline = lobbySnapshot?.redPlayer;
+    const blackOnline = lobbySnapshot?.blackPlayer;
+    const playersMeta =
+      boardSessionKind === 'online'
+        ? {
+            red: {
+              displayName:
+                redOnline?.displayName ??
+                redOnline?.username ??
+                (onlineMatchView?.viewerColor === 'red'
+                  ? userProfile?.displayName ?? userProfile?.username ?? 'Joueur Rouge'
+                  : 'Adversaire Rouge'),
+              eloRating:
+                redOnline?.eloRating ??
+                (onlineMatchView?.viewerColor === 'red' ? userProfile?.eloRating ?? 200 : null),
+              avatarBadge:
+                redOnline?.avatarBadge ??
+                (onlineMatchView?.viewerColor === 'red' ? userProfile?.avatarBadge ?? '♔' : '♔'),
+              avatarImage:
+                redOnline?.avatarImage ??
+                (onlineMatchView?.viewerColor === 'red' ? userProfile?.avatarImage ?? null : null),
+            },
+            black: {
+              displayName:
+                blackOnline?.displayName ??
+                blackOnline?.username ??
+                (onlineMatchView?.viewerColor === 'black'
+                  ? userProfile?.displayName ?? userProfile?.username ?? 'Joueur Noir'
+                  : 'Adversaire Noir'),
+              eloRating:
+                blackOnline?.eloRating ??
+                (onlineMatchView?.viewerColor === 'black' ? userProfile?.eloRating ?? 200 : null),
+              avatarBadge:
+                blackOnline?.avatarBadge ??
+                (onlineMatchView?.viewerColor === 'black' ? userProfile?.avatarBadge ?? '♚' : '♚'),
+              avatarImage:
+                blackOnline?.avatarImage ??
+                (onlineMatchView?.viewerColor === 'black' ? userProfile?.avatarImage ?? null : null),
+            },
+          }
+        : boardSessionKind === 'tutorial'
+          ? {
+              red: {
+                displayName: userProfile?.displayName ?? userProfile?.username ?? 'Apprenti',
+                eloRating: userProfile?.eloRating ?? null,
+                avatarBadge: userProfile?.avatarBadge ?? '♔',
+                avatarImage: userProfile?.avatarImage ?? null,
+              },
+              black: {
+                displayName: 'Instructeur BlindWar',
+                eloRating: null,
+                avatarBadge: '♚',
+                avatarImage: null,
+              },
+            }
+          : {
+              red: {
+                displayName: userProfile?.displayName ?? userProfile?.username ?? 'Joueur Rouge',
+                eloRating: userProfile?.eloRating ?? null,
+                avatarBadge: userProfile?.avatarBadge ?? '♔',
+                avatarImage: userProfile?.avatarImage ?? null,
+              },
+              black: {
+                displayName: 'Joueur Noir (Local)',
+                eloRating: null,
+                avatarBadge: '♚',
+                avatarImage: null,
+              },
+            };
+
     return (
       <ThemeProvider preferences={settings}>
         <GameBoardScreen
@@ -742,6 +812,7 @@ export const App: React.FC = () => {
         onlineRoomId={activeOnlineRoomId}
         onlinePrepRemainingSec={lobbySnapshot?.prepRemainingSeconds ?? null}
         tutorialScenario={boardSessionKind === 'tutorial' ? activeTutorial : null}
+        playersMeta={playersMeta}
         settings={settings}
         onOnlineAction={
           boardSessionKind === 'online' && activeOnlineRoomId
