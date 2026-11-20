@@ -6747,3 +6747,99 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   letter-spacing: 0.04em;
 }
 
+/* ============================================================================
+   RESPONSIVE ADAPTATION — DESKTOP, LAPTOP, TABLET & MOBILE (§3.3)
+   Guarantees centered board, zero overlapping controls, and zero horizontal overflow
+   ============================================================================ */
+.bw-topbar-right,
+.bw-nav-auth {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.bw-visual-style-category-switch .bw-btn {
+  flex: 1 1 210px;
+  justify-content: center;
+}
+
+@media (max-width: 1120px) {
+  .bw-nav-theme-select {
+    max-width: 140px;
+  }
+
+  .bw-ingame-theme-select {
+    max-width: 125px;
+  }
+
+  .bw-topbar-right {
+    gap: 0.28rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .bw-game-topbar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    padding: 0.42rem 0.6rem;
+  }
+
+  .bw-topbar-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .bw-board-stage {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .bw-unit-ability-bar {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 720px) {
+  .bw-nav-theme-picker {
+    padding: 0.14rem 0.35rem;
+  }
+
+  .bw-nav-theme-select,
+  .bw-ingame-theme-select {
+    max-width: 108px;
+    font-size: 0.68rem;
+  }
+
+  .bw-visual-style-toggle {
+    padding: 0.2rem 0.42rem;
+    font-size: 0.7rem;
+  }
+
+  .bw-topbar-right {
+    justify-content: center;
+    gap: 0.24rem;
+  }
+
+  .bw-game-bottombar {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .bw-nav-theme-select,
+  .bw-ingame-theme-select {
+    max-width: 92px;
+    font-size: 0.65rem;
+  }
+
+  .bw-visual-style-category-switch .bw-btn {
+    flex: 1 1 100%;
+  }
+}
+
+
