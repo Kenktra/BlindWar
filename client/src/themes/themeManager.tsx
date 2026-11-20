@@ -3,17 +3,20 @@ import {
   DEFAULT_USER_PREFERENCES,
   THEME_LIST,
   getThemeDefinition,
+  getThemePresetForVisualStyle,
   sanitizeUserPreferences,
   type BlindWarThemeDefinition,
   type ColorMode,
   type ThemeId,
   type UserPreferences,
+  type VisualStyleMode,
   resolveThemeUiForColorMode,
 } from '../../../shared/src/index.js';
 
 export interface ResolvedThemeState {
   readonly preferences: UserPreferences;
   readonly colorMode: ColorMode;
+  readonly visualStyle: VisualStyleMode;
   readonly siteTheme: BlindWarThemeDefinition;
   readonly boardTheme: BlindWarThemeDefinition;
   readonly effectiveMotionReduced: boolean;
@@ -24,6 +27,7 @@ const DEFAULT_THEME = getThemeDefinition('rouge_et_noir');
 const DEFAULT_RESOLVED_THEME: ResolvedThemeState = {
   preferences: DEFAULT_USER_PREFERENCES,
   colorMode: DEFAULT_USER_PREFERENCES.colorMode,
+  visualStyle: DEFAULT_USER_PREFERENCES.visualStyle ?? 'classic',
   siteTheme: DEFAULT_THEME,
   boardTheme: DEFAULT_THEME,
   effectiveMotionReduced: false,
@@ -36,6 +40,7 @@ export function resolveThemeState(
   rawPrefs?: Partial<UserPreferences> | null,
 ): ResolvedThemeState {
   const preferences = sanitizeUserPreferences(rawPrefs);
+  const visualStyle: VisualStyleMode = preferences.visualStyle ?? 'classic';
   const siteTheme = getThemeDefinition(preferences.siteThemeId);
   const boardTheme =
     preferences.boardThemeId === 'match_site'
@@ -45,6 +50,7 @@ export function resolveThemeState(
   return {
     preferences,
     colorMode: preferences.colorMode,
+    visualStyle,
     siteTheme,
     boardTheme,
     effectiveMotionReduced:
@@ -190,6 +196,8 @@ export function applyThemePreferencesToDocument(
     'bw-brightness-standard',
     'bw-brightness-bright',
     'bw-brightness-dim',
+    'bw-style-classic',
+    'bw-style-pixel_art',
     'bw-a11y-text-large',
     'bw-a11y-text-xlarge',
     'bw-a11y-high-contrast',
@@ -203,6 +211,7 @@ export function applyThemePreferencesToDocument(
     'bw-board-theme-' + state.boardTheme.id,
     'bw-color-' + state.colorMode,
     'bw-brightness-' + state.preferences.brightness,
+    'bw-style-' + state.visualStyle,
   );
   root.classList.remove(state.colorMode === 'light' ? 'bw-color-dark' : 'bw-color-light');
   root.style.colorScheme = state.colorMode;
@@ -228,6 +237,7 @@ export function applyThemePreferencesToDocument(
   root.dataset.bwTheme = state.siteTheme.id;
   root.dataset.bwBoardTheme = state.boardTheme.id;
   root.dataset.bwColorMode = state.colorMode;
+  root.dataset.bwVisualStyle = state.visualStyle;
   root.dataset.bwAnimSpeed = state.preferences.animationSpeed;
   root.dataset.bwBoardScale = state.preferences.boardScale ?? 'normal';
   root.dataset.bwDynamicBoard = String(state.preferences.dynamicBoardScale ?? true);
@@ -256,6 +266,9 @@ export function useOptionalBlindWarTheme(): ResolvedThemeState | null {
   return useContext(ThemeContext);
 }
 
-export function getThemePrimaryLabel(themeId: ThemeId): string {
-  return getThemeDefinition(themeId).name;
+export function getThemePrimaryLabel(
+  themeId: ThemeId,
+  visualStyle: VisualStyleMode = 'classic',
+): string {
+  return getThemePresetForVisualStyle(themeId, visualStyle).displayName;
 }

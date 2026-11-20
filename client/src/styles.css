@@ -6597,27 +6597,32 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
  * 6. DIRECTION ARTISTIQUE PIXEL ART INTÉGRALE (SITE, ÉCHIQUIER, BOUTONS & THÈMES)
  * ============================================================================ */
 
-/* Rendu pixelisé net sur tous les sprites SVG / images */
-.bw-piece-artwork-svg,
-.bw-card-artwork-svg,
-.bw-piece-artwork-wrap,
-.bw-card-artwork-wrap,
+/* Rendu pixelisé net sur les sprites lorsque le Style Pixel Art est actif */
+.bw-style-pixel_art .bw-piece-artwork-svg,
+.bw-style-pixel_art .bw-card-artwork-svg,
+.bw-style-pixel_art .bw-piece-artwork-wrap,
+.bw-style-pixel_art .bw-card-artwork-wrap,
 .bw-pixel-board-grid {
   image-rendering: pixelated;
   image-rendering: crisp-edges;
 }
 
-/* Sélecteur rapide de thème Pixel Art en 1 clic (Barre de navigation & En partie) */
+/* Sélecteur rapide de thème et bouton de style (Barre de navigation & En partie) */
 .bw-nav-theme-picker {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
   padding: 0.2rem 0.48rem;
   background: var(--bw-bg-panel-alt);
-  border: 2px solid var(--bw-border-bright);
+  border: 1.5px solid var(--bw-border-bright);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.bw-style-pixel_art .bw-nav-theme-picker {
+  border-width: 2px;
   border-radius: 2px;
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
-  cursor: pointer;
 }
 
 .bw-nav-theme-picker:hover {
@@ -6656,17 +6661,22 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   font-size: 0.72rem;
 }
 
-/* Habillage Pixel Art 16-bit de l'ensemble du site (panneaux, boutons, cartes, modales) */
-.bw-panel,
-.bw-modal-card,
-.bw-theme-card,
-.bw-hand-card,
-.bw-left-move-history-panel,
-.bw-piece-dossier-panel,
-.bw-right-hub-panel,
-.bw-tutorial-banner,
-.bw-unit-ability-bar,
-.bw-contextual-tip-bar {
+.bw-visual-style-toggle {
+  white-space: nowrap;
+  font-weight: 800;
+}
+
+/* Habillage Pixel Art 16-bit de l'ensemble du site uniquement en Style Pixel Art (.bw-style-pixel_art) */
+.bw-style-pixel_art .bw-panel,
+.bw-style-pixel_art .bw-modal-card,
+.bw-style-pixel_art .bw-theme-card,
+.bw-style-pixel_art .bw-hand-card,
+.bw-style-pixel_art .bw-left-move-history-panel,
+.bw-style-pixel_art .bw-piece-dossier-panel,
+.bw-style-pixel_art .bw-right-hub-panel,
+.bw-style-pixel_art .bw-tutorial-banner,
+.bw-style-pixel_art .bw-unit-ability-bar,
+.bw-style-pixel_art .bw-contextual-tip-bar {
   border-radius: 3px !important;
   border-width: 2px !important;
   box-shadow:
@@ -6674,11 +6684,11 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
     inset 1px 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-.bw-btn,
-.bw-nav-link,
-.bw-right-tab-btn,
-.bw-settings-tab-btn,
-.bw-learn-cat-btn {
+.bw-style-pixel_art .bw-btn,
+.bw-style-pixel_art .bw-nav-link,
+.bw-style-pixel_art .bw-right-tab-btn,
+.bw-style-pixel_art .bw-settings-tab-btn,
+.bw-style-pixel_art .bw-learn-cat-btn {
   border-radius: 2px !important;
   border-width: 2px !important;
   box-shadow:
@@ -6687,13 +6697,13 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   letter-spacing: 0.03em;
 }
 
-.bw-btn:active:not(:disabled) {
+.bw-style-pixel_art .bw-btn:active:not(:disabled) {
   transform: translate(1px, 1px);
   box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
 }
 
-/* Sprite de tuile Pixel Art sur chacune des 81 cases de l'échiquier 9×9 */
-.bw-board-wrapper {
+/* Sprite de tuile Pixel Art sur chacune des 81 cases de l'échiquier 9×9 en mode Pixel Art */
+.bw-style-pixel_art .bw-board-wrapper {
   border-radius: 4px !important;
   border-width: 3px !important;
   box-shadow:
@@ -6701,7 +6711,7 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
     5px 5px 0 rgba(0, 0, 0, 0.62);
 }
 
-.bw-board-cell {
+.bw-style-pixel_art .bw-board-cell {
   border-radius: 0 !important;
 }
 
@@ -6727,11 +6737,11 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
 }
 
 /* Badges et étiquettes de pions en style Pixel Art franc */
-.bw-badge,
-.bw-piece-label,
-.bw-lastmove-tag,
-.bw-coord-rank,
-.bw-coord-file {
+.bw-style-pixel_art .bw-badge,
+.bw-style-pixel_art .bw-piece-label,
+.bw-style-pixel_art .bw-lastmove-tag,
+.bw-style-pixel_art .bw-coord-rank,
+.bw-style-pixel_art .bw-coord-file {
   border-radius: 2px !important;
   font-family: 'Courier New', Consolas, monospace, system-ui;
   letter-spacing: 0.04em;

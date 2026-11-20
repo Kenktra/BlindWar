@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import {
+  CLASSIC_THEMES_CATALOG,
   DEFAULT_USER_PREFERENCES,
   SETTINGS_HELP_ITEMS,
   THEME_LIST,
   getThemeDefinition,
+  getThemePresetForVisualStyle,
+  getThemesForVisualStyle,
   type ThemeId,
   type UserPreferences,
+  type VisualStyleMode,
 } from '../../../shared/src/index.js';
 import {
   apiChangePassword,
@@ -63,8 +67,11 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
   };
 
   const handleApplyDraftTheme = async () => {
+    const nextVisualStyle: VisualStyleMode =
+      draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic';
     const next: UserPreferences = {
       ...preferences,
+      visualStyle: nextVisualStyle,
       colorMode: draftAppearance.colorMode,
       siteThemeId: draftAppearance.siteThemeId,
       boardThemeId: draftAppearance.boardThemeId,
@@ -72,23 +79,24 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       boardScale: draftAppearance.boardScale ?? 'normal',
       dynamicBoardScale: draftAppearance.dynamicBoardScale ?? true,
     };
-    const chosen = getThemeDefinition(next.siteThemeId);
+    const chosen = getThemePresetForVisualStyle(next.siteThemeId, nextVisualStyle);
     await commitPreferences(
       next,
-      `Thème « ${chosen.name} » (${next.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'}) appliqué immédiatement !`,
+      `Thème « ${chosen.displayName} » (${nextVisualStyle === 'pixel_art' ? 'Style Pixel Art' : 'Style classique'} • ${next.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'}) appliqué immédiatement !`,
     );
   };
 
   const handleResetThemeToDefault = async () => {
     const next: UserPreferences = {
       ...preferences,
+      visualStyle: DEFAULT_USER_PREFERENCES.visualStyle ?? 'classic',
       colorMode: DEFAULT_USER_PREFERENCES.colorMode,
       siteThemeId: DEFAULT_USER_PREFERENCES.siteThemeId,
       boardThemeId: DEFAULT_USER_PREFERENCES.boardThemeId,
       brightness: DEFAULT_USER_PREFERENCES.brightness,
     };
     setDraftAppearance(next);
-    await commitPreferences(next, 'Apparence d’origine (Mode sombre • Rouge et noir) rétablie.');
+    await commitPreferences(next, 'Apparence d’origine (Style classique • Mode sombre • Rouge et noir) rétablie.');
   };
 
   return (
@@ -244,26 +252,123 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               </button>
             </div>
 
-            <h3>2. Choisissez le thème global du site et du jeu</h3>
+            <h3>2. Catégorie de style visuel (Style classique / Style Pixel Art)</h3>
             <p className="bw-muted-small">
-              Cliquez sur un thème pour le prévisualiser ci-dessous, puis cliquez sur{' '}
-              <strong>Appliquer ce thème</strong> pour transformer immédiatement toute l’interface
-              (navigation, boutons, panneaux, notifications, plateau et médaillons originaux).
+              Choisissez entre l’identité visuelle d’origine (<strong>Style classique</strong>) et
+              la direction artistique rétro 16×16 (<strong>Style Pixel Art</strong>). Seuls les
+              thèmes appartenant à la catégorie choisie sont affichés ci-dessous.
             </p>
-            <div className="bw-theme-grid" style={{ marginTop: '0.8rem' }}>
-              {THEME_LIST.map((t) => {
-                const selected = draftAppearance.siteThemeId === t.id;
-                const active = preferences.siteThemeId === t.id;
+            <div
+              className="bw-visual-style-category-switch"
+              role="group"
+              aria-label="Catégorie de style visuel Classique ou Pixel Art"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.6rem',
+                marginTop: '0.65rem',
+                marginBottom: '1.1rem',
+              }}
+            >
+              <button
+                type="button"
+                data-visual-style-option="classic"
+                className={`bw-btn ${(draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic') === 'classic' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+                onClick={() => {
+                  const hasClassicSiteTheme = CLASSIC_THEMES_CATALOG.some(
+                    (c) => c.themeId === draftAppearance.siteThemeId,
+                  );
+                  const safeSiteThemeId: ThemeId = hasClassicSiteTheme
+                    ? draftAppearance.siteThemeId
+                    : 'rouge_et_noir';
+                  const safeBoardThemeId: ThemeId | 'match_site' =
+                    draftAppearance.boardThemeId === 'match_site' ||
+                    CLASSIC_THEMES_CATALOG.some((c) => c.themeId === draftAppearance.boardThemeId)
+                      ? draftAppearance.boardThemeId
+                      : 'match_site';
+                  const next: UserPreferences = {
+                    ...preferences,
+                    ...draftAppearance,
+                    visualStyle: 'classic',
+                    siteThemeId: safeSiteThemeId,
+                    boardThemeId: safeBoardThemeId,
+                  };
+                  setDraftAppearance(next);
+                  void commitPreferences(
+                    next,
+                    'Style classique activé : silhouettes vectorielles, échiquier classique et thèmes d’origine.',
+                  );
+                  playTacticalSfx('menu');
+                }}
+              >
+                🏛️ Style classique{' '}
+                {(draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic') === 'classic'
+                  ? '• Actif'
+                  : ''}
+              </button>
+              <button
+                type="button"
+                data-visual-style-option="pixel_art"
+                className={`bw-btn ${(draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic') === 'pixel_art' ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+                onClick={() => {
+                  const next: UserPreferences = {
+                    ...preferences,
+                    ...draftAppearance,
+                    visualStyle: 'pixel_art',
+                  };
+                  setDraftAppearance(next);
+                  void commitPreferences(
+                    next,
+                    'Style Pixel Art activé : sprites 16×16 des pièces et cartes, tuiles 8-bit et thèmes Pixel Art.',
+                  );
+                  playTacticalSfx('menu');
+                }}
+              >
+                👾 Style Pixel Art{' '}
+                {(draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic') === 'pixel_art'
+                  ? '• Actif'
+                  : ''}
+              </button>
+            </div>
+
+            <h3>
+              3. Choisissez un thème de la catégorie «{' '}
+              {(draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic') === 'pixel_art'
+                ? 'Style Pixel Art'
+                : 'Style classique'}{' '}
+              »
+            </h3>
+            <p className="bw-muted-small">
+              Cliquez sur un thème pour l’appliquer immédiatement à toute l’interface, à l’échiquier
+              9×9, aux 13 pièces et aux 16 cartes.
+            </p>
+            <div
+              className="bw-theme-grid"
+              data-theme-category={draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic'}
+              style={{ marginTop: '0.8rem' }}
+            >
+              {getThemesForVisualStyle(
+                draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic',
+              ).map((t) => {
+                const activeStyle: VisualStyleMode =
+                  draftAppearance.visualStyle ?? preferences.visualStyle ?? 'classic';
+                const selected = draftAppearance.siteThemeId === t.themeId;
+                const active =
+                  preferences.siteThemeId === t.themeId &&
+                  (preferences.visualStyle ?? 'classic') === activeStyle;
                 return (
                   <button
-                    key={t.id}
+                    key={`${activeStyle}-${t.themeId}`}
                     type="button"
+                    data-theme-card-id={t.themeId}
+                    data-theme-card-style={t.styleCategory}
                     className={`bw-theme-card ${selected ? 'selected' : ''}`}
                     onClick={() => {
                       const next: UserPreferences = {
                         ...preferences,
+                        visualStyle: activeStyle,
                         colorMode: draftAppearance.colorMode,
-                        siteThemeId: t.id,
+                        siteThemeId: t.themeId,
                         boardThemeId: draftAppearance.boardThemeId,
                         brightness: draftAppearance.brightness,
                         boardScale: draftAppearance.boardScale ?? 'normal',
@@ -272,13 +377,13 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                       setDraftAppearance(next);
                       void commitPreferences(
                         next,
-                        `Thème Pixel Art « ${t.name} » appliqué immédiatement !`,
+                        `Thème ${activeStyle === 'pixel_art' ? 'Pixel Art' : 'Classique'} « ${t.displayName} » appliqué immédiatement !`,
                       );
                       playTacticalSfx('menu');
                     }}
                   >
                     <div className="bw-theme-card-top">
-                      <span className="bw-theme-card-name">{t.name}</span>
+                      <span className="bw-theme-card-name">{t.displayName}</span>
                       <div className="bw-theme-swatches">
                         <span
                           className="bw-theme-swatch"
@@ -290,7 +395,7 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                         />
                       </div>
                     </div>
-                    <span className="bw-theme-card-sub">{t.subtitle}</span>
+                    <span className="bw-theme-card-sub">{t.displaySubtitle}</span>
                     {t.isDefault ? (
                       <span className="bw-theme-default-pill">
                         Thème par défaut {active ? '• Actif' : ''}

@@ -7,6 +7,7 @@ import {
   CARD_TYPES,
   CHARACTER_DOSSIERS,
   CHARACTER_TYPES,
+  CLASSIC_THEMES_CATALOG,
   CUSTOM_CLOCK_PRESETS_SECONDS,
   DEFAULT_USER_PREFERENCES,
   FAQ_ITEMS,
@@ -23,6 +24,7 @@ import {
   createAiTrainingMatch,
   createMatchState,
   createZeroNewMechanicsStats,
+  getThemesForVisualStyle,
   isDesignatedAdminUsername,
   sanitizeUserPreferences,
   type AiDifficulty,
@@ -43,6 +45,7 @@ import {
   type ServerMatchState,
   type ThemeId,
   type TrainingSituationSpec,
+  type VisualStyleMode,
   type UserPreferences,
 } from '../../shared/src/index.js';
 import type { RoomLobbySnapshot } from '../../server/src/rooms/roomManager.js';
@@ -709,11 +712,46 @@ export const App: React.FC = () => {
       </div>
 
       <div className="bw-nav-auth">
-        <label className="bw-nav-theme-picker" title="Changer de thème Pixel Art en 1 clic">
-          <span className="bw-nav-theme-icon" aria-hidden="true">👾</span>
+        <button
+          type="button"
+          className="bw-btn bw-btn-ghost bw-btn-sm bw-visual-style-toggle"
+          data-visual-style={settings.visualStyle ?? 'classic'}
+          onClick={() => {
+            const currentStyle: VisualStyleMode = settings.visualStyle ?? 'classic';
+            const nextStyle: VisualStyleMode =
+              currentStyle === 'pixel_art' ? 'classic' : 'pixel_art';
+            const safeSiteThemeId: ThemeId =
+              nextStyle === 'classic' &&
+              !CLASSIC_THEMES_CATALOG.some((c) => c.themeId === settings.siteThemeId)
+                ? 'rouge_et_noir'
+                : settings.siteThemeId;
+            void handleUpdateSettings({
+              ...settings,
+              visualStyle: nextStyle,
+              siteThemeId: safeSiteThemeId,
+            });
+            playTacticalSfx('menu');
+          }}
+          title={
+            (settings.visualStyle ?? 'classic') === 'pixel_art'
+              ? 'Style Pixel Art actif — cliquer pour basculer vers le Style classique'
+              : 'Style classique actif — cliquer pour basculer vers le Style Pixel Art'
+          }
+          aria-label="Basculer entre le Style classique et le Style Pixel Art"
+        >
+          {(settings.visualStyle ?? 'classic') === 'pixel_art' ? '👾 Pixel Art' : '🏛️ Classique'}
+        </button>
+
+        <label
+          className="bw-nav-theme-picker"
+          title={`Changer de thème (${(settings.visualStyle ?? 'classic') === 'pixel_art' ? 'Style Pixel Art' : 'Style classique'}) en 1 clic`}
+        >
+          <span className="bw-nav-theme-icon" aria-hidden="true">
+            {(settings.visualStyle ?? 'classic') === 'pixel_art' ? '👾' : '🎨'}
+          </span>
           <select
             className="bw-nav-theme-select"
-            aria-label="Choisir le thème Pixel Art"
+            aria-label="Choisir le thème"
             value={settings.siteThemeId}
             onChange={(e) => {
               const nextThemeId = e.target.value as ThemeId;
@@ -724,9 +762,9 @@ export const App: React.FC = () => {
               playTacticalSfx('menu');
             }}
           >
-            {THEME_LIST.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
+            {getThemesForVisualStyle(settings.visualStyle ?? 'classic').map((t) => (
+              <option key={t.themeId} value={t.themeId}>
+                {t.displayName}
               </option>
             ))}
           </select>
@@ -906,6 +944,19 @@ export const App: React.FC = () => {
           });
           playTacticalSfx('menu');
         }}
+        onChangeVisualStyle={(nextStyle) => {
+          const safeSiteThemeId: ThemeId =
+            nextStyle === 'classic' &&
+            !CLASSIC_THEMES_CATALOG.some((c) => c.themeId === settings.siteThemeId)
+              ? 'rouge_et_noir'
+              : settings.siteThemeId;
+          void handleUpdateSettings({
+            ...settings,
+            visualStyle: nextStyle,
+            siteThemeId: safeSiteThemeId,
+          });
+          playTacticalSfx('menu');
+        }}
         onOnlineAction={
           boardSessionKind === 'online' && activeOnlineRoomId
             ? {
@@ -987,7 +1038,10 @@ export const App: React.FC = () => {
 
   return (
     <ThemeProvider preferences={settings}>
-      <div className="bw-app-shell">
+      <div
+        className={`bw-app-shell bw-style-${settings.visualStyle ?? 'classic'}`}
+        data-visual-style={settings.visualStyle ?? 'classic'}
+      >
       {renderGlobalNavbar()}
 
       <main className="bw-page-container">

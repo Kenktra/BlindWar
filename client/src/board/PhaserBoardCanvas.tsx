@@ -278,9 +278,10 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
 
   return (
     <div
-      className={`bw-board-stage bw-board-scale-${boardScale}`}
+      className={`bw-board-stage bw-board-scale-${boardScale} bw-style-${themeState.visualStyle}`}
       data-board-turn-state={isViewerTurn ? 'yours' : 'opponent'}
       data-dynamic-scale={dynamicBoardScale ? 'true' : 'false'}
+      data-visual-style={themeState.visualStyle}
     >
       <div
         className={`bw-board-wrapper ${turnScaleClass} ${annotationModeActive ? 'bw-board-annotation-mode' : ''}`}
@@ -311,10 +312,11 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
         </div>
         <div ref={phaserHostRef} className="bw-phaser-backdrop" aria-hidden="true" />
         <div
-          className="bw-board-grid bw-pixel-board-grid"
+          className={`bw-board-grid ${themeState.visualStyle === 'pixel_art' ? 'bw-pixel-board-grid' : 'bw-classic-board-grid'}`}
           role="grid"
           aria-label="Plateau BLIND WAR 9x9"
-          data-pixel-board="true"
+          data-pixel-board={themeState.visualStyle === 'pixel_art' ? 'true' : 'false'}
+          data-visual-style={themeState.visualStyle}
         >
         {rows.map((row) =>
           Array.from({ length: BOARD_COLS }, (_, col) => {
@@ -403,7 +405,9 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                 onContextMenu={(e) => e.preventDefault()}
                 title={`Case ${notation}`}
               >
-                <span className="bw-pixel-tile-sprite" aria-hidden="true" />
+                {themeState.visualStyle === 'pixel_art' && (
+                  <span className="bw-pixel-tile-sprite" aria-hidden="true" />
+                )}
                 {annoColor && (
                   <span
                     className={`bw-anno-square-mark bw-anno-mark-${annoColor}`}

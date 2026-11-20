@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import {
   getThemeDefinition,
+  getThemePresetForVisualStyle,
   resolveThemeUiForColorMode,
   type CharacterType,
   type Coord,
   type UserPreferences,
+  type VisualStyleMode,
 } from '../../../shared/src/index.js';
 import { CardArtwork } from './CardArtwork.js';
 import { PieceArtwork } from './PieceArtwork.js';
@@ -35,14 +37,18 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
   onApplyDraft,
   onResetDefaults,
 }) => {
+  const previewVisualStyle: VisualStyleMode = previewPrefs.visualStyle ?? 'classic';
   const siteTheme = getThemeDefinition(previewPrefs.siteThemeId);
+  const sitePresetLabel = getThemePresetForVisualStyle(siteTheme.id, previewVisualStyle);
   const ui = resolveThemeUiForColorMode(siteTheme, previewPrefs.colorMode);
   const boardTheme =
     previewPrefs.boardThemeId === 'match_site'
       ? siteTheme
       : getThemeDefinition(previewPrefs.boardThemeId);
+  const boardPresetLabel = getThemePresetForVisualStyle(boardTheme.id, previewVisualStyle);
 
   const hasPendingChanges =
+    (previewPrefs.visualStyle ?? 'classic') !== (activePrefs.visualStyle ?? 'classic') ||
     previewPrefs.colorMode !== activePrefs.colorMode ||
     previewPrefs.siteThemeId !== activePrefs.siteThemeId ||
     previewPrefs.boardThemeId !== activePrefs.boardThemeId ||
@@ -77,12 +83,16 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
       <div className="bw-theme-preview-header">
         <div>
           <strong style={{ fontSize: '0.96rem' }}>
-            Aperçu : {siteTheme.name} ({previewPrefs.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'})
-            {boardTheme.id !== siteTheme.id ? ` • Échiquier : ${boardTheme.name}` : ''}
+            Aperçu ({previewVisualStyle === 'pixel_art' ? '👾 Style Pixel Art' : '🏛️ Style classique'}) :{' '}
+            {sitePresetLabel.displayName} ({previewPrefs.colorMode === 'light' ? 'Mode clair' : 'Mode sombre'})
+            {boardTheme.id !== siteTheme.id ? ` • Échiquier : ${boardPresetLabel.displayName}` : ''}
           </strong>
           <div style={{ fontSize: '0.76rem', color: ui.textMuted }}>
-            {siteTheme.subtitle} — Cases {boardTheme.board.squareALabel} /{' '}
-            {boardTheme.board.squareBLabel} • Pièces transparentes à contraste équilibré
+            {sitePresetLabel.displaySubtitle} — Cases {boardTheme.board.squareALabel} /{' '}
+            {boardTheme.board.squareBLabel} •{' '}
+            {previewVisualStyle === 'pixel_art'
+              ? 'Sprites 16×16 Pixel Art à contraste élevé'
+              : 'Silhouettes vectorielles classiques à contraste équilibré'}
           </div>
         </div>
         <div className="bw-theme-swatches" aria-label="Couleurs principales">
@@ -166,6 +176,7 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                       owner={piece.owner}
                       coord={coord}
                       theme={boardTheme}
+                      visualStyle={previewVisualStyle}
                       size="sm"
                     />
                   ) : isHighlightedMove ? (
@@ -221,8 +232,8 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                     }}
                     title={`${ch} Rouge & Noir sur case ${boardTheme.board.squareALabel}`}
                   >
-                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 0 }} theme={boardTheme} size="xs" />
-                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 0 }} theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 0 }} theme={boardTheme} visualStyle={previewVisualStyle} size="xs" />
+                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 0 }} theme={boardTheme} visualStyle={previewVisualStyle} size="xs" />
                   </span>
                   <span
                     style={{
@@ -234,14 +245,14 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                     }}
                     title={`${ch} Rouge & Noir sur case ${boardTheme.board.squareBLabel}`}
                   >
-                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 1 }} theme={boardTheme} size="xs" />
-                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 1 }} theme={boardTheme} size="xs" />
+                    <PieceArtwork character={ch} owner="red" coord={{ row: 0, col: 1 }} theme={boardTheme} visualStyle={previewVisualStyle} size="xs" />
+                    <PieceArtwork character={ch} owner="black" coord={{ row: 0, col: 1 }} theme={boardTheme} visualStyle={previewVisualStyle} size="xs" />
                   </span>
                 </React.Fragment>
               ))}
             </div>
             <div style={{ fontWeight: 800, fontSize: '0.84rem', margin: '0.55rem 0 0.35rem' }}>
-              Assets des cartes du thème ({siteTheme.name})
+              Assets des cartes du thème ({sitePresetLabel.displayName})
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', alignItems: 'center' }}>
               {(['kamikaze', 'invincibilite', 'espionnage', 'teleportation'] as const).map((cid) => (
@@ -250,6 +261,7 @@ export const ThemePreviewPanel: React.FC<ThemePreviewPanelProps> = ({
                   card={cid}
                   theme={siteTheme}
                   colorMode={previewPrefs.colorMode}
+                  visualStyle={previewVisualStyle}
                   size="sm"
                   framed
                   title={cid}

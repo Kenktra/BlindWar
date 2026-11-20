@@ -30,6 +30,7 @@ import {
   generateTeleportCandidatesForPiece,
   generateTraqueurMarkCandidates,
   getOwnEdgeRow,
+  getThemesForVisualStyle,
   isCardAllowedOnCharacter,
   isInPlacementZone,
   markTraqueurTarget,
@@ -68,6 +69,7 @@ import {
   type ThemeId,
   type TutorialScenarioSpec,
   type VisibilityContext,
+  type VisualStyleMode,
 } from '../../../shared/src/index.js';
 import {
   clearAllPersonalAnnotations,
@@ -535,6 +537,7 @@ export interface GameBoardScreenProps {
   readonly playersMeta?: MatchPlayersMeta;
   readonly settings: UserSettings;
   readonly onChangeTheme?: (themeId: ThemeId) => void;
+  readonly onChangeVisualStyle?: (visualStyle: VisualStyleMode) => void;
   readonly onOnlineAction?: {
     readonly submitPlacement: (entries: readonly PlacementEntry[]) => void;
     readonly movePiece: (
@@ -581,6 +584,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   playersMeta,
   settings,
   onChangeTheme,
+  onChangeVisualStyle,
   onOnlineAction,
   onMatchConcluded,
   onExitToMenu,
@@ -2199,8 +2203,13 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     },
   };
 
+  const activeVisualStyle: VisualStyleMode = settings.visualStyle ?? 'classic';
+
   return (
-    <div className="bw-game-layout">
+    <div
+      className={`bw-game-layout bw-style-${activeVisualStyle}`}
+      data-visual-style={activeVisualStyle}
+    >
       {/* Top Strategic HUD Bar : Joueurs, Avatars, Elo, Horloges, État du tour & Commandes */}
       <header className="bw-game-topbar">
         <div className="bw-topbar-left">
@@ -2311,18 +2320,41 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
 
         <div className="bw-topbar-right">
+          {onChangeVisualStyle && (
+            <button
+              type="button"
+              className="bw-btn bw-btn-ghost bw-btn-sm bw-visual-style-toggle"
+              data-visual-style={activeVisualStyle}
+              onClick={() =>
+                onChangeVisualStyle(activeVisualStyle === 'pixel_art' ? 'classic' : 'pixel_art')
+              }
+              title={
+                activeVisualStyle === 'pixel_art'
+                  ? 'Style Pixel Art actif — cliquer pour basculer vers le Style classique sans interrompre la partie'
+                  : 'Style classique actif — cliquer pour basculer vers le Style Pixel Art sans interrompre la partie'
+              }
+              aria-label="Basculer entre le Style classique et le Style Pixel Art en partie"
+            >
+              {activeVisualStyle === 'pixel_art' ? '👾 Pixel Art' : '🏛️ Classique'}
+            </button>
+          )}
           {onChangeTheme && (
-            <label className="bw-nav-theme-picker bw-ingame-theme-picker" title="Changer le thème Pixel Art en direct">
-              <span className="bw-nav-theme-icon" aria-hidden="true">👾</span>
+            <label
+              className="bw-nav-theme-picker bw-ingame-theme-picker"
+              title={`Changer le thème (${activeVisualStyle === 'pixel_art' ? 'Style Pixel Art' : 'Style classique'}) en direct`}
+            >
+              <span className="bw-nav-theme-icon" aria-hidden="true">
+                {activeVisualStyle === 'pixel_art' ? '👾' : '🎨'}
+              </span>
               <select
                 className="bw-nav-theme-select bw-ingame-theme-select"
-                aria-label="Choisir le thème Pixel Art en partie"
+                aria-label="Choisir le thème en partie"
                 value={settings.siteThemeId}
                 onChange={(e) => onChangeTheme(e.target.value as ThemeId)}
               >
-                {THEME_LIST.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
+                {getThemesForVisualStyle(activeVisualStyle).map((t) => (
+                  <option key={t.themeId} value={t.themeId}>
+                    {t.displayName}
                   </option>
                 ))}
               </select>
