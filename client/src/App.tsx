@@ -618,7 +618,10 @@ export const App: React.FC = () => {
         if (prof) setUserProfile(prof);
       });
     }, 350);
-    if (summary.winner === summary.perspectiveColor) {
+    if (
+      summary.winner !== 'draw' &&
+      (summary.mode === 'local' || summary.winner === summary.perspectiveColor)
+    ) {
       setScreen('victory');
     } else {
       setScreen('defeat');
@@ -2943,7 +2946,9 @@ export const App: React.FC = () => {
                 onClick={() =>
                   lastMatchResult?.mode?.startsWith('matchmaking')
                     ? setScreen('matchmaking')
-                    : startNewLocalGame()
+                    : boardSessionKind === 'training_ai'
+                      ? startAiTrainingGame(aiDifficulty, true)
+                      : startNewLocalGame()
                 }
               >
                 Rejouer une Partie
@@ -3021,7 +3026,9 @@ export const App: React.FC = () => {
                 onClick={() =>
                   lastMatchResult?.mode?.startsWith('matchmaking')
                     ? setScreen('matchmaking')
-                    : startNewLocalGame()
+                    : boardSessionKind === 'training_ai'
+                      ? startAiTrainingGame(aiDifficulty, true)
+                      : startNewLocalGame()
                 }
               >
                 Prendre sa Revanche

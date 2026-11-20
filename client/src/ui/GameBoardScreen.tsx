@@ -18,6 +18,8 @@ import {
   coordKey,
   coordToNotation,
   countCharacters,
+  createAiTrainingMatch,
+  createMatchState,
   executeAiTurnStep,
   executePieceMove,
   filterTutorialsByQuery,
@@ -577,32 +579,72 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           })(),
   );
 
+  const resetLocalTransientUiState = (nextMatchState: ServerMatchState) => {
+    setLocalState(nextMatchState);
+    setLocalPlacementTurn(
+      nextMatchState.players.red.placementConfirmed && !nextMatchState.players.black.placementConfirmed
+        ? 'black'
+        : 'red',
+    );
+    setPrivacyCurtainFor(null);
+    setStagedPlacement([]);
+    setSelectedBrushCharacter('soldat');
+    setLocalPrepSecondsLeft(nextMatchState.ruleset.prepDurationSeconds ?? 90);
+    setSelectedSquare(null);
+    setInspectedSquare(null);
+    setActiveCardInUse(null);
+    setConfirmingCard(null);
+    setCardSourcePieceId(null);
+    setSelectedGraveyardPieceId(null);
+    setEspionageSelectedIds([]);
+    setTraqueurMarkModePieceId(null);
+    setPendingMoveDisambiguation(null);
+    setStatusError(null);
+    setInspectedLogSeq(null);
+    setConfirmingResign(false);
+    setPendingImportantConfirm(null);
+    setActiveOpponentCardAlert(null);
+    setActiveNewCardAlert(null);
+    setHighlightedNewCardKey(null);
+    setShowMatchStartBanner(false);
+    setRecentlyMarkedCoord(null);
+    setTacticalToast(null);
+    setAnnotationsByPlayer(createInitialAnnotationsByPlayer());
+    setAnnotationModeActive(false);
+    setPendingArrowStart(null);
+    emittedMatchConcludedRef.current = null;
+  };
+
+  const handleRestartLocalMatch = () => {
+    if (mode === 'tutorial' && tutorialScenario) {
+      resetLocalTransientUiState(tutorialScenario.createInitialState());
+      return;
+    }
+    if (mode === 'training_ai') {
+      const freshAi = trainingSituationTitle && initialLocalState
+        ? initialLocalState
+        : createAiTrainingMatch(aiDifficulty, true);
+      resetLocalTransientUiState(freshAi);
+      playTacticalSfx('menu');
+      return;
+    }
+    if (mode === 'local') {
+      const freshLocal = createMatchState(`local-${Date.now()}`, 'local', localState.ruleset);
+      resetLocalTransientUiState(freshLocal);
+      playTacticalSfx('menu');
+    }
+  };
+
   useEffect(() => {
     if (initialLocalState && mode !== 'tutorial') {
-      setLocalState(initialLocalState);
-      setSelectedSquare(null);
-      setInspectedSquare(null);
-      setActiveCardInUse(null);
-      setCardSourcePieceId(null);
-      setEspionageSelectedIds([]);
-      setTraqueurMarkModePieceId(null);
-      setPendingMoveDisambiguation(null);
-      setStatusError(null);
-      setInspectedLogSeq(null);
+      resetLocalTransientUiState(initialLocalState);
     }
   }, [initialLocalState, mode]);
 
   // Reset state when switching tutorial scenarios
   useEffect(() => {
     if (mode === 'tutorial' && tutorialScenario) {
-      setLocalState(tutorialScenario.createInitialState());
-      setSelectedSquare(null);
-      setActiveCardInUse(null);
-      setCardSourcePieceId(null);
-      setEspionageSelectedIds([]);
-      setTraqueurMarkModePieceId(null);
-      setPendingMoveDisambiguation(null);
-      setStatusError(null);
+      resetLocalTransientUiState(tutorialScenario.createInitialState());
       setShowTutorialHints(false);
       emittedTutorialCompletionRef.current = null;
     }
@@ -639,11 +681,14 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     loadDismissedContextualTips(),
   );
   const emittedTutorialCompletionRef = useRef<string | null>(null);
+  const emittedMatchConcludedRef = useRef<string | null>(null);
+  const onMatchConcludedRef = useRef(onMatchConcluded);
+  onMatchConcludedRef.current = onMatchConcluded;
   const onTutorialCompletedRef = useRef(onTutorialCompleted);
   onTutorialCompletedRef.current = onTutorialCompleted;
   const [showCardHistoryModal, setShowCardHistoryModal] = useState<boolean>(false);
   const [confirmingResign, setConfirmingResign] = useState<boolean>(false);
-  const [pendingImportantConfirm, setPendingImportantConfirm] = useState<'draw' | 'exit' | null>(null);
+  const [pendingImportantConfirm, setPendingImportantConfirm] = useState<'draw' | 'exit' | 'restart' | null>(null);
   const [mobileDrawer, setMobileDrawer] = useState<MobileDrawerTab>('none');
   const [activeOpponentCardAlert, setActiveOpponentCardAlert] =
     useState<CardNotificationView | null>(null);
@@ -897,24 +942,38 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     }));
   };
 
-  // Local preparation countdown timer (§3.2)
+  // Local preparation countdown timer (§3.2) — separated tick from state transition to avoid React 18 state-updater side effects
   useEffect(() => {
     if (mode !== 'local' || localState.phase !== 'placement' || privacyCurtainFor !== null) {
       return;
     }
     const id = setInterval(() => {
-      setLocalPrepSecondsLeft((prev) => {
-        if (prev <= 1) {
-          // Auto-complete remaining pieces when prep timer hits 0 (§3.2)
-          const completed = autoCompletePlacement(localPlacementTurn, stagedPlacement);
-          handleConfirmPlacementEntries(completed);
-          return localState.ruleset.prepDurationSeconds;
-        }
-        return prev - 1;
-      });
+      setLocalPrepSecondsLeft((prev) => Math.max(0, prev - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [mode, localState.phase, localPlacementTurn, privacyCurtainFor, stagedPlacement]);
+  }, [mode, localState.phase, localPlacementTurn, privacyCurtainFor]);
+
+  useEffect(() => {
+    if (
+      mode !== 'local' ||
+      localState.phase !== 'placement' ||
+      privacyCurtainFor !== null ||
+      localPrepSecondsLeft > 0
+    ) {
+      return;
+    }
+    const completed = autoCompletePlacement(localPlacementTurn, stagedPlacement);
+    handleConfirmPlacementEntries(completed);
+    setLocalPrepSecondsLeft(localState.ruleset.prepDurationSeconds ?? 90);
+  }, [
+    mode,
+    localState.phase,
+    localState.ruleset.prepDurationSeconds,
+    localPlacementTurn,
+    privacyCurtainFor,
+    localPrepSecondsLeft,
+    stagedPlacement,
+  ]);
 
   // Local playing dual chess clock ticker (§11)
   useEffect(() => {
@@ -1041,8 +1100,21 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       return;
     }
     if (view.phase === 'finished' && view.winner && view.outcomeReason) {
-      playTacticalSfx(view.winner === viewerColor || view.winner === 'draw' ? 'victory' : 'defeat');
-      onMatchConcluded({
+      const conclusionKey = `${view.matchId}:${view.winner}:${view.outcomeReason}`;
+      if (emittedMatchConcludedRef.current === conclusionKey) {
+        return;
+      }
+      emittedMatchConcludedRef.current = conclusionKey;
+      playTacticalSfx(
+        mode === 'local'
+          ? view.winner === 'draw'
+            ? 'alert'
+            : 'victory'
+          : view.winner === viewerColor || view.winner === 'draw'
+            ? 'victory'
+            : 'defeat',
+      );
+      onMatchConcludedRef.current({
         winner: view.winner,
         perspectiveColor: viewerColor,
         reason: view.outcomeReason,
@@ -1050,7 +1122,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         mode: view.mode,
       });
     }
-  }, [view.phase, view.winner, view.outcomeReason, mode, viewerColor, view.turn.turnNumber, view.mode, onMatchConcluded]);
+  }, [view.matchId, view.phase, view.winner, view.outcomeReason, mode, viewerColor, view.turn.turnNumber, view.mode]);
 
   const tutorialCompleted = useMemo(() => {
     if (mode !== 'tutorial' || !tutorialScenario) return false;
@@ -1773,6 +1845,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const handleKeyDown = (ev: KeyboardEvent) => {
+      if (privacyCurtainFor !== null) {
+        return;
+      }
       const target = ev.target as HTMLElement | null;
       const tagName = target?.tagName?.toUpperCase() ?? '';
       if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target?.isContentEditable) {
@@ -1864,16 +1939,26 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             if (mode === 'online' && onOnlineAction) {
               onOnlineAction.stopJump();
             } else {
-              setLocalState((prev) => stopCavalierJumpChain(prev, viewerColor, Date.now()));
+              const prevPlayer = localState.turn.activePlayer;
+              const next = stopCavalierJumpChain(localState, viewerColor, Date.now());
+              setLocalState(next);
               setSelectedSquare(null);
+              if (mode === 'local' && next.phase === 'playing' && next.turn.activePlayer !== prevPlayer) {
+                setPrivacyCurtainFor(next.turn.activePlayer);
+              }
             }
           } else if (view.turn.pendingBerserkerRagePieceId) {
             ev.preventDefault();
             if (mode === 'online' && onOnlineAction) {
               onOnlineAction.skipRage();
             } else {
-              setLocalState((prev) => skipBerserkerRageMove(prev, viewerColor, Date.now()));
+              const prevPlayer = localState.turn.activePlayer;
+              const next = skipBerserkerRageMove(localState, viewerColor, Date.now());
+              setLocalState(next);
               setSelectedSquare(null);
+              if (mode === 'local' && next.phase === 'playing' && next.turn.activePlayer !== prevPlayer) {
+                setPrivacyCurtainFor(next.turn.activePlayer);
+              }
             }
           }
         }
@@ -1883,6 +1968,8 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
+    privacyCurtainFor,
+    localState,
     confirmingCard,
     confirmingResign,
     pendingImportantConfirm,
@@ -2238,6 +2325,22 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           >
             📖 Aide & Règles
           </button>
+          {(mode === 'local' || mode === 'training_ai') && (
+            <button
+              type="button"
+              className="bw-btn bw-btn-secondary bw-btn-sm"
+              title="Recommencer une nouvelle partie immédiatement"
+              onClick={() => {
+                if (settings.confirmImportantActions && view.phase === 'playing') {
+                  setPendingImportantConfirm('restart');
+                } else {
+                  handleRestartLocalMatch();
+                }
+              }}
+            >
+              🔄 Recommencer
+            </button>
+          )}
           {view.phase === 'playing' && mode !== 'tutorial' && (
             <>
               <button
@@ -4629,9 +4732,11 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               <h2>
                 {pendingImportantConfirm === 'exit'
                   ? '🚪 Quitter la partie ?'
-                  : view.drawOfferFrom && view.drawOfferFrom !== viewerColor
-                    ? '🤝 Accepter le match nul ?'
-                    : '🤝 Proposer un match nul ?'}
+                  : pendingImportantConfirm === 'restart'
+                    ? '🔄 Recommencer la partie ?'
+                    : view.drawOfferFrom && view.drawOfferFrom !== viewerColor
+                      ? '🤝 Accepter le match nul ?'
+                      : '🤝 Proposer un match nul ?'}
               </h2>
               <button
                 type="button"
@@ -4645,9 +4750,11 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
               <p>
                 {pendingImportantConfirm === 'exit'
                   ? 'Une partie est actuellement en cours. Voulez-vous vraiment revenir au menu principal ?'
-                  : view.drawOfferFrom && view.drawOfferFrom !== viewerColor
-                    ? 'Accepter le match nul mettra immédiatement fin à la partie sur une égalité.'
-                    : 'Envoyer une proposition de match nul à votre adversaire ?'}
+                  : pendingImportantConfirm === 'restart'
+                    ? 'Voulez-vous vraiment réinitialiser la partie en cours et repartir à zéro ?'
+                    : view.drawOfferFrom && view.drawOfferFrom !== viewerColor
+                      ? 'Accepter le match nul mettra immédiatement fin à la partie sur une égalité.'
+                      : 'Envoyer une proposition de match nul à votre adversaire ?'}
               </p>
               <div className="bw-modal-footer-btns">
                 <button
@@ -4658,6 +4765,8 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                     setPendingImportantConfirm(null);
                     if (action === 'exit') {
                       onExitToMenu();
+                    } else if (action === 'restart') {
+                      handleRestartLocalMatch();
                     } else if (mode === 'online' && onOnlineAction) {
                       onOnlineAction.offerDraw();
                     } else {
