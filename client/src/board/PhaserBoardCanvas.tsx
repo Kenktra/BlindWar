@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Phaser from 'phaser';
+import type Phaser from 'phaser';
 import {
   BOARD_COLS,
   BOARD_ROWS,
@@ -53,6 +53,12 @@ const ANNOTATION_SVG_PALETTE: Readonly<
 export interface PhaserBoardCanvasProps {
   readonly phase: 'placement' | 'playing' | 'finished';
   readonly viewerColor: PlayerColor;
+  readonly isViewerTurn?: boolean;
+  readonly isSpectator?: boolean;
+  readonly opponentStatusLabel?: string | null;
+  readonly dynamicBoardScale?: boolean;
+  readonly boardScale?: 'compact' | 'normal' | 'large';
+  readonly recentlyMarkedCoord?: Coord | null;
   readonly pieces: readonly ClientPieceView[];
   readonly stagedPlacement?: readonly PlacementEntry[];
   readonly selectedCoord: Coord | null;
@@ -79,6 +85,12 @@ export interface PhaserBoardCanvasProps {
 export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
   phase,
   viewerColor,
+  isViewerTurn = true,
+  isSpectator = false,
+  opponentStatusLabel = null,
+  dynamicBoardScale = true,
+  boardScale = 'normal',
+  recentlyMarkedCoord = null,
   pieces,
   stagedPlacement = [],
   selectedCoord,
@@ -139,50 +151,61 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
 
   // Initialize Phaser 3 tactical ambient canvas layer for particle/pulse effects
   useEffect(() => {
-    if (!phaserHostRef.current || phaserGameRef.current) {
+    if (typeof window === 'undefined' || !phaserHostRef.current || phaserGameRef.current) {
       return;
     }
 
+    let cancelled = false;
     const host = phaserHostRef.current;
-    class TacticalEffectScene extends Phaser.Scene {
-      private t = 0;
-      create() {
-        pulseGraphicsRef.current = this.add.graphics();
-      }
-      update(_time: number, delta: number) {
-        const g = pulseGraphicsRef.current;
-        if (!g) return;
-        g.clear();
-        const { pulseHex, reduceMotion } = phaserThemeRef.current;
-        if (!reduceMotion) {
-          this.t += delta * 0.003;
-        }
-        const alpha = reduceMotion ? 0.08 : 0.08 + Math.sin(this.t) * 0.04;
-        g.lineStyle(1, pulseHex, alpha);
-        for (let i = 0; i <= 9; i += 1) {
-          const pos = (i / 9) * 540;
-          g.lineBetween(pos, 0, pos, 540);
-          g.lineBetween(0, pos, 540, pos);
-        }
-      }
-    }
 
-    try {
-      phaserGameRef.current = new Phaser.Game({
-        type: Phaser.CANVAS,
-        parent: host,
-        width: 540,
-        height: 540,
-        transparent: true,
-        scene: TacticalEffectScene,
-        audio: { noAudio: true },
-        banner: false,
+    void import('phaser')
+      .then((mod) => {
+        if (cancelled || !host || phaserGameRef.current) return;
+        const PhaserLib = mod.default ?? mod;
+        class TacticalEffectScene extends PhaserLib.Scene {
+          private t = 0;
+          create() {
+            pulseGraphicsRef.current = this.add.graphics();
+          }
+          update(_time: number, delta: number) {
+            const g = pulseGraphicsRef.current;
+            if (!g) return;
+            g.clear();
+            const { pulseHex, reduceMotion } = phaserThemeRef.current;
+            if (!reduceMotion) {
+              this.t += delta * 0.003;
+            }
+            const alpha = reduceMotion ? 0.08 : 0.08 + Math.sin(this.t) * 0.04;
+            g.lineStyle(1, pulseHex, alpha);
+            for (let i = 0; i <= 9; i += 1) {
+              const pos = (i / 9) * 540;
+              g.lineBetween(pos, 0, pos, 540);
+              g.lineBetween(0, pos, 540, pos);
+            }
+          }
+        }
+
+        try {
+          phaserGameRef.current = new PhaserLib.Game({
+            type: PhaserLib.CANVAS,
+            parent: host,
+            width: 540,
+            height: 540,
+            transparent: true,
+            scene: TacticalEffectScene,
+            audio: { noAudio: true },
+            banner: false,
+          });
+        } catch {
+          // Fallback gracefully if headless environment lacks WebGL/Canvas context
+        }
+      })
+      .catch(() => {
+        // Ignore in headless test environment
       });
-    } catch {
-      // Fallback gracefully if headless environment lacks WebGL/Canvas context
-    }
 
     return () => {
+      cancelled = true;
       if (phaserGameRef.current) {
         phaserGameRef.current.destroy(true);
         phaserGameRef.current = null;
@@ -243,13 +266,49 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
     rows.push(r);
   }
 
+  const recentlyMarkedKey = recentlyMarkedCoord ? coordKey(recentlyMarkedCoord) : null;
+  const turnScaleClass =
+    !dynamicBoardScale || phase === 'finished' || isSpectator
+      ? 'bw-board-turn-neutral'
+      : isViewerTurn
+        ? 'bw-board-turn-yours'
+        : 'bw-board-turn-opponent';
+
   return (
     <div
-      className={`bw-board-wrapper ${annotationModeActive ? 'bw-board-annotation-mode' : ''}`}
-      onContextMenu={(e) => e.preventDefault()}
+      className={`bw-board-stage bw-board-scale-${boardScale}`}
+      data-board-turn-state={isViewerTurn ? 'yours' : 'opponent'}
+      data-dynamic-scale={dynamicBoardScale ? 'true' : 'false'}
     >
-      <div ref={phaserHostRef} className="bw-phaser-backdrop" aria-hidden="true" />
-      <div className="bw-board-grid" role="grid" aria-label="Plateau BLIND WAR 9x9">
+      <div
+        className={`bw-board-wrapper ${turnScaleClass} ${annotationModeActive ? 'bw-board-annotation-mode' : ''}`}
+        onContextMenu={(e) => e.preventDefault()}
+      >
+        {/* Discrete Turn & Dynamic Board State Indicator (§3) */}
+        <div className={`bw-board-turn-ribbon ${isViewerTurn ? 'yours' : 'opponent'}`} aria-live="polite">
+          {isSpectator ? (
+            <span className="bw-ribbon-text">👁️ MODE SPECTATEUR — OBSERVATION EN DIRECT</span>
+          ) : phase === 'placement' ? (
+            <span className="bw-ribbon-text">
+              {isViewerTurn
+                ? '♟️ PHASE DE PRÉPARATION — PLACEZ VOS 27 UNITÉS'
+                : '⏳ EN ATTENTE DU PLACEMENT ADVERSE…'}
+            </span>
+          ) : phase === 'finished' ? (
+            <span className="bw-ribbon-text">🏁 AFFRONTEMENT TERMINÉ</span>
+          ) : isViewerTurn ? (
+            <span className="bw-ribbon-text">
+              <span className="bw-pixel-dot bw-pixel-dot-active" aria-hidden="true" /> À VOTRE TOUR — INTERACTIONS ACTIVES
+            </span>
+          ) : (
+            <span className="bw-ribbon-text">
+              <span className="bw-pixel-dot bw-pixel-dot-wait" aria-hidden="true" />{' '}
+              {opponentStatusLabel ?? '⏳ TOUR ADVERSE — L’ADVERSAIRE RÉFLÉCHIT…'}
+            </span>
+          )}
+        </div>
+        <div ref={phaserHostRef} className="bw-phaser-backdrop" aria-hidden="true" />
+        <div className="bw-board-grid" role="grid" aria-label="Plateau BLIND WAR 9x9">
         {rows.map((row) =>
           Array.from({ length: BOARD_COLS }, (_, col) => {
             const coord: Coord = { row, col };
@@ -568,14 +627,32 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                   </div>
                 )}
 
-                {isTraqueurMarkTarget ? (
+                {isSelected && (
+                  <span className="bw-pixel-select-corners" aria-hidden="true" />
+                )}
+
+                {recentlyMarkedKey === key && (
+                  <span className="bw-pixel-lock-burst" role="status">
+                    🎯 VERROUILLÉ
+                  </span>
+                )}
+
+                {isTraqueurMarkTarget && (
                   <>
                     <span className="bw-move-marker bw-move-marker-mark" aria-hidden="true" />
+                    <span
+                      className="bw-pixel-target-reticle"
+                      title="Cliquez directement sur ce pion révélé pour le marquer avec votre Traqueur (0 action)"
+                      aria-hidden="true"
+                    >
+                      🎯 VISER
+                    </span>
                     {themeState.preferences.showPatternMarkers && (
                       <span className="bw-pattern-marker" aria-hidden="true">◎</span>
                     )}
                   </>
-                ) : moveCandidate ? (
+                )}
+                {moveCandidate ? (
                   <>
                     <span
                       className={`bw-move-marker bw-move-marker-${
@@ -585,6 +662,19 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                       }`}
                       aria-hidden="true"
                     />
+                    {hasMoveKind('piercing_strike') && (
+                      <span className="bw-pixel-ability-tag bw-pixel-pierce-tag" aria-hidden="true">
+                        ⚡ FRAPPE
+                      </span>
+                    )}
+                    {hasMoveKind('crossbow_shot') && (
+                      <span className="bw-pixel-ability-tag bw-pixel-shot-tag" aria-hidden="true">
+                        🏹 TIR
+                      </span>
+                    )}
+                    {hasMoveKind('capture_move') && !isTraqueurMarkTarget && (
+                      <span className="bw-pixel-danger-corner" aria-hidden="true" />
+                    )}
                     {themeState.preferences.showPatternMarkers && (
                       <span className="bw-pattern-marker" aria-hidden="true">
                         {moveCandidate.kind === 'capture_move' ||
@@ -848,6 +938,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
             })()}
         </svg>
       )}
+      </div>
     </div>
   );
 };

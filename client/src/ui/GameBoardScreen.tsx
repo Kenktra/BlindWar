@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AI_DIFFICULTY_CATALOG,
   ARMY_COMPOSITION,
   CARD_CATALOG,
   CARD_DOSSIERS,
@@ -11,10 +12,12 @@ import {
   TOTAL_PIECES_PER_PLAYER,
   autoCompletePlacement,
   canPlayerPlayCard,
+  chooseAiPlacement,
   computeGuetteurReconZoneKeys,
   coordKey,
   coordToNotation,
   countCharacters,
+  executeAiTurnStep,
   executePieceMove,
   filterTutorialsByQuery,
   finalizePlacementOnTimerExpired,
@@ -28,6 +31,7 @@ import {
   isInPlacementZone,
   markTraqueurTarget,
   playCard,
+  projectMatchStateForSpectator,
   projectMatchStateForViewer,
   proposeOrAcceptMutualDraw,
   resignMatch,
@@ -37,6 +41,7 @@ import {
   stopCavalierJumpChain,
   submitPlayerPlacement,
   tickMatchClock,
+  type AiDifficulty,
   type AnnotationColor,
   type AnnotationTool,
   type CardDrawNotificationView,
@@ -45,6 +50,7 @@ import {
   type CardPlayPayload,
   type CardType,
   type CharacterType,
+  type ClientActionLogEntryView,
   type ClientMatchView,
   type Coord,
   type GameEventType,
@@ -320,8 +326,184 @@ export interface MatchPlayersMeta {
   readonly black: MatchPlayerHudMeta;
 }
 
+export interface CompactMoveItemMeta {
+  readonly seq: number;
+  readonly turnNumber: number;
+  readonly actor: PlayerColor;
+  readonly compactMove: string;
+  readonly pieceTypeKnown: CharacterType | null;
+  readonly pieceLabel: string;
+  readonly isCapture: boolean;
+  readonly isCard: boolean;
+  readonly isAbility: boolean;
+  readonly importantTag: string | null;
+  readonly fullText: string;
+  readonly timestampMs: number;
+}
+
+export interface PairedTurnRow {
+  readonly turnNumber: number;
+  readonly redMoves: readonly CompactMoveItemMeta[];
+  readonly blackMoves: readonly CompactMoveItemMeta[];
+  readonly latestSeq: number;
+  readonly hasCapture: boolean;
+}
+
+const KNOWN_ROLE_REGEX_LIST: readonly { readonly id: CharacterType; readonly label: string; readonly regex: RegExp }[] = [
+  { id: 'guetteur_h', label: 'Guetteur H', regex: /\bGuetteur\s*H\b/i },
+  { id: 'guetteur_d', label: 'Guetteur D', regex: /\bGuetteur\s*D\b/i },
+  { id: 'arbaletrier', label: 'Arbalétrier', regex: /\bArbal[ée]trier\b/i },
+  { id: 'executeur', label: 'Exécuteur', regex: /\bEx[ée]cuteur\b/i },
+  { id: 'traqueur', label: 'Traqueur', regex: /\bTraqueur\b/i },
+  { id: 'berserker', label: 'Berserker', regex: /\bBerserker\b/i },
+  { id: 'cavalier', label: 'Cavalier', regex: /\bCavalier\b/i },
+  { id: 'assassin', label: 'Assassin', regex: /\bAssassin\b/i },
+  { id: 'colosse', label: 'Colosse', regex: /\bColosse\b/i },
+  { id: 'reine', label: 'Reine', regex: /\bReine\b/i },
+  { id: 'soldat', label: 'Soldat', regex: /\bSoldat\b/i },
+  { id: 'roi', label: 'Roi', regex: /\bRoi\b/i },
+];
+
+export function extractCompactMoveMeta(
+  entry: ClientActionLogEntryView,
+  visiblePieces: readonly {
+    readonly owner: PlayerColor;
+    readonly position: Coord;
+    readonly character: CharacterType | null;
+  }[] = [],
+): CompactMoveItemMeta {
+  const txt = entry.text;
+  let pieceTypeKnown: CharacterType | null = null;
+  let pieceLabel = 'Pion';
+  for (const item of KNOWN_ROLE_REGEX_LIST) {
+    if (item.regex.test(txt)) {
+      pieceTypeKnown = item.id;
+      pieceLabel = item.label;
+      break;
+    }
+  }
+
+  const coordMatches = txt.match(/\b[A-I][1-9]\b/g) ?? [];
+  if (!pieceTypeKnown && coordMatches.length > 0 && visiblePieces.length > 0) {
+    const destNot = coordMatches[coordMatches.length - 1]!;
+    const matchedPiece = visiblePieces.find(
+      (p) => p.owner === entry.actor && coordToNotation(p.position) === destNot,
+    );
+    if (matchedPiece && matchedPiece.character !== null) {
+      pieceTypeKnown = matchedPiece.character;
+      pieceLabel = CHARACTER_CATALOG[matchedPiece.character].name;
+    }
+  }
+  const isCapture =
+    entry.eventType === 'PIECE_CAPTURED' ||
+    /élimine|abattue|capture|kamikaze|piège déclenché/i.test(txt);
+  const isCard = entry.eventType === 'CARD_PLAYED' || Boolean(entry.cardNotification);
+  const isAbility =
+    entry.eventType === 'EFFECT_ACTIVATED' ||
+    entry.eventType === 'PIECE_REVEALED' ||
+    /Frappe traversante|Tir d’arbalète|Marquage|Poursuite|Rage|Bond|Saut|promu/i.test(txt);
+
+  let compactMove = '';
+  if (isCard && entry.cardNotification) {
+    compactMove = `🃏 ${entry.cardNotification.cardName}`;
+  } else if (/Marquage/i.test(txt) && coordMatches.length >= 1) {
+    compactMove = `🎯 ${coordMatches[coordMatches.length - 1]}`;
+  } else if (coordMatches.length >= 2) {
+    const first = coordMatches[0]!;
+    const last = coordMatches[coordMatches.length - 1]!;
+    compactMove = `${first}${isCapture ? '×' : '→'}${last}`;
+  } else if (coordMatches.length === 1) {
+    compactMove = `${isCapture ? '⚔ ' : ''}${coordMatches[0]!}`;
+  } else {
+    compactMove = txt.length > 26 ? `${txt.slice(0, 24)}…` : txt;
+  }
+
+  let importantTag: string | null = null;
+  if (/promu/i.test(txt)) importantTag = 'PROMU';
+  else if (/Frappe traversante/i.test(txt)) importantTag = 'FRAPPE';
+  else if (/Tir d’arbalète/i.test(txt)) importantTag = 'TIR';
+  else if (/Marquage/i.test(txt)) importantTag = 'CIBLE';
+  else if (/Rage/i.test(txt)) importantTag = 'RAGE';
+  else if (/Bond|Saut/i.test(txt)) importantTag = 'SAUT';
+  else if (isCard) importantTag = 'CARTE';
+  else if (isCapture) importantTag = 'CAPT.';
+
+  return {
+    seq: entry.seq,
+    turnNumber: entry.turnNumber,
+    actor: entry.actor,
+    compactMove,
+    pieceTypeKnown,
+    pieceLabel,
+    isCapture,
+    isCard,
+    isAbility,
+    importantTag,
+    fullText: txt,
+    timestampMs: entry.timestampMs,
+  };
+}
+
+export function buildPairedTurnHistory(
+  actionLog: readonly ClientActionLogEntryView[],
+  visiblePieces: readonly {
+    readonly owner: PlayerColor;
+    readonly position: Coord;
+    readonly character: CharacterType | null;
+  }[] = [],
+): readonly PairedTurnRow[] {
+  const rows: {
+    turnNumber: number;
+    red: CompactMoveItemMeta[];
+    black: CompactMoveItemMeta[];
+    latestSeq: number;
+    hasCapture: boolean;
+  }[] = [];
+
+  for (const entry of actionLog) {
+    const meta = extractCompactMoveMeta(entry, visiblePieces);
+    let current = rows[rows.length - 1];
+
+    if (
+      !current ||
+      (entry.actor === 'red' && current.black.length > 0)
+    ) {
+      current = {
+        turnNumber: rows.length + 1,
+        red: [],
+        black: [],
+        latestSeq: entry.seq,
+        hasCapture: false,
+      };
+      rows.push(current);
+    }
+
+    if (entry.actor === 'red') {
+      current.red.push(meta);
+    } else {
+      current.black.push(meta);
+    }
+    if (entry.seq > current.latestSeq) {
+      current.latestSeq = entry.seq;
+    }
+    if (meta.isCapture) {
+      current.hasCapture = true;
+    }
+  }
+
+  return rows.map((r) => ({
+    turnNumber: r.turnNumber,
+    redMoves: r.red,
+    blackMoves: r.black,
+    latestSeq: r.latestSeq,
+    hasCapture: r.hasCapture,
+  }));
+}
+
 export interface GameBoardScreenProps {
-  readonly mode: 'local' | 'online' | 'tutorial';
+  readonly mode: 'local' | 'online' | 'tutorial' | 'training_ai' | 'spectator';
+  readonly aiDifficulty?: AiDifficulty;
+  readonly trainingSituationTitle?: string | null;
   readonly initialLocalState?: ServerMatchState;
   readonly onlineView?: ClientMatchView | null;
   readonly onlineRoomId?: string | null;
@@ -353,6 +535,7 @@ export interface GameBoardScreenProps {
   }) => void;
   readonly onExitToMenu: () => void;
   readonly onNextTutorialStep?: () => void;
+  readonly onSkipTutorial?: () => void;
   readonly onTutorialCompleted?: (scenarioId: string) => void;
 }
 
@@ -365,6 +548,8 @@ function formatClockMs(ms: number): string {
 
 export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   mode,
+  aiDifficulty = 'medium',
+  trainingSituationTitle = null,
   initialLocalState,
   onlineView,
   onlinePrepRemainingSec,
@@ -375,6 +560,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   onMatchConcluded,
   onExitToMenu,
   onNextTutorialStep,
+  onSkipTutorial,
   onTutorialCompleted,
 }) => {
   const [localState, setLocalState] = useState<ServerMatchState>(() =>
@@ -386,6 +572,21 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             throw new Error('État local initial requis');
           })(),
   );
+
+  useEffect(() => {
+    if (initialLocalState && mode !== 'tutorial') {
+      setLocalState(initialLocalState);
+      setSelectedSquare(null);
+      setInspectedSquare(null);
+      setActiveCardInUse(null);
+      setCardSourcePieceId(null);
+      setEspionageSelectedIds([]);
+      setTraqueurMarkModePieceId(null);
+      setPendingMoveDisambiguation(null);
+      setStatusError(null);
+      setInspectedLogSeq(null);
+    }
+  }, [initialLocalState, mode]);
 
   // Reset state when switching tutorial scenarios
   useEffect(() => {
@@ -468,12 +669,32 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   const [annotationsOpen, setAnnotationsOpen] = useState<boolean>(false);
   const [rightHelpQuery, setRightHelpQuery] = useState<string>('');
 
+  // Feature 4: Left Move History Panel (collapsible + auto-scroll + historical inspection + export) (§4, §10.D)
+  const [leftHistoryOpen, setLeftHistoryOpen] = useState<boolean>(
+    settings.showMoveHistory ?? true,
+  );
+  const [inspectedLogSeq, setInspectedLogSeq] = useState<number | null>(null);
+  const leftHistoryScrollRef = useRef<HTMLDivElement | null>(null);
+
+  // Feature 5: Direct Traqueur target-lock visual burst & discrete tactical notifications (§5, §6, §8)
+  const [recentlyMarkedCoord, setRecentlyMarkedCoord] = useState<Coord | null>(null);
+  const [tacticalToast, setTacticalToast] = useState<{
+    readonly id: string;
+    readonly kind: 'action' | 'capture' | 'turn' | 'ability' | 'end';
+    readonly text: string;
+  } | null>(null);
+  const [spectatorAutoPlay, setSpectatorAutoPlay] = useState<boolean>(true);
+
+  useEffect(() => {
+    setLeftHistoryOpen(settings.showMoveHistory ?? true);
+  }, [settings.showMoveHistory]);
+
   // Determine current viewer color and projected view
   const viewerColor: PlayerColor = useMemo(() => {
     if (mode === 'online' && onlineView) {
       return onlineView.viewerColor;
     }
-    if (mode === 'tutorial') {
+    if (mode === 'tutorial' || mode === 'training_ai' || mode === 'spectator') {
       return 'red';
     }
     if (localState.phase === 'placement') {
@@ -485,6 +706,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   const view: ClientMatchView = useMemo(() => {
     if (mode === 'online' && onlineView) {
       return onlineView;
+    }
+    if (mode === 'spectator') {
+      return projectMatchStateForSpectator(localState);
     }
     return projectMatchStateForViewer(localState, viewerColor);
   }, [mode, onlineView, localState, viewerColor]);
@@ -690,7 +914,11 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
 
   // Local playing dual chess clock ticker (§11)
   useEffect(() => {
-    if (mode !== 'local' || localState.phase !== 'playing' || privacyCurtainFor !== null) {
+    if (
+      (mode !== 'local' && mode !== 'training_ai' && mode !== 'spectator') ||
+      localState.phase !== 'playing' ||
+      privacyCurtainFor !== null
+    ) {
       return;
     }
     const id = setInterval(() => {
@@ -699,13 +927,117 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     return () => clearInterval(id);
   }, [mode, localState.phase, privacyCurtainFor]);
 
+  // Smooth turn change sound & discrete notification (§6, §7, §8)
+  const prevTurnKeyRef = useRef<string>(`${view.turn.turnNumber}:${view.turn.activePlayer}`);
+  useEffect(() => {
+    const nextKey = `${view.turn.turnNumber}:${view.turn.activePlayer}`;
+    if (prevTurnKeyRef.current !== nextKey && view.phase === 'playing') {
+      prevTurnKeyRef.current = nextKey;
+      playTacticalSfx('turn');
+      if (mode !== 'local' || privacyCurtainFor === null) {
+        const isYours = view.turn.activePlayer === viewerColor;
+        setTacticalToast({
+          id: `turn-${nextKey}`,
+          kind: 'turn',
+          text:
+            mode === 'spectator'
+              ? `Tour #${view.turn.turnNumber} — Camp ${view.turn.activePlayer === 'red' ? 'Rouge 🔴' : 'Noir ⚫'}`
+              : isYours
+                ? `🟢 Tour #${view.turn.turnNumber} — À vous de jouer (${view.turn.remainingActions} PA)`
+                : mode === 'training_ai'
+                  ? `🤖 Tour #${view.turn.turnNumber} — L’IA (${AI_DIFFICULTY_CATALOG[aiDifficulty].label}) réfléchit…`
+                  : `⏳ Tour #${view.turn.turnNumber} — Tour de votre adversaire`,
+        });
+      }
+    }
+  }, [view.turn.turnNumber, view.turn.activePlayer, view.turn.remainingActions, view.phase, viewerColor, mode, privacyCurtainFor, aiDifficulty]);
+
+  useEffect(() => {
+    if (!tacticalToast) return;
+    const t = setTimeout(() => {
+      setTacticalToast((curr) => (curr?.id === tacticalToast.id ? null : curr));
+    }, 3400);
+    return () => clearTimeout(t);
+  }, [tacticalToast]);
+
+  useEffect(() => {
+    if (!recentlyMarkedCoord) return;
+    const t = setTimeout(() => setRecentlyMarkedCoord(null), 1700);
+    return () => clearTimeout(t);
+  }, [recentlyMarkedCoord]);
+
+  // Auto-scroll left move history to the latest move whenever actionLog grows (§4)
+  useEffect(() => {
+    if (leftHistoryScrollRef.current && inspectedLogSeq === null) {
+      leftHistoryScrollRef.current.scrollTop = leftHistoryScrollRef.current.scrollHeight;
+    }
+  }, [view.actionLog.length, inspectedLogSeq]);
+
+  // AI opponent automatic turn execution in Training Mode (§10.A)
+  useEffect(() => {
+    if (
+      mode !== 'training_ai' ||
+      localState.phase !== 'playing' ||
+      localState.turn.activePlayer !== 'black'
+    ) {
+      return;
+    }
+    const delay = AI_DIFFICULTY_CATALOG[aiDifficulty]?.thinkDelayMs ?? 500;
+    const timer = setTimeout(() => {
+      setLocalState((prev) => {
+        if (prev.phase !== 'playing' || prev.turn.activePlayer !== 'black') {
+          return prev;
+        }
+        return executeAiTurnStep(prev, aiDifficulty, Date.now());
+      });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [
+    mode,
+    aiDifficulty,
+    localState.phase,
+    localState.turn.activePlayer,
+    localState.turn.remainingActions,
+    localState.turn.pendingCavalierJumpPieceId,
+    localState.turn.pendingBerserkerRagePieceId,
+    localState.turn.pendingPromotionPieceId,
+    localState.actionLog.length,
+  ]);
+
+  // Spectator live AI-vs-AI simulation step when observing offline (§10.C)
+  useEffect(() => {
+    if (
+      mode !== 'spectator' ||
+      Boolean(onlineView) ||
+      !spectatorAutoPlay ||
+      localState.phase !== 'playing'
+    ) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setLocalState((prev) => {
+        if (prev.phase !== 'playing') return prev;
+        return executeAiTurnStep(prev, aiDifficulty, Date.now());
+      });
+    }, 680);
+    return () => clearTimeout(timer);
+  }, [
+    mode,
+    onlineView,
+    spectatorAutoPlay,
+    aiDifficulty,
+    localState.phase,
+    localState.turn.activePlayer,
+    localState.actionLog.length,
+  ]);
+
   // Trigger conclusion callback when match ends (except in tutorial where we show lesson victory banner)
   useEffect(() => {
-    if (mode === 'tutorial') {
+    if (mode === 'tutorial' || mode === 'spectator') {
       return;
     }
     if (view.phase === 'finished' && view.winner && view.outcomeReason) {
-      playTacticalSfx('victory');
+      playTacticalSfx(view.winner === viewerColor || view.winner === 'draw' ? 'victory' : 'defeat');
       onMatchConcluded({
         winner: view.winner,
         perspectiveColor: viewerColor,
@@ -772,30 +1104,42 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     try {
       if (mode === 'online' && onOnlineAction) {
         onOnlineAction.submitPlacement(entriesToSubmit);
-        playTacticalSfx('card');
+        playTacticalSfx('ability');
         return;
       }
 
       const prevPlayer = localPlacementTurn;
-      const nextState = submitPlayerPlacement(localState, prevPlayer, entriesToSubmit, Date.now());
+      let nextState = submitPlayerPlacement(localState, prevPlayer, entriesToSubmit, Date.now());
+      if (mode === 'training_ai' && nextState.phase === 'placement') {
+        const aiEntries = chooseAiPlacement('black', aiDifficulty);
+        nextState = submitPlayerPlacement(nextState, 'black', aiEntries, Date.now());
+      }
       setLocalState(nextState);
       setStagedPlacement([]);
-      playTacticalSfx('card');
+      playTacticalSfx('ability');
 
-      if (prevPlayer === 'red' && nextState.phase === 'placement') {
-        setLocalPlacementTurn('black');
-        setLocalPrepSecondsLeft(localState.ruleset.prepDurationSeconds);
-        setPrivacyCurtainFor('black');
-      } else if (nextState.phase === 'playing') {
-        setPrivacyCurtainFor('red');
+      if (mode === 'local') {
+        if (prevPlayer === 'red' && nextState.phase === 'placement') {
+          setLocalPlacementTurn('black');
+          setLocalPrepSecondsLeft(localState.ruleset.prepDurationSeconds);
+          setPrivacyCurtainFor('black');
+        } else if (nextState.phase === 'playing') {
+          setPrivacyCurtainFor('red');
+        }
       }
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Placement invalide');
+      playTacticalSfx('alert');
     }
   };
 
   const selectedOwnPieceView = useMemo(() => {
-    if (view.phase !== 'playing' || !selectedSquare || view.turn.activePlayer !== viewerColor) {
+    if (
+      mode === 'spectator' ||
+      view.phase !== 'playing' ||
+      !selectedSquare ||
+      view.turn.activePlayer !== viewerColor
+    ) {
       return null;
     }
     return (
@@ -806,15 +1150,14 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           p.owner === viewerColor,
       ) ?? null
     );
-  }, [view.phase, view.pieces, view.turn.activePlayer, selectedSquare, viewerColor]);
+  }, [mode, view.phase, view.pieces, view.turn.activePlayer, selectedSquare, viewerColor]);
 
-  // Compute legal moves for the currently selected piece
+  // Compute legal moves for the currently selected piece (stays active alongside Traqueur direct target selection)
   const highlightedMoves: readonly MoveCandidate[] = useMemo(() => {
     if (
       view.phase !== 'playing' ||
       !selectedOwnPieceView ||
-      activeCardInUse !== null ||
-      traqueurMarkModePieceId !== null
+      activeCardInUse !== null
     ) {
       return [];
     }
@@ -837,9 +1180,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     }
 
     return generateMoveCandidatesForPiece(selectedPseudo, pseudoServerPieces, visContext, false);
-  }, [view, selectedOwnPieceView, activeCardInUse, traqueurMarkModePieceId, viewerColor]);
+  }, [view, selectedOwnPieceView, activeCardInUse, viewerColor]);
 
-  // Compute legal enemy pieces markable by the currently selected Traqueur (§3.3)
+  // Compute legal enemy pieces markable by the currently selected Traqueur (§3.3 & §5 Direct Board Interaction)
   const traqueurMarkTargets = useMemo(() => {
     if (
       view.phase !== 'playing' ||
@@ -861,14 +1204,15 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
     return generateTraqueurMarkCandidates(selectedPseudo, pseudoServerPieces, visContext);
   }, [view, selectedOwnPieceView, activeCardInUse, viewerColor]);
 
+  // Automatically highlight markable targets on the board as soon as the Traqueur is selected (§5)
   const highlightedTraqueurMarkCoords: readonly Coord[] = useMemo(() => {
-    if (!selectedOwnPieceView || traqueurMarkModePieceId !== selectedOwnPieceView.id) {
+    if (!selectedOwnPieceView || selectedOwnPieceView.character !== 'traqueur') {
       return [];
     }
     return traqueurMarkTargets
       .map((t) => t.position)
       .filter((c): c is Coord => c !== null);
-  }, [selectedOwnPieceView, traqueurMarkModePieceId, traqueurMarkTargets]);
+  }, [selectedOwnPieceView, traqueurMarkTargets]);
 
   const activeContextualTip = useMemo(() => {
     if (mode === 'tutorial') {
@@ -1048,17 +1392,36 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         }
       }
       maybeAutoClearViewerAnnotations();
-      playTacticalSfx(
-        isCaptureTarget || preferredKind === 'piercing_strike' || preferredKind === 'crossbow_shot'
-          ? 'capture'
-          : 'move',
-      );
+      const sfxKind =
+        preferredKind === 'piercing_strike' || preferredKind === 'crossbow_shot'
+          ? 'ability'
+          : isCaptureTarget
+            ? 'capture'
+            : 'move';
+      playTacticalSfx(sfxKind);
+      setTacticalToast({
+        id: `move-${Date.now()}`,
+        kind: isCaptureTarget || preferredKind === 'piercing_strike' || preferredKind === 'crossbow_shot' ? 'capture' : 'action',
+        text:
+          preferredKind === 'piercing_strike'
+            ? `⚡ Frappe traversante en ${coordToNotation(destination)}`
+            : preferredKind === 'crossbow_shot'
+              ? `🏹 Tir d’arbalète en ${coordToNotation(destination)}`
+              : isCaptureTarget
+                ? `⚔️ Attaque exécutée vers ${coordToNotation(destination)}`
+                : `♟️ Déplacement vers ${coordToNotation(destination)}`,
+      });
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Déplacement refusé');
+      playTacticalSfx('alert');
     }
   };
 
-  const handleExecuteTraqueurMark = (traqueurPieceId: string, targetEnemyPieceId: string) => {
+  const handleExecuteTraqueurMark = (
+    traqueurPieceId: string,
+    targetEnemyPieceId: string,
+    targetCoord?: Coord,
+  ) => {
     setStatusError(null);
     try {
       if (mode === 'online' && onOnlineAction?.markTraqueur) {
@@ -1074,9 +1437,18 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         setLocalState(next);
       }
       setTraqueurMarkModePieceId(null);
-      playTacticalSfx('card');
+      if (targetCoord) {
+        setRecentlyMarkedCoord(targetCoord);
+      }
+      playTacticalSfx('ability');
+      setTacticalToast({
+        id: `mark-${Date.now()}`,
+        kind: 'ability',
+        text: `🎯 Cible marquée par le Traqueur (0 PA)${targetCoord ? ` en ${coordToNotation(targetCoord)}` : ''} — Poursuite (+1 case) active au prochain tour !`,
+      });
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Marquage impossible');
+      playTacticalSfx('alert');
     }
   };
 
@@ -1290,24 +1662,48 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       }
     }
 
-    // 2.5. Active Traqueur Mark Targeting (0 action cost, revealed ortho 1..3 enemy only)
+    // 2.5. Direct Traqueur Target Selection on the Board (§5 — automatic on Traqueur selection, no extra button needed)
+    if (
+      selectedOwnPieceView &&
+      selectedOwnPieceView.character === 'traqueur' &&
+      clickedPiece &&
+      traqueurMarkTargets.some((t) => t.id === clickedPiece.id)
+    ) {
+      const matchingCaptureCandidates = highlightedMoves.filter(
+        (m) => m.to.row === coord.row && m.to.col === coord.col,
+      );
+      // Direct click on a markable revealed enemy pawn immediately marks it (0 PA) if it is not yet marked
+      // (or if explicit mark mode is toggled, or if it cannot be captured directly like a revealed Colossus).
+      // Clicking an already-marked enemy pawn a second time executes the capture!
+      if (
+        traqueurMarkModePieceId === selectedOwnPieceView.id ||
+        !clickedPiece.traqueurMarkedByViewer ||
+        matchingCaptureCandidates.length === 0
+      ) {
+        handleExecuteTraqueurMark(selectedOwnPieceView.id, clickedPiece.id, coord);
+        return;
+      }
+    }
+
     if (traqueurMarkModePieceId !== null) {
       if (clickedPiece && clickedPiece.id === traqueurMarkModePieceId) {
         setTraqueurMarkModePieceId(null);
         return;
       }
       if (clickedPiece && traqueurMarkTargets.some((t) => t.id === clickedPiece.id)) {
-        handleExecuteTraqueurMark(traqueurMarkModePieceId, clickedPiece.id);
+        handleExecuteTraqueurMark(traqueurMarkModePieceId, clickedPiece.id, coord);
         return;
       }
       if (clickedPiece && clickedPiece.owner === viewerColor) {
         setTraqueurMarkModePieceId(null);
         setSelectedSquare(coord);
+        playTacticalSfx('select');
         return;
       }
       setStatusError(
         `Sélectionnez une cible ennemie déjà révélée à 1–2 cases orthogonales sans obstacle (ou annulez le marquage).`,
       );
+      playTacticalSfx('alert');
       return;
     }
 
@@ -1330,6 +1726,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           candidates: matchingCandidates,
           isCaptureTarget: Boolean(clickedPiece),
         });
+        playTacticalSfx('select');
         return;
       }
 
@@ -1356,6 +1753,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         setInspectedSquare(null);
       } else {
         setSelectedSquare(coord);
+        playTacticalSfx('select');
       }
     } else {
       setSelectedSquare(null);
@@ -1366,6 +1764,143 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       }
     }
   };
+
+  // Keyboard shortcuts (§8): Escape (cancel selection/modal), ArrowLeft/ArrowRight (navigate move history), Space (contextual action)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleKeyDown = (ev: KeyboardEvent) => {
+      const target = ev.target as HTMLElement | null;
+      const tagName = target?.tagName?.toUpperCase() ?? '';
+      if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target?.isContentEditable) {
+        return;
+      }
+
+      if (ev.key === 'Escape') {
+        if (confirmingCard) {
+          setConfirmingCard(null);
+          return;
+        }
+        if (confirmingResign) {
+          setConfirmingResign(false);
+          return;
+        }
+        if (pendingImportantConfirm) {
+          setPendingImportantConfirm(null);
+          return;
+        }
+        if (showCardHistoryModal) {
+          setShowCardHistoryModal(false);
+          return;
+        }
+        if (showInGameRulesModal) {
+          setShowInGameRulesModal(false);
+          return;
+        }
+        if (activeCardInUse) {
+          setActiveCardInUse(null);
+          setCardSourcePieceId(null);
+          setEspionageSelectedIds([]);
+          return;
+        }
+        if (pendingMoveDisambiguation) {
+          setPendingMoveDisambiguation(null);
+          return;
+        }
+        if (traqueurMarkModePieceId) {
+          setTraqueurMarkModePieceId(null);
+          return;
+        }
+        if (annotationModeActive || annotationsOpen) {
+          setAnnotationModeActive(false);
+          setAnnotationsOpen(false);
+          setPendingArrowStart(null);
+          return;
+        }
+        if (inspectedLogSeq !== null) {
+          setInspectedLogSeq(null);
+          return;
+        }
+        if (selectedSquare || inspectedSquare) {
+          setSelectedSquare(null);
+          setInspectedSquare(null);
+        }
+        return;
+      }
+
+      if (ev.key === 'ArrowLeft' && view.actionLog.length > 0) {
+        ev.preventDefault();
+        setInspectedLogSeq((curr) => {
+          if (curr === null) {
+            return view.actionLog[view.actionLog.length - 1]!.seq;
+          }
+          const idx = view.actionLog.findIndex((e) => e.seq === curr);
+          if (idx > 0) return view.actionLog[idx - 1]!.seq;
+          return curr;
+        });
+        return;
+      }
+
+      if (ev.key === 'ArrowRight' && view.actionLog.length > 0) {
+        ev.preventDefault();
+        setInspectedLogSeq((curr) => {
+          if (curr === null) return null;
+          const idx = view.actionLog.findIndex((e) => e.seq === curr);
+          if (idx !== -1 && idx < view.actionLog.length - 1) {
+            return view.actionLog[idx + 1]!.seq;
+          }
+          return null;
+        });
+        return;
+      }
+
+      if (ev.key === ' ' && tagName !== 'BUTTON') {
+        if (view.phase === 'playing' && view.turn.activePlayer === viewerColor) {
+          if (view.turn.pendingCavalierJumpPieceId) {
+            ev.preventDefault();
+            if (mode === 'online' && onOnlineAction) {
+              onOnlineAction.stopJump();
+            } else {
+              setLocalState((prev) => stopCavalierJumpChain(prev, viewerColor, Date.now()));
+              setSelectedSquare(null);
+            }
+          } else if (view.turn.pendingBerserkerRagePieceId) {
+            ev.preventDefault();
+            if (mode === 'online' && onOnlineAction) {
+              onOnlineAction.skipRage();
+            } else {
+              setLocalState((prev) => skipBerserkerRageMove(prev, viewerColor, Date.now()));
+              setSelectedSquare(null);
+            }
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    confirmingCard,
+    confirmingResign,
+    pendingImportantConfirm,
+    showCardHistoryModal,
+    showInGameRulesModal,
+    activeCardInUse,
+    pendingMoveDisambiguation,
+    traqueurMarkModePieceId,
+    annotationModeActive,
+    annotationsOpen,
+    inspectedLogSeq,
+    selectedSquare,
+    inspectedSquare,
+    view.actionLog,
+    view.phase,
+    view.turn.activePlayer,
+    view.turn.pendingCavalierJumpPieceId,
+    view.turn.pendingBerserkerRagePieceId,
+    viewerColor,
+    mode,
+    onOnlineAction,
+  ]);
 
   const rightHelpMatches = useMemo(() => {
     const pieces = filterTutorialsByQuery(
@@ -1420,6 +1955,80 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       ) ?? null
     : null;
 
+  const pairedTurnHistory = useMemo(
+    () => buildPairedTurnHistory(view.actionLog, view.pieces),
+    [view.actionLog, view.pieces],
+  );
+  const latestActionSeq =
+    view.actionLog.length > 0 ? view.actionLog[view.actionLog.length - 1]!.seq : null;
+  const inspectedLogEntry = useMemo(
+    () =>
+      inspectedLogSeq !== null
+        ? (view.actionLog.find((e) => e.seq === inspectedLogSeq) ?? null)
+        : null,
+    [view.actionLog, inspectedLogSeq],
+  );
+  const inspectedLogMeta = useMemo(
+    () => (inspectedLogEntry ? extractCompactMoveMeta(inspectedLogEntry, view.pieces) : null),
+    [inspectedLogEntry, view.pieces],
+  );
+
+  const isViewerTurn =
+    mode === 'spectator'
+      ? false
+      : view.phase === 'placement'
+        ? !ownPlacementConfirmed
+        : view.phase === 'playing'
+          ? view.turn.activePlayer === viewerColor
+          : false;
+
+  const opponentStatusLabel =
+    mode === 'training_ai'
+      ? `🤖 L’IA (${AI_DIFFICULTY_CATALOG[aiDifficulty].label}) réfléchit…`
+      : mode === 'tutorial'
+        ? '🎓 Tour de l’Instructeur…'
+        : '⏳ Tour adverse — L’adversaire réfléchit ou joue…';
+
+  const handleExportMatchAnalysis = () => {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      matchId: view.matchId,
+      mode,
+      phase: view.phase,
+      turnsPlayed: view.turn.turnNumber,
+      winner: view.winner,
+      outcomeReason: view.outcomeReason,
+      turns: pairedTurnHistory,
+      actionLog: view.actionLog,
+    };
+    const jsonText = JSON.stringify(payload, null, 2);
+    try {
+      if (typeof window !== 'undefined' && typeof Blob !== 'undefined') {
+        const blob = new Blob([jsonText], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `blind-war-analyse-${view.matchId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+      setTacticalToast({
+        id: `export-${Date.now()}`,
+        kind: 'action',
+        text: '📥 Analyse de la partie exportée en JSON !',
+      });
+      playTacticalSfx('menu');
+    } catch {
+      setTacticalToast({
+        id: `export-err-${Date.now()}`,
+        kind: 'action',
+        text: '📋 Historique prêt pour analyse.',
+      });
+    }
+  };
+
   const handleOpenCardConfirm = (cardId: CardType) => {
     setTraqueurMarkModePieceId(null);
     setPendingMoveDisambiguation(null);
@@ -1429,12 +2038,35 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       setEspionageSelectedIds([]);
       return;
     }
-    setConfirmingCard(cardId);
+    // Global immediate cards (Block, Brouillard, Double Action) open confirmation if confirmImportantActions is enabled
+    if (cardId === 'block' || cardId === 'brouillard' || cardId === 'double_action') {
+      if (settings.confirmImportantActions) {
+        setConfirmingCard(cardId);
+      } else {
+        dispatchCardPlay({ card: cardId });
+      }
+      return;
+    }
+    // Targeted cards switch directly into on-board target selection without an extra modal click (§5)
+    setConfirmingCard(null);
+    setActiveCardInUse(cardId);
+    setCardSourcePieceId(null);
+    setEspionageSelectedIds([]);
+    playTacticalSfx('select');
+    if (cardId === 'resurrection') {
+      setRightPanelTab('match');
+      setTabletSideTab('match');
+    }
   };
 
   const resolvedPlayersMeta: MatchPlayersMeta = playersMeta ?? {
     red: {
-      displayName: mode === 'tutorial' ? 'Apprenti (Rouge)' : 'Joueur Rouge',
+      displayName:
+        mode === 'tutorial'
+          ? 'Apprenti (Rouge)'
+          : mode === 'spectator'
+            ? 'Commandant Rouge (IA)'
+            : 'Joueur Rouge',
       eloRating: mode === 'online' ? 200 : null,
       avatarBadge: '♔',
       avatarImage: null,
@@ -1443,9 +2075,13 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       displayName:
         mode === 'tutorial'
           ? 'Instructeur'
-          : mode === 'local'
-            ? 'Joueur Noir (Local)'
-            : 'Adversaire Noir',
+          : mode === 'training_ai'
+            ? `IA ${AI_DIFFICULTY_CATALOG[aiDifficulty].label}`
+            : mode === 'spectator'
+              ? 'Commandant Noir (IA)'
+              : mode === 'local'
+                ? 'Joueur Noir (Local)'
+                : 'Adversaire Noir',
       eloRating: mode === 'online' ? 200 : null,
       avatarBadge: '♚',
       avatarImage: null,
@@ -1473,11 +2109,15 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           <span className="bw-mode-pill">
             {mode === 'tutorial'
               ? 'TUTORIEL'
-              : mode === 'local'
-                ? 'LOCAL 2J'
-                : view.mode === 'matchmaking_ranked'
-                  ? 'CLASSÉ ELO'
-                  : 'EN LIGNE'}
+              : mode === 'training_ai'
+                ? `ENTRAÎNEMENT IA (${AI_DIFFICULTY_CATALOG[aiDifficulty].badge})`
+                : mode === 'spectator'
+                  ? 'MODE SPECTATEUR'
+                  : mode === 'local'
+                    ? 'LOCAL 2J'
+                    : view.mode === 'matchmaking_ranked'
+                      ? 'CLASSÉ ELO'
+                      : 'EN LIGNE'}
           </span>
         </div>
 
@@ -1821,7 +2461,93 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                 ↺ Réinitialiser
               </button>
             )}
+            {onSkipTutorial && (
+              <button
+                type="button"
+                className="bw-btn bw-btn-ghost bw-btn-sm"
+                onClick={onSkipTutorial}
+                title="Passer le tutoriel et accéder directement aux parties"
+              >
+                ⏭ Passer le tutoriel
+              </button>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Training Situation or Spectator Control Strip (§10.A, §10.C) */}
+      {mode === 'training_ai' && trainingSituationTitle && (
+        <div className="bw-training-drill-banner" role="region" aria-label="Situation d'entraînement">
+          <span>
+            🎯 <strong>Situation tactique :</strong> {trainingSituationTitle} — Adversaire IA :{' '}
+            <strong>{AI_DIFFICULTY_CATALOG[aiDifficulty].label}</strong>
+          </span>
+          {initialLocalState && (
+            <button
+              type="button"
+              className="bw-btn bw-btn-secondary bw-btn-xs"
+              onClick={() => {
+                setLocalState(initialLocalState);
+                setSelectedSquare(null);
+                setInspectedLogSeq(null);
+              }}
+            >
+              ↺ Rejouer cette situation
+            </button>
+          )}
+        </div>
+      )}
+
+      {mode === 'spectator' && (
+        <div className="bw-spectator-banner" role="region" aria-label="Contrôles du mode spectateur">
+          <div>
+            👁️ <strong>Mode Spectateur :</strong> Vous observez la partie sans intervenir. Seules les
+            identités révélées publiquement selon les règles sont affichées.
+          </div>
+          {!onlineView && (
+            <div className="bw-spectator-controls">
+              <button
+                type="button"
+                className="bw-btn bw-btn-primary bw-btn-xs"
+                onClick={() => setSpectatorAutoPlay((v) => !v)}
+              >
+                {spectatorAutoPlay ? '⏸ Pause' : '▶ Lecture auto'}
+              </button>
+              <button
+                type="button"
+                className="bw-btn bw-btn-secondary bw-btn-xs"
+                disabled={localState.phase !== 'playing'}
+                onClick={() =>
+                  setLocalState((prev) =>
+                    prev.phase === 'playing'
+                      ? executeAiTurnStep(prev, aiDifficulty, Date.now())
+                      : prev,
+                  )
+                }
+              >
+                ⏭ Coup suivant
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Discrete Tactical Notification Toast (§8 Notifications discrètes) */}
+      {tacticalToast && (
+        <div
+          className={`bw-tactical-toast bw-tactical-toast-${tacticalToast.kind}`}
+          role="status"
+          aria-live="polite"
+        >
+          <span>{tacticalToast.text}</span>
+          <button
+            type="button"
+            className="bw-toast-close"
+            onClick={() => setTacticalToast(null)}
+            aria-label="Fermer la notification"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -1990,10 +2716,197 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
       )}
 
-      {/* Main 3-Column Tactical Arena */}
-      <div className="bw-arena-columns">
-        {/* Left Sidebar: Dynamic Piece Description Panel + Placement Palette / Cards Hand */}
+      {/* Main 3-Column Tactical Arena (§4 : À gauche Historique des coups, Au centre Échiquier, À droite Infos & Actions) */}
+      <div className={`bw-arena-columns ${leftHistoryOpen ? '' : 'bw-arena-left-collapsed'}`}>
+        {/* Left Sidebar: Collapsible Move History Panel (§4) + Dynamic Piece Dossier + Placement / Hand */}
         <aside className="bw-sidebar bw-sidebar-left">
+          {/* Panneau Historique des Coups à gauche de l'échiquier (§4) */}
+          <div
+            className={`bw-panel bw-left-move-history-panel ${leftHistoryOpen ? 'open' : 'collapsed'}`}
+            role="region"
+            aria-label="Historique des coups à gauche"
+          >
+            <div className="bw-left-history-header">
+              <div className="bw-left-history-title-wrap">
+                <h3 className="bw-left-history-title">
+                  📜 Coups ({view.actionLog.length})
+                </h3>
+                <span className="bw-left-history-turn-pill">T#{view.turn.turnNumber}</span>
+              </div>
+              <div className="bw-left-history-controls">
+                {view.actionLog.length > 0 && (
+                  <>
+                    <button
+                      type="button"
+                      className="bw-btn bw-btn-ghost bw-btn-xs"
+                      title="Coup précédent (Flèche Gauche ←)"
+                      onClick={() => {
+                        setInspectedLogSeq((curr) => {
+                          if (curr === null) return view.actionLog[view.actionLog.length - 1]!.seq;
+                          const idx = view.actionLog.findIndex((e) => e.seq === curr);
+                          return idx > 0 ? view.actionLog[idx - 1]!.seq : curr;
+                        });
+                      }}
+                    >
+                      ◀
+                    </button>
+                    <button
+                      type="button"
+                      className="bw-btn bw-btn-ghost bw-btn-xs"
+                      title="Coup suivant / Direct (Flèche Droite →)"
+                      disabled={inspectedLogSeq === null}
+                      onClick={() => {
+                        setInspectedLogSeq((curr) => {
+                          if (curr === null) return null;
+                          const idx = view.actionLog.findIndex((e) => e.seq === curr);
+                          if (idx !== -1 && idx < view.actionLog.length - 1) {
+                            return view.actionLog[idx + 1]!.seq;
+                          }
+                          return null;
+                        });
+                      }}
+                    >
+                      ▶
+                    </button>
+                    <button
+                      type="button"
+                      className="bw-btn bw-btn-ghost bw-btn-xs"
+                      title="Exporter l'analyse de la partie (JSON)"
+                      onClick={handleExportMatchAnalysis}
+                    >
+                      📥
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="bw-btn bw-btn-secondary bw-btn-xs bw-left-history-toggle"
+                  onClick={() => setLeftHistoryOpen((v) => !v)}
+                  aria-expanded={leftHistoryOpen}
+                  title={leftHistoryOpen ? 'Réduire l’historique des coups' : 'Ouvrir l’historique des coups'}
+                >
+                  {leftHistoryOpen ? '▾ Réduire' : '▸ Ouvrir'}
+                </button>
+              </div>
+            </div>
+
+            {leftHistoryOpen && (
+              <div className="bw-left-history-body">
+                <div className="bw-left-history-col-headers" aria-hidden="true">
+                  <span className="bw-lh-col-turn">Tour</span>
+                  <span className="bw-lh-col-p1">🔴 Joueur 1</span>
+                  <span className="bw-lh-col-p2">⚫ Joueur 2</span>
+                </div>
+
+                <div ref={leftHistoryScrollRef} className="bw-left-history-scroll">
+                  {pairedTurnHistory.length === 0 ? (
+                    <p className="bw-muted-small bw-left-history-empty">
+                      Aucun coup joué — les déplacements, pièces révélées et captures s’afficheront ici tour par tour.
+                    </p>
+                  ) : (
+                    pairedTurnHistory.map((row) => {
+                      const isLatestTurn =
+                        latestActionSeq !== null && row.latestSeq === latestActionSeq;
+                      return (
+                        <div
+                          key={`turn-row-${row.turnNumber}`}
+                          className={`bw-left-turn-row ${isLatestTurn ? 'bw-left-turn-row-latest' : ''}`}
+                        >
+                          <span className="bw-left-turn-num">#{row.turnNumber}</span>
+
+                          <div className="bw-left-turn-cell bw-left-turn-cell-red">
+                            {row.redMoves.length === 0 ? (
+                              <span className="bw-lh-dash">—</span>
+                            ) : (
+                              row.redMoves.map((m) => {
+                                const isLatestMove = m.seq === latestActionSeq;
+                                const isInspected = m.seq === inspectedLogSeq;
+                                return (
+                                  <button
+                                    key={m.seq}
+                                    type="button"
+                                    className={`bw-lh-move-chip bw-lh-move-red ${isLatestMove ? 'bw-lh-move-latest' : ''} ${isInspected ? 'bw-lh-move-inspected' : ''}`}
+                                    onClick={() =>
+                                      setInspectedLogSeq((curr) => (curr === m.seq ? null : m.seq))
+                                    }
+                                    title={`${m.fullText} (Cliquer pour analyser)`}
+                                  >
+                                    <span className="bw-lh-piece-tag">{m.pieceLabel}</span>
+                                    <strong className="bw-lh-move-not">{m.compactMove}</strong>
+                                    {m.importantTag && (
+                                      <span
+                                        className={`bw-lh-badge ${m.isCapture ? 'bw-lh-badge-capture' : 'bw-lh-badge-info'}`}
+                                      >
+                                        {m.importantTag}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          <div className="bw-left-turn-cell bw-left-turn-cell-black">
+                            {row.blackMoves.length === 0 ? (
+                              <span className="bw-lh-dash">…</span>
+                            ) : (
+                              row.blackMoves.map((m) => {
+                                const isLatestMove = m.seq === latestActionSeq;
+                                const isInspected = m.seq === inspectedLogSeq;
+                                return (
+                                  <button
+                                    key={m.seq}
+                                    type="button"
+                                    className={`bw-lh-move-chip bw-lh-move-black ${isLatestMove ? 'bw-lh-move-latest' : ''} ${isInspected ? 'bw-lh-move-inspected' : ''}`}
+                                    onClick={() =>
+                                      setInspectedLogSeq((curr) => (curr === m.seq ? null : m.seq))
+                                    }
+                                    title={`${m.fullText} (Cliquer pour analyser)`}
+                                  >
+                                    <span className="bw-lh-piece-tag">{m.pieceLabel}</span>
+                                    <strong className="bw-lh-move-not">{m.compactMove}</strong>
+                                    {m.importantTag && (
+                                      <span
+                                        className={`bw-lh-badge ${m.isCapture ? 'bw-lh-badge-capture' : 'bw-lh-badge-info'}`}
+                                      >
+                                        {m.importantTag}
+                                      </span>
+                                    )}
+                                  </button>
+                                );
+                              })
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Analyse détaillée d'un coup passé lorsqu'on clique dessus ou navigue avec ← / → (§10.D) */}
+                {inspectedLogMeta && (
+                  <div className="bw-left-history-inspector" role="status">
+                    <div className="bw-lh-inspector-head">
+                      <span>
+                        🔍 <strong>Coup #{inspectedLogMeta.seq}</strong> • Tour #
+                        {inspectedLogMeta.turnNumber} (
+                        {inspectedLogMeta.actor === 'red' ? '🔴 Joueur 1' : '⚫ Joueur 2'})
+                      </span>
+                      <button
+                        type="button"
+                        className="bw-btn bw-btn-ghost bw-btn-xs"
+                        onClick={() => setInspectedLogSeq(null)}
+                      >
+                        📡 Direct
+                      </button>
+                    </div>
+                    <p className="bw-lh-inspector-text">{inspectedLogMeta.fullText}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <PieceDescriptionPanel
             viewerColor={viewerColor}
             phase={view.phase}
@@ -2205,6 +3118,12 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
           <PhaserBoardCanvas
             phase={view.phase}
             viewerColor={viewerColor}
+            isViewerTurn={isViewerTurn}
+            isSpectator={mode === 'spectator'}
+            opponentStatusLabel={opponentStatusLabel}
+            dynamicBoardScale={settings.dynamicBoardScale ?? true}
+            boardScale={settings.boardScale ?? 'normal'}
+            recentlyMarkedCoord={recentlyMarkedCoord}
             pieces={view.pieces}
             stagedPlacement={effectiveStagedPlacement}
             selectedCoord={selectedSquare}
@@ -2279,10 +3198,10 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                 {selectedOwnPieceView.character === 'traqueur' && (
                   <>
                     <div className="bw-unit-ability-info">
-                      <strong>Traqueur — Marquage (0 action) :</strong>{' '}
-                      {traqueurMarkModePieceId === selectedOwnPieceView.id ? (
+                      <strong>Traqueur — Ciblage Direct sur l’Échiquier (0 action) :</strong>{' '}
+                      {traqueurMarkTargets.length > 0 ? (
                         <span className="bw-ability-accent">
-                          Cliquez sur un ennemi déjà révélé en violet (1–2 cases H/V sans obstacle).
+                          🎯 {traqueurMarkTargets.length} cible(s) révélée(s) en surbrillance — cliquez directement sur le pion ennemi sur l’échiquier pour le viser (0 PA) !
                         </span>
                       ) : selectedOwnPieceView.traqueurHasActiveMarkVisible ? (
                         <span>
@@ -2295,32 +3214,9 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                         </span>
                       ) : (
                         <span>
-                          Aucune cible marquée (portée de base 2). {traqueurMarkTargets.length > 0
-                            ? `${traqueurMarkTargets.length} cible(s) révélée(s) à portée (marquage gratuit : ne consomme pas votre tour).`
-                            : 'Révélez un ennemi à 1–2 cases H/V sans obstacle pour passer à 3 cases.'}
+                          Aucune cible révélée à portée (1–2 cases H/V sans obstacle). Dès qu’un ennemi est révélé à portée, cliquez directement dessus sur l’échiquier.
                         </span>
                       )}
-                    </div>
-                    <div className="bw-unit-ability-actions">
-                      <button
-                        type="button"
-                        className={`bw-btn bw-btn-sm ${traqueurMarkModePieceId === selectedOwnPieceView.id ? 'bw-btn-ghost' : 'bw-btn-primary'}`}
-                        disabled={
-                          traqueurMarkModePieceId !== selectedOwnPieceView.id &&
-                          traqueurMarkTargets.length === 0
-                        }
-                        onClick={() =>
-                          setTraqueurMarkModePieceId((curr) =>
-                            curr === selectedOwnPieceView.id ? null : selectedOwnPieceView.id,
-                          )
-                        }
-                      >
-                        {traqueurMarkModePieceId === selectedOwnPieceView.id
-                          ? '✕ Quitter mode Marquage'
-                          : selectedOwnPieceView.traqueurHasActiveMarkVisible
-                            ? 'Changer de cible (0 action)'
-                            : 'Marquer une cible (0 action)'}
-                      </button>
                     </div>
                   </>
                 )}
@@ -3050,33 +3946,16 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             )
           ) : view.phase === 'playing' && view.turn.activePlayer === viewerColor ? (
             selectedOwnPieceView?.character === 'traqueur' ? (
-              <>
-                <span className="bw-muted-small">
-                  <strong>Traqueur :</strong>{' '}
-                  {selectedOwnPieceView.traqueurHasActiveMarkVisible
+              <span className="bw-muted-small">
+                <strong>Traqueur :</strong>{' '}
+                {traqueurMarkTargets.length > 0
+                  ? `🎯 ${traqueurMarkTargets.length} cible(s) révélée(s) en surbrillance — cliquez directement sur le pion adverse pour marquer (0 PA)`
+                  : selectedOwnPieceView.traqueurHasActiveMarkVisible
                     ? selectedOwnPieceView.traqueurPursuitReadyVisible
                       ? 'Poursuite 3 cases PRÊTE'
-                      : 'Cible marquée (tour suivant)'
-                    : `${traqueurMarkTargets.length} cible(s) révélée(s)`}
-                </span>
-                <button
-                  type="button"
-                  className="bw-btn bw-btn-primary bw-btn-xs"
-                  disabled={
-                    traqueurMarkModePieceId !== selectedOwnPieceView.id &&
-                    traqueurMarkTargets.length === 0
-                  }
-                  onClick={() =>
-                    setTraqueurMarkModePieceId((curr) =>
-                      curr === selectedOwnPieceView.id ? null : selectedOwnPieceView.id,
-                    )
-                  }
-                >
-                  {traqueurMarkModePieceId === selectedOwnPieceView.id
-                    ? '✕ Annuler marquage'
-                    : '🎯 Marquer (0 PA)'}
-                </button>
-              </>
+                      : 'Cible marquée (active au tour suivant)'
+                    : 'Aucune cible révélée à portée (1–2 cases H/V)'}
+              </span>
             ) : selectedOwnPieceView?.character === 'arbaletrier' ? (
               <span className="bw-muted-small">
                 <strong>Arbalétrier :</strong>{' '}
@@ -3102,8 +3981,17 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         <div className="bw-bottombar-actions">
           <button
             type="button"
+            className={`bw-btn bw-btn-xs ${leftHistoryOpen ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
+            onClick={() => setLeftHistoryOpen((v) => !v)}
+            title="Ouvrir ou réduire le panneau d'historique des coups à gauche"
+          >
+            📜 Coups ({view.actionLog.length})
+          </button>
+          <button
+            type="button"
             className={`bw-btn bw-btn-xs ${annotationsOpen || annotationModeActive ? 'bw-btn-primary' : 'bw-btn-secondary'}`}
             onClick={() => setAnnotationsOpen((v) => !v)}
+            title="Ouvrir les annotations tactiques personnelles (flèches & cases)"
           >
             ✏️ Annotations{currentViewerAnnotationCount > 0 ? ` (${currentViewerAnnotationCount})` : ''}
           </button>
@@ -3111,6 +3999,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             type="button"
             className="bw-btn bw-btn-secondary bw-btn-xs"
             onClick={() => setShowInGameRulesModal(true)}
+            title="Consulter l'encyclopédie et les règles sans quitter la partie"
           >
             🎓 Tutoriels & Règles
           </button>

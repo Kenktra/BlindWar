@@ -45,6 +45,7 @@ const STYLE_META_BY_THEME_ID: Readonly<Record<ThemeId, PieceAssetPackStyleMeta>>
   noir_et_blanc: MONOCHROME_ASSET_PACK_STYLE,
   bleu_et_argent: BLUE_ASSET_PACK_STYLE,
   ambre_et_ebene: CLASSIC_ASSET_PACK_STYLE,
+  purple_night: CLASSIC_ASSET_PACK_STYLE,
 };
 
 function buildThemeAssetPack(themeId: ThemeId): ThemeAssetPack {

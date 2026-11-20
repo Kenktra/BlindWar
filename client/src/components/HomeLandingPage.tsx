@@ -15,6 +15,9 @@ import { PieceArtwork } from './PieceArtwork.js';
 export interface HomeLandingPageProps {
   readonly userProfile: ClientUserProfile | null;
   readonly onPlayLocal: () => void;
+  readonly onPlayTrainingAi?: () => void;
+  readonly onPlayQuickMatch?: () => void;
+  readonly onOpenSpectator?: () => void;
   readonly onOpenMatchmaking: () => void;
   readonly onOpenCustomCreate: () => void;
   readonly onOpenTutorial: () => void;
@@ -94,6 +97,9 @@ const FEATURED_CARDS = [
 export const HomeLandingPage: React.FC<HomeLandingPageProps> = ({
   userProfile,
   onPlayLocal,
+  onPlayTrainingAi,
+  onPlayQuickMatch,
+  onOpenSpectator,
   onOpenMatchmaking,
   onOpenCustomCreate,
   onOpenTutorial,
@@ -168,8 +174,35 @@ export const HomeLandingPage: React.FC<HomeLandingPageProps> = ({
             </button>
           </div>
 
-          {/* RACCOURCIS RAPIDES (§5.2) */}
+          {/* RACCOURCIS RAPIDES (§5.2 & §10) */}
           <div className="bw-landing-quick-actions" role="navigation" aria-label="Accès rapides">
+            {onPlayTrainingAi && (
+              <button
+                type="button"
+                className="bw-landing-quick-btn"
+                onClick={onPlayTrainingAi}
+              >
+                🤖 Mode Entraînement (IA)
+              </button>
+            )}
+            {onPlayQuickMatch && (
+              <button
+                type="button"
+                className="bw-landing-quick-btn"
+                onClick={onPlayQuickMatch}
+              >
+                ⚡ Partie rapide
+              </button>
+            )}
+            {onOpenSpectator && (
+              <button
+                type="button"
+                className="bw-landing-quick-btn"
+                onClick={onOpenSpectator}
+              >
+                👁️ Mode spectateur
+              </button>
+            )}
             <button
               type="button"
               className="bw-landing-quick-btn"

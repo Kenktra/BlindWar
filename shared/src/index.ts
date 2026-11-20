@@ -16,3 +16,4 @@ export * from './rules/engine.js';
 export * from './rules/encyclopedia.js';
 export * from './rules/tutorial.js';
 export * from './rules/tutorialsData.js';
+export * from './rules/ai.js';

@@ -75,8 +75,16 @@ export function buildThemeCssVariables(
         ? '0.55'
         : '1';
 
+  const boardBaseMax =
+    preferences.boardScale === 'compact'
+      ? '470px'
+      : preferences.boardScale === 'large'
+        ? '610px'
+        : '548px';
+
   return {
     '--bw-color-scheme': colorMode,
+    '--bw-board-max-size': boardBaseMax,
     '--bw-bg-deep': ui.bgDeep,
     '--bw-bg-radial': ui.bgRadialGlow,
     '--bw-bg-navbar': ui.bgNavbar,
@@ -221,6 +229,8 @@ export function applyThemePreferencesToDocument(
   root.dataset.bwBoardTheme = state.boardTheme.id;
   root.dataset.bwColorMode = state.colorMode;
   root.dataset.bwAnimSpeed = state.preferences.animationSpeed;
+  root.dataset.bwBoardScale = state.preferences.boardScale ?? 'normal';
+  root.dataset.bwDynamicBoard = String(state.preferences.dynamicBoardScale ?? true);
 
   return state;
 }

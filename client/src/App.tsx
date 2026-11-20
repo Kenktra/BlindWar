@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import {
+  AI_DIFFICULTIES,
+  AI_DIFFICULTY_CATALOG,
   CARD_DOSSIERS,
   CARD_TYPES,
   CHARACTER_DOSSIERS,
@@ -13,13 +15,16 @@ import {
   PREP_DURATION_PRESETS_SECONDS,
   RULE_SECTIONS,
   SETTINGS_HELP_ITEMS,
+  TRAINING_SITUATIONS,
   TUTORIAL_SCENARIOS,
   computeEloUpdate,
   computeProfileCosmetics,
+  createAiTrainingMatch,
   createMatchState,
   createZeroNewMechanicsStats,
   isDesignatedAdminUsername,
   sanitizeUserPreferences,
+  type AiDifficulty,
   type CardPlayPayload,
   type CardType,
   type CharacterType,
@@ -35,6 +40,7 @@ import {
   type ProfileBannerId,
   type ProfileTitleId,
   type ServerMatchState,
+  type TrainingSituationSpec,
   type UserPreferences,
 } from '../../shared/src/index.js';
 import type { RoomLobbySnapshot } from '../../server/src/rooms/roomManager.js';
@@ -183,7 +189,11 @@ export const App: React.FC = () => {
     remotePlayersInQueue: number;
   }>({ connectedRelays: 0, knownPeersCount: 0, remotePlayersInQueue: 0 });
   const [mmError, setMmError] = useState<string | null>(null);
-  const [boardSessionKind, setBoardSessionKind] = useState<'local' | 'online' | 'tutorial'>('local');
+  const [boardSessionKind, setBoardSessionKind] = useState<
+    'local' | 'online' | 'tutorial' | 'training_ai' | 'spectator'
+  >('local');
+  const [aiDifficulty, setAiDifficulty] = useState<AiDifficulty>('medium');
+  const [trainingSituationTitle, setTrainingSituationTitle] = useState<string | null>(null);
   const [localMatchState, setLocalMatchState] = useState<ServerMatchState>(() =>
     createMatchState('local-default', 'local'),
   );
@@ -476,14 +486,57 @@ export const App: React.FC = () => {
   }, [screen, userProfile]);
 
   const startNewLocalGame = (customRules?: Partial<CustomRulesetConfig>) => {
+    setTrainingSituationTitle(null);
     setLocalMatchState(createMatchState(`local-${Date.now()}`, 'local', customRules));
     setBoardSessionKind('local');
+    playTacticalSfx('menu');
+    setScreen('board');
+  };
+
+  const startAiTrainingGame = (
+    difficulty: AiDifficulty = aiDifficulty,
+    autoPlaceHumanArmy: boolean = false,
+    customRules?: Partial<CustomRulesetConfig>,
+  ) => {
+    setAiDifficulty(difficulty);
+    setTrainingSituationTitle(null);
+    const match = createAiTrainingMatch(difficulty, autoPlaceHumanArmy);
+    setLocalMatchState(
+      customRules
+        ? {
+            ...match,
+            ruleset: { ...match.ruleset, ...customRules },
+          }
+        : match,
+    );
+    setBoardSessionKind('training_ai');
+    playTacticalSfx('menu');
+    setScreen('board');
+  };
+
+  const startTrainingSituation = (sit: TrainingSituationSpec) => {
+    setAiDifficulty(sit.difficulty);
+    setTrainingSituationTitle(sit.title);
+    setLocalMatchState(sit.createInitialState());
+    setBoardSessionKind('training_ai');
+    playTacticalSfx('menu');
+    setScreen('board');
+  };
+
+  const startSpectatorExhibition = (difficulty: AiDifficulty = aiDifficulty) => {
+    setAiDifficulty(difficulty);
+    setTrainingSituationTitle(null);
+    setLocalMatchState(createAiTrainingMatch(difficulty, true));
+    setBoardSessionKind('spectator');
+    playTacticalSfx('menu');
     setScreen('board');
   };
 
   const startTutorialScenario = (idx: number) => {
+    setTrainingSituationTitle(null);
     setTutorialIndex(idx);
     setBoardSessionKind('tutorial');
+    playTacticalSfx('menu');
     setScreen('board');
   };
 
@@ -809,6 +862,8 @@ export const App: React.FC = () => {
       <ThemeProvider preferences={settings}>
         <GameBoardScreen
         mode={boardSessionKind}
+        aiDifficulty={aiDifficulty}
+        trainingSituationTitle={trainingSituationTitle}
         initialLocalState={localMatchState}
         onlineView={onlineMatchView}
         onlineRoomId={activeOnlineRoomId}
@@ -874,6 +929,11 @@ export const App: React.FC = () => {
         onMatchConcluded={handleMatchConcluded}
         onExitToMenu={() => setScreen('main_menu')}
         onTutorialCompleted={handleTutorialCompleted}
+        onSkipTutorial={
+          boardSessionKind === 'tutorial'
+            ? () => startAiTrainingGame('easy', true)
+            : undefined
+        }
         onNextTutorialStep={
           boardSessionKind === 'tutorial'
             ? () => {
@@ -901,6 +961,14 @@ export const App: React.FC = () => {
           <HomeLandingPage
             userProfile={userProfile}
             onPlayLocal={() => startNewLocalGame()}
+            onPlayTrainingAi={() => startAiTrainingGame(aiDifficulty, false)}
+            onPlayQuickMatch={() =>
+              startAiTrainingGame(aiDifficulty, true, {
+                prepDurationSeconds: 60,
+                clockDurationSeconds: 180,
+              })
+            }
+            onOpenSpectator={() => startSpectatorExhibition(aiDifficulty)}
             onOpenMatchmaking={() => setScreen('matchmaking')}
             onOpenCustomCreate={() => setScreen('custom_create')}
             onOpenTutorial={() => setScreen('tutorial')}
@@ -1067,17 +1135,98 @@ export const App: React.FC = () => {
             <h2>Menu Principal — Centre de Commandement</h2>
             <div className="bw-menu-grid">
               <div className="bw-menu-card bw-menu-card-highlight">
-                <h3>Mode Local (2 Joueurs)</h3>
+                <h3>🤖 Mode Entraînement (contre IA)</h3>
                 <p>
-                  Affrontez un adversaire sur le même écran avec rideau de confidentialité privé
-                  entre chaque tour.
+                  Affrontez l’IA tactique (sans triche sur vos identités cachées), choisissez la
+                  difficulté ou rejouez des situations prédéfinies.
+                </p>
+                <div className="bw-ai-difficulty-selector" role="group" aria-label="Niveau de difficulté IA">
+                  {AI_DIFFICULTIES.map((diff) => (
+                    <button
+                      key={diff}
+                      type="button"
+                      className={`bw-btn bw-btn-xs ${aiDifficulty === diff ? 'bw-btn-primary' : 'bw-btn-ghost'}`}
+                      onClick={() => setAiDifficulty(diff)}
+                    >
+                      {AI_DIFFICULTY_CATALOG[diff].badge} {AI_DIFFICULTY_CATALOG[diff].label}
+                    </button>
+                  ))}
+                </div>
+                <div className="bw-card-btn-group" style={{ marginTop: '0.45rem' }}>
+                  <button
+                    type="button"
+                    className="bw-btn bw-btn-primary bw-btn-sm"
+                    onClick={() => startAiTrainingGame(aiDifficulty, false)}
+                  >
+                    ⚔️ Jouer vs IA (Placement libre)
+                  </button>
+                  <button
+                    type="button"
+                    className="bw-btn bw-btn-secondary bw-btn-sm"
+                    onClick={() => startAiTrainingGame(aiDifficulty, true)}
+                  >
+                    ⚡ Combat immédiat vs IA
+                  </button>
+                </div>
+                <div className="bw-training-drills-list" style={{ marginTop: '0.5rem' }}>
+                  <small className="bw-muted-small">Situations prédéfinies :</small>
+                  <div className="bw-card-btn-group" style={{ marginTop: '0.25rem' }}>
+                    {TRAINING_SITUATIONS.map((sit) => (
+                      <button
+                        key={sit.id}
+                        type="button"
+                        className="bw-btn bw-btn-ghost bw-btn-xs"
+                        onClick={() => startTrainingSituation(sit)}
+                        title={sit.description}
+                      >
+                        🎯 {sit.title.replace(/^Situation \d+ :\s*/, '')}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bw-menu-card">
+                <h3>Mode Local (2 Joueurs) & Modes Rapides</h3>
+                <p>
+                  Partie Classique (10 min) ou Partie Rapide (3 min) sur le même écran avec rideau
+                  de confidentialité privé entre chaque tour.
+                </p>
+                <div className="bw-card-btn-group">
+                  <button
+                    type="button"
+                    className="bw-btn bw-btn-primary bw-btn-sm"
+                    onClick={() => startNewLocalGame()}
+                  >
+                    ♟️ Partie Classique (10 min)
+                  </button>
+                  <button
+                    type="button"
+                    className="bw-btn bw-btn-secondary bw-btn-sm"
+                    onClick={() =>
+                      startNewLocalGame({
+                        prepDurationSeconds: 60,
+                        clockDurationSeconds: 180,
+                      })
+                    }
+                  >
+                    ⚡ Partie Rapide (3 min)
+                  </button>
+                </div>
+              </div>
+
+              <div className="bw-menu-card">
+                <h3>👁️ Mode Spectateur & Analyse</h3>
+                <p>
+                  Observez une partie tactique en direct sans intervenir, consultez l’historique
+                  des coups à gauche et exportez l’analyse.
                 </p>
                 <button
                   type="button"
-                  className="bw-btn bw-btn-primary"
-                  onClick={() => startNewLocalGame()}
+                  className="bw-btn bw-btn-secondary"
+                  onClick={() => startSpectatorExhibition(aiDifficulty)}
                 >
-                  Lancer une Partie Locale
+                  👁️ Observer une Partie en Direct
                 </button>
               </div>
 

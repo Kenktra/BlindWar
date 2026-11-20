@@ -496,15 +496,38 @@ export function validateClientAvatarDataUrl(raw: string): string {
   return `data:image/${mimeSubtype === 'jpg' ? 'jpeg' : mimeSubtype};base64,${base64Body}`;
 }
 
-/** Synthesize tactical UI/board sound effects scaled by `settings.soundVolume`. */
-export function playTacticalSfx(
-  kind: 'move' | 'capture' | 'reveal' | 'card' | 'victory' | 'alert',
-): void {
+export type TacticalSfxKind =
+  | 'select'
+  | 'move'
+  | 'capture'
+  | 'ability'
+  | 'reveal'
+  | 'card'
+  | 'turn'
+  | 'alert'
+  | 'victory'
+  | 'defeat'
+  | 'menu';
+
+/**
+ * Synthesize original pixel-art tactical sound effects scaled by `masterVolume` and `soundVolume`.
+ * Uses subtle pitch micro-variation so repeated actions never sound fatiguing.
+ */
+export function playTacticalSfx(kind: TacticalSfxKind): void {
   const settings = loadUserSettings();
-  if (!settings.soundEnabled || settings.soundVolume <= 0 || typeof window === 'undefined') {
+  const masterVol = settings.masterVolume ?? 85;
+  if (
+    !settings.soundEnabled ||
+    masterVol <= 0 ||
+    settings.soundVolume <= 0 ||
+    typeof window === 'undefined'
+  ) {
     return;
   }
-  const volFactor = Math.max(0.02, Math.min(1, settings.soundVolume / 100));
+  const combinedFactor = Math.max(
+    0.01,
+    Math.min(1, (masterVol / 100) * (settings.soundVolume / 100)),
+  );
   try {
     const AudioCtx =
       window.AudioContext ||
@@ -517,44 +540,85 @@ export function playTacticalSfx(
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
-    if (kind === 'move') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(220, now);
-      osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
-      gain.gain.setValueAtTime(0.08 * volFactor, now);
-      gain.gain.linearRampToValueAtTime(0.005, now + 0.09);
+    const detuneCents = (Math.random() - 0.5) * 24;
+    osc.detune.setValueAtTime(detuneCents, now);
+
+    if (kind === 'select') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.setValueAtTime(660, now + 0.025);
+      gain.gain.setValueAtTime(0.045 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.002, now + 0.055);
       osc.start(now);
-      osc.stop(now + 0.09);
+      osc.stop(now + 0.055);
+    } else if (kind === 'menu') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.setValueAtTime(540, now + 0.02);
+      gain.gain.setValueAtTime(0.04 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.002, now + 0.045);
+      osc.start(now);
+      osc.stop(now + 0.045);
+    } else if (kind === 'move') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(240, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.075);
+      gain.gain.setValueAtTime(0.075 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.085);
+      osc.start(now);
+      osc.stop(now + 0.085);
     } else if (kind === 'capture') {
       osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(160, now);
-      osc.frequency.exponentialRampToValueAtTime(55, now + 0.18);
-      gain.gain.setValueAtTime(0.14 * volFactor, now);
-      gain.gain.linearRampToValueAtTime(0.005, now + 0.19);
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.setValueAtTime(120, now + 0.04);
+      osc.frequency.exponentialRampToValueAtTime(52, now + 0.17);
+      gain.gain.setValueAtTime(0.13 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.18);
       osc.start(now);
-      osc.stop(now + 0.19);
-    } else if (kind === 'reveal' || kind === 'card') {
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(420, now);
-      osc.frequency.exponentialRampToValueAtTime(680, now + 0.15);
-      gain.gain.setValueAtTime(0.09 * volFactor, now);
-      gain.gain.linearRampToValueAtTime(0.005, now + 0.16);
+      osc.stop(now + 0.18);
+    } else if (kind === 'ability' || kind === 'reveal' || kind === 'card') {
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(392, now);
+      osc.frequency.setValueAtTime(523.25, now + 0.045);
+      osc.frequency.setValueAtTime(659.25, now + 0.09);
+      gain.gain.setValueAtTime(0.065 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.15);
       osc.start(now);
-      osc.stop(now + 0.16);
+      osc.stop(now + 0.15);
+    } else if (kind === 'turn') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(330, now);
+      osc.frequency.setValueAtTime(440, now + 0.045);
+      gain.gain.setValueAtTime(0.055 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.003, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
     } else if (kind === 'victory') {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(330, now);
-      osc.frequency.setValueAtTime(440, now + 0.1);
-      osc.frequency.setValueAtTime(660, now + 0.2);
-      gain.gain.setValueAtTime(0.12 * volFactor, now);
-      gain.gain.linearRampToValueAtTime(0.005, now + 0.4);
+      osc.frequency.setValueAtTime(440, now + 0.09);
+      osc.frequency.setValueAtTime(554.37, now + 0.18);
+      osc.frequency.setValueAtTime(659.25, now + 0.27);
+      gain.gain.setValueAtTime(0.11 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.42);
       osc.start(now);
-      osc.stop(now + 0.4);
+      osc.stop(now + 0.42);
+    } else if (kind === 'defeat') {
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(293.66, now);
+      osc.frequency.setValueAtTime(246.94, now + 0.11);
+      osc.frequency.setValueAtTime(196.0, now + 0.22);
+      gain.gain.setValueAtTime(0.085 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.38);
+      osc.start(now);
+      osc.stop(now + 0.38);
     } else {
+      // alert
       osc.type = 'square';
-      osc.frequency.setValueAtTime(280, now);
-      gain.gain.setValueAtTime(0.06 * volFactor, now);
-      gain.gain.linearRampToValueAtTime(0.005, now + 0.12);
+      osc.frequency.setValueAtTime(310, now);
+      osc.frequency.setValueAtTime(230, now + 0.055);
+      gain.gain.setValueAtTime(0.06 * combinedFactor, now);
+      gain.gain.linearRampToValueAtTime(0.004, now + 0.12);
       osc.start(now);
       osc.stop(now + 0.12);
     }

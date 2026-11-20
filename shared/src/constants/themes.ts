@@ -15,7 +15,16 @@ export type ThemeId =
   | 'vert_et_beige'
   | 'noir_et_blanc'
   | 'bleu_et_argent'
-  | 'ambre_et_ebene';
+  | 'ambre_et_ebene'
+  | 'purple_night';
+
+export const THEME_ALIASES: Readonly<Record<string, ThemeId>> = {
+  pixel_red: 'rouge_et_noir',
+  classic_chess: 'vert_et_beige',
+  monochrome: 'noir_et_blanc',
+  ocean: 'bleu_et_argent',
+  purple_night: 'purple_night',
+};
 
 export const DEFAULT_THEME_ID: ThemeId = 'rouge_et_noir';
 
@@ -123,8 +132,8 @@ export interface BlindWarThemeDefinition {
 export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>> = {
   rouge_et_noir: {
     id: 'rouge_et_noir',
-    name: 'Rouge et noir',
-    subtitle: 'Thème original de BLIND WAR',
+    name: 'Pixel Red — Rouge et noir',
+    subtitle: 'Thème par défaut Pixel Art (noir profond & rouge)',
     isDefault: true,
     swatchA: '#B51F2B',
     swatchB: '#171717',
@@ -374,8 +383,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   vert_et_beige: {
     id: 'vert_et_beige',
-    name: 'Vert et beige',
-    subtitle: 'Inspiré de l’ambiance visuelle de Chess.com',
+    name: 'Classic Chess — Vert et beige',
+    subtitle: 'Inspiré des échiquiers classiques (vert & beige)',
     swatchA: '#769656',
     swatchB: '#EEEED2',
     ui: {
@@ -499,8 +508,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   noir_et_blanc: {
     id: 'noir_et_blanc',
-    name: 'Noir et blanc',
-    subtitle: 'Un style sobre et classique',
+    name: 'Monochrome — Noir et blanc',
+    subtitle: 'Minimalisme tactique noir, blanc et gris',
     swatchA: '#F5F5F5',
     swatchB: '#202020',
     ui: {
@@ -624,8 +633,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   bleu_et_argent: {
     id: 'bleu_et_argent',
-    name: 'Bleu et argent',
-    subtitle: 'Un style moderne et froid',
+    name: 'Ocean — Bleu et argent',
+    subtitle: 'Ambiance océanique bleu foncé et bleu clair',
     swatchA: '#2864A5',
     swatchB: '#C8D0D9',
     ui: {
@@ -869,6 +878,129 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
       },
     },
   },
+
+  purple_night: {
+    id: 'purple_night',
+    name: 'Purple Night — Violet et noir',
+    subtitle: 'Nuit tactique pixel art violet et noir profond',
+    swatchA: '#6D28D9',
+    swatchB: '#120C1C',
+    ui: {
+      bgDeep: '#09060f',
+      bgRadialGlow: '#22103b',
+      bgNavbar: 'rgba(15, 11, 24, 0.94)',
+      bgPanel: '#130e1e',
+      bgPanelAlt: '#1b142b',
+      bgElevated: '#261c3d',
+      border: '#38285c',
+      borderBright: '#5b3f94',
+      accent: '#7c3aed',
+      accentBright: '#a855f7',
+      accentSoftBg: 'rgba(124, 58, 237, 0.24)',
+      accentGlow: 'rgba(168, 85, 247, 0.42)',
+      accentBadgeText: '#f3e8ff',
+      btnPrimaryStart: '#7c3aed',
+      btnPrimaryEnd: '#5b21b6',
+      btnPrimaryHoverStart: '#9333ea',
+      btnPrimaryHoverEnd: '#6d28d9',
+      btnPrimaryText: '#faf5ff',
+      btnPrimaryBorder: '#c084fc',
+      textPrimary: '#faf5ff',
+      textSecondary: '#ddd6fe',
+      textMuted: '#a78bfa',
+      notifBg: 'rgba(21, 15, 34, 0.96)',
+      notifBorder: '#8b5cf6',
+      notifAccent: '#e9d5ff',
+      gold: '#fbbf24',
+      green: '#34d399',
+      cyan: '#38bdf8',
+      dangerText: '#fca5a5',
+      dangerBorder: '#f87171',
+      phaserPulseHex: 0x8b5cf6,
+    },
+    board: {
+      squareA: '#6D28D9',
+      squareB: '#120C1C',
+      squareALabel: 'Violet',
+      squareBLabel: 'Nuit',
+      frameBg: '#0c0814',
+      frameBorder: '#4c1d95',
+      coordOnA: 'rgba(250, 245, 255, 0.84)',
+      coordOnB: 'rgba(221, 214, 254, 0.65)',
+      pieceOnA: {
+        bgTop: '#241838',
+        bgBottom: '#0f091c',
+        rimOuter: '#e9d5ff',
+        rimInner: '#faf5ff',
+        glyphMain: '#faf5ff',
+        glyphAccent: '#d8b4fe',
+        glyphStroke: '#faf5ff',
+      },
+      pieceOnB: {
+        bgTop: '#faf5ff',
+        bgBottom: '#e9d5ff',
+        rimOuter: '#7e22ce',
+        rimInner: '#ffffff',
+        glyphMain: '#faf5ff',
+        glyphAccent: '#6d28d9',
+        glyphStroke: '#170d29',
+      },
+      pieceNeutral: {
+        bgTop: '#3b275e',
+        bgBottom: '#180f29',
+        rimOuter: '#c084fc',
+        rimInner: '#f3e8ff',
+        glyphMain: '#faf5ff',
+        glyphAccent: '#d8b4fe',
+        glyphStroke: '#12091f',
+      },
+      campRed: {
+        bgTop: '#FAF5FF',
+        bgBottom: '#E9D5FF',
+        rimOuter: '#7E22CE',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FAF5FF',
+        glyphAccent: '#6D28D9',
+        glyphStroke: '#140B24',
+      },
+      campBlack: {
+        bgTop: '#1D142E',
+        bgBottom: '#0D0817',
+        rimOuter: '#FAF5FF',
+        rimInner: '#FFFFFF',
+        glyphMain: '#FAF5FF',
+        glyphAccent: '#D8B4FE',
+        glyphStroke: '#FAF5FF',
+      },
+      allyBadgeBg: 'rgba(18, 12, 28, 0.9)',
+      allyBadgeText: '#f3e8ff',
+      enemyBadgeBg: 'rgba(18, 12, 28, 0.94)',
+      enemyBadgeBorder: '#c084fc',
+      enemyBadgeText: '#e9d5ff',
+      interactions: {
+        cellBorder: 'rgba(216, 180, 254, 0.14)',
+        cellHoverBorder: '#f3e8ff',
+        selectionBg: 'rgba(250, 204, 21, 0.34)',
+        selectionBorder: '#fbbf24',
+        moveValidBg: 'rgba(52, 211, 153, 0.28)',
+        moveValidBorder: '#34d399',
+        attackValidBg: 'rgba(248, 113, 113, 0.28)',
+        attackValidBorder: '#f87171',
+        jumpValidBg: 'rgba(251, 191, 36, 0.36)',
+        jumpValidBorder: '#f59e0b',
+        specialZoneBg: 'rgba(217, 70, 239, 0.32)',
+        specialZoneBorder: '#e879f9',
+        cardTargetBg: 'rgba(56, 189, 248, 0.28)',
+        cardTargetBorder: '#38bdf8',
+        reconGlow: 'rgba(192, 132, 252, 0.5)',
+        lastMoveFromBg: 'rgba(192, 132, 252, 0.25)',
+        lastMoveToBg: 'rgba(168, 85, 247, 0.34)',
+        lastMoveAccent: '#c084fc',
+        boardHudBg: '#161024',
+        boardHudBorder: '#5b3f94',
+      },
+    },
+  },
 };
 
 export const THEME_LIST: readonly BlindWarThemeDefinition[] = [
@@ -878,6 +1010,7 @@ export const THEME_LIST: readonly BlindWarThemeDefinition[] = [
   BLIND_WAR_THEMES.noir_et_blanc,
   BLIND_WAR_THEMES.bleu_et_argent,
   BLIND_WAR_THEMES.ambre_et_ebene,
+  BLIND_WAR_THEMES.purple_night,
 ];
 
 const THEME_ID_SET: ReadonlySet<string> = new Set<string>(Object.keys(BLIND_WAR_THEMES));
@@ -885,6 +1018,20 @@ const THEME_ID_SET: ReadonlySet<string> = new Set<string>(Object.keys(BLIND_WAR_
 /** Check whether a value is one of the registered theme IDs. */
 export function isValidThemeId(value: unknown): value is ThemeId {
   return typeof value === 'string' && THEME_ID_SET.has(value);
+}
+
+/** Resolve any theme ID or alias safely, falling back cleanly to `'rouge_et_noir'`. */
+export function resolveThemeIdAlias(value?: unknown): ThemeId {
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (THEME_ID_SET.has(normalized)) {
+      return normalized as ThemeId;
+    }
+    if (normalized in THEME_ALIASES) {
+      return THEME_ALIASES[normalized]!;
+    }
+  }
+  return DEFAULT_THEME_ID;
 }
 
 /** Resolve UI surface palette for dark or light display mode cleanly per theme. */
@@ -1034,6 +1181,25 @@ export function resolveThemeUiForColorMode(
       green: '#047857',
       cyan: '#0e7490',
     },
+    purple_night: {
+      bgDeep: '#f7f3ff',
+      bgRadialGlow: '#ede4ff',
+      bgPanelAlt: '#eee8fb',
+      bgElevated: '#e0d5f5',
+      border: '#cbb8ed',
+      borderBright: '#9674d4',
+      accentBadgeText: '#4c1d95',
+      btnPrimaryStart: '#6d28d9',
+      btnPrimaryEnd: '#4c1d95',
+      btnPrimaryHoverStart: '#7c3aed',
+      btnPrimaryHoverEnd: '#5b21b6',
+      btnPrimaryText: '#ffffff',
+      btnPrimaryBorder: '#4c1d95',
+      dangerText: '#991b1b',
+      gold: '#b45309',
+      green: '#047857',
+      cyan: '#0369a1',
+    },
   };
 
   const light = lightAccents[theme.id];
@@ -1068,12 +1234,13 @@ export function resolveThemeUiForColorMode(
   };
 }
 
-/** Resolve any theme ID safely, falling back cleanly to `'rouge_et_noir'`. */
+/** Resolve any theme ID or alias safely, falling back cleanly to `'rouge_et_noir'`. */
 export function getThemeDefinition(themeId?: string | null): BlindWarThemeDefinition {
   if (isValidThemeId(themeId)) {
     return BLIND_WAR_THEMES[themeId];
   }
-  return BLIND_WAR_THEMES[DEFAULT_THEME_ID];
+  const resolved = resolveThemeIdAlias(themeId);
+  return BLIND_WAR_THEMES[resolved];
 }
 
 /**
@@ -1805,6 +1972,84 @@ const BUILTIN_CARD_PALETTES: Readonly<
         secondary: '#fef3c7',
         frameBg: 'rgba(120, 53, 15, 0.12)',
         frameBorder: 'rgba(120, 53, 15, 0.42)',
+      },
+    },
+  },
+  purple_night: {
+    dark: {
+      offense: {
+        fillTop: '#c084fc',
+        fillBottom: '#7e22ce',
+        stroke: '#faf5ff',
+        accent: '#fbbf24',
+        secondary: '#1e1030',
+        frameBg: 'rgba(168, 85, 247, 0.22)',
+        frameBorder: 'rgba(192, 132, 252, 0.6)',
+      },
+      defense: {
+        fillTop: '#a78bfa',
+        fillBottom: '#4c1d95',
+        stroke: '#faf5ff',
+        accent: '#e879f9',
+        secondary: '#130e1e',
+        frameBg: 'rgba(139, 92, 246, 0.22)',
+        frameBorder: 'rgba(221, 214, 254, 0.5)',
+      },
+      recon: {
+        fillTop: '#e9d5ff',
+        fillBottom: '#9333ea',
+        stroke: '#faf5ff',
+        accent: '#38bdf8',
+        secondary: '#26183d',
+        frameBg: 'rgba(233, 213, 255, 0.16)',
+        frameBorder: 'rgba(192, 132, 252, 0.56)',
+      },
+      maneuver: {
+        fillTop: '#f3e8ff',
+        fillBottom: '#a855f7',
+        stroke: '#140b24',
+        accent: '#7e22ce',
+        secondary: '#2e1c4a',
+        frameBg: 'rgba(243, 232, 255, 0.16)',
+        frameBorder: 'rgba(168, 85, 247, 0.54)',
+      },
+    },
+    light: {
+      offense: {
+        fillTop: '#7e22ce',
+        fillBottom: '#4c1d95',
+        stroke: '#140b24',
+        accent: '#fbbf24',
+        secondary: '#f3e8ff',
+        frameBg: 'rgba(126, 34, 206, 0.12)',
+        frameBorder: 'rgba(126, 34, 206, 0.45)',
+      },
+      defense: {
+        fillTop: '#5b21b6',
+        fillBottom: '#2e1065',
+        stroke: '#140b24',
+        accent: '#c084fc',
+        secondary: '#ede9fe',
+        frameBg: 'rgba(91, 33, 182, 0.12)',
+        frameBorder: 'rgba(91, 33, 182, 0.42)',
+      },
+      recon: {
+        fillTop: '#6d28d9',
+        fillBottom: '#3b0764',
+        stroke: '#140b24',
+        accent: '#38bdf8',
+        secondary: '#f3e8ff',
+        frameBg: 'rgba(109, 40, 217, 0.12)',
+        frameBorder: 'rgba(109, 40, 217, 0.44)',
+      },
+      maneuver: {
+        fillTop: '#4c1d95',
+        fillBottom: '#2e1065',
+        stroke: '#140b24',
+        accent: '#e879f9',
+        secondary: '#faf5ff',
+        frameBg: 'rgba(76, 29, 149, 0.12)',
+        frameBorder: 'rgba(76, 29, 149, 0.44)',
       },
     },
   },

@@ -69,6 +69,8 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
       siteThemeId: draftAppearance.siteThemeId,
       boardThemeId: draftAppearance.boardThemeId,
       brightness: draftAppearance.brightness,
+      boardScale: draftAppearance.boardScale ?? 'normal',
+      dynamicBoardScale: draftAppearance.dynamicBoardScale ?? true,
     };
     const chosen = getThemeDefinition(next.siteThemeId);
     await commitPreferences(
@@ -339,6 +341,49 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                   <option value="dim">Adoucie (-)</option>
                 </select>
               </label>
+
+              <label className="bw-setting-control-row">
+                <span className="bw-setting-control-info">
+                  <span className="bw-setting-control-title">Taille de l’échiquier</span>
+                  <span className="bw-setting-control-desc">
+                    Ajuste la dimension de base du plateau 9×9 selon votre écran.
+                  </span>
+                </span>
+                <select
+                  className="bw-history-filter-select"
+                  value={preferences.boardScale ?? 'normal'}
+                  onChange={(e) => {
+                    const boardScale = e.target.value as 'compact' | 'normal' | 'large';
+                    setDraftAppearance((prev) => ({ ...prev, boardScale }));
+                    void commitPreferences(
+                      { ...preferences, boardScale },
+                      'Taille de l’échiquier mise à jour.',
+                    );
+                  }}
+                >
+                  <option value="compact">Compacte</option>
+                  <option value="normal">Standard (Recommandée)</option>
+                  <option value="large">Grande</option>
+                </select>
+              </label>
+
+              <label className="bw-setting-control-row">
+                <span className="bw-setting-control-info">
+                  <span className="bw-setting-control-title">Échiquier dynamique selon le tour</span>
+                  <span className="bw-setting-control-desc">
+                    Agrandit légèrement l’échiquier lors de votre tour et le réduit légèrement au tour adverse.
+                  </span>
+                </span>
+                <input
+                  type="checkbox"
+                  checked={preferences.dynamicBoardScale ?? true}
+                  onChange={(e) => {
+                    const dynamicBoardScale = e.target.checked;
+                    setDraftAppearance((prev) => ({ ...prev, dynamicBoardScale }));
+                    void commitPreferences({ ...preferences, dynamicBoardScale });
+                  }}
+                />
+              </label>
             </div>
           </div>
 
@@ -378,10 +423,35 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
           <div className="bw-setting-control-row">
             <span className="bw-setting-control-info">
               <span className="bw-setting-control-title">
-                Volume des effets ({preferences.soundVolume}%)
+                Volume général ({preferences.masterVolume ?? 85}%)
               </span>
               <span className="bw-setting-control-desc">
-                Ajuste l’intensité audio sans couper les notifications visuelles.
+                Contrôle le niveau sonore principal de l’ensemble du site.
+              </span>
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                disabled={!preferences.soundEnabled}
+                value={preferences.masterVolume ?? 85}
+                onChange={(e) =>
+                  commitPreferences({ ...preferences, masterVolume: Number(e.target.value) })
+                }
+                className="bw-range-input"
+              />
+            </div>
+          </div>
+
+          <div className="bw-setting-control-row">
+            <span className="bw-setting-control-info">
+              <span className="bw-setting-control-title">
+                Volume des effets sonores ({preferences.soundVolume}%)
+              </span>
+              <span className="bw-setting-control-desc">
+                Ajuste l’intensité des effets (sélection, déplacement, capture, capacité, tour).
               </span>
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -400,13 +470,31 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
               <button
                 type="button"
                 className="bw-btn bw-btn-secondary bw-btn-sm"
-                disabled={!preferences.soundEnabled || preferences.soundVolume === 0}
-                onClick={() => playTacticalSfx('card')}
+                disabled={!preferences.soundEnabled || preferences.soundVolume === 0 || (preferences.masterVolume ?? 85) === 0}
+                onClick={() => playTacticalSfx('ability')}
               >
                 🔊 Tester
               </button>
             </div>
           </div>
+
+          <label className="bw-setting-control-row">
+            <span className="bw-setting-control-info">
+              <span className="bw-setting-control-title">
+                Afficher l’historique des coups à gauche par défaut
+              </span>
+              <span className="bw-setting-control-desc">
+                Ouvre automatiquement le panneau d’historique des coups à gauche de l’échiquier.
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              checked={preferences.showMoveHistory ?? true}
+              onChange={(e) =>
+                commitPreferences({ ...preferences, showMoveHistory: e.target.checked })
+              }
+            />
+          </label>
 
           <label className="bw-setting-control-row">
             <span className="bw-setting-control-info">

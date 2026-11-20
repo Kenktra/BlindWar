@@ -44,6 +44,7 @@ const STYLE_META_BY_THEME_ID: Readonly<Record<ThemeId, CardAssetPackStyleMeta>> 
   noir_et_blanc: MONOCHROME_CARD_ASSET_STYLE,
   bleu_et_argent: BLUE_CARD_ASSET_STYLE,
   ambre_et_ebene: CLASSIC_CARD_ASSET_STYLE,
+  purple_night: RED_BLACK_CARD_ASSET_STYLE,
 };
 
 function buildCardThemeAssetPack(

@@ -340,6 +340,7 @@ describe('Restauration des assets originaux, Thèmes personnalisables, Profil & 
         'noir_et_blanc',
         'bleu_et_argent',
         'ambre_et_ebene',
+        'purple_night',
       ]);
 
       expect(BLIND_WAR_THEMES.rouge_et_noir.board.squareA).toBe('#B51F2B');

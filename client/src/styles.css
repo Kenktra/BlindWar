@@ -6091,3 +6091,504 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================================================
+ * REFONTE PIXEL ART MINIMALISTE, ÉCHIQUIER DYNAMIQUE SELON LE TOUR,
+ * HISTORIQUE DES COUPS À GAUCHE & CIBLAGE DIRECT SUR L'ÉCHIQUIER (§2 - §11)
+ * ============================================================================ */
+
+/* 1. Fond d'écran Pixel Art discret & Texture des cases (§2) */
+.bw-app-shell,
+.bw-game-layout {
+  background-image:
+    radial-gradient(circle at 50% 0%, var(--bw-bg-radial, rgba(181, 31, 43, 0.16)), transparent 65%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 8px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.014) 0px,
+      rgba(255, 255, 255, 0.014) 1px,
+      transparent 1px,
+      transparent 8px
+    );
+}
+
+.bw-board-cell {
+  background-image:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(0, 0, 0, 0.06) 25%, transparent 25%);
+  background-size: 8px 8px;
+}
+
+/* 2. Échiquier dynamique selon le tour (§3) — aucun décalage de l'interface */
+.bw-board-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  position: relative;
+  padding: 6px 0;
+}
+
+.bw-board-wrapper {
+  --bw-turn-scale: 1;
+  transform: scale(var(--bw-turn-scale));
+  transform-origin: center center;
+  transition:
+    transform calc(0.28s * var(--bw-anim-scale, 1)) cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow calc(0.28s * var(--bw-anim-scale, 1)) ease,
+    border-color calc(0.28s * var(--bw-anim-scale, 1)) ease;
+  will-change: transform;
+}
+
+.bw-board-wrapper.bw-board-turn-yours {
+  --bw-turn-scale: 1.022;
+  border-color: var(--bw-accent-bright);
+  box-shadow:
+    0 0 0 2px var(--bw-accent-glow),
+    0 16px 38px rgba(0, 0, 0, 0.58);
+}
+
+.bw-board-wrapper.bw-board-turn-opponent {
+  --bw-turn-scale: 0.964;
+  border-color: var(--bw-board-frame-border);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.44);
+}
+
+.bw-board-wrapper.bw-board-turn-neutral {
+  --bw-turn-scale: 1;
+}
+
+.bw-board-scale-compact .bw-board-wrapper {
+  max-width: 470px;
+}
+
+.bw-board-scale-large .bw-board-wrapper {
+  max-width: 615px;
+}
+
+/* Ruban discret d'état du tour sur le cadre de l'échiquier (§3) */
+.bw-board-turn-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.55rem;
+  margin-bottom: 4px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--bw-board-hud-bg);
+  border: 1px solid var(--bw-board-hud-border);
+  color: var(--bw-text-secondary);
+}
+
+.bw-board-turn-ribbon.yours {
+  border-color: var(--bw-accent-bright);
+  color: var(--bw-text-primary);
+  background: linear-gradient(90deg, var(--bw-accent-soft), var(--bw-board-hud-bg));
+}
+
+.bw-board-turn-ribbon.opponent {
+  color: var(--bw-text-muted);
+}
+
+.bw-pixel-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+}
+
+.bw-pixel-dot-active {
+  background: var(--bw-green);
+  box-shadow: 0 0 6px var(--bw-green);
+}
+
+.bw-pixel-dot-wait {
+  background: var(--bw-gold);
+}
+
+/* 3. Indicateurs Pixel Art de sélection, danger et ciblage direct Traqueur/Capacités (§2, §5, §6) */
+.bw-pixel-select-corners {
+  position: absolute;
+  inset: 2px;
+  pointer-events: none;
+  z-index: 6;
+  border: 2px solid var(--bw-cell-select-border);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.55);
+}
+
+.bw-pixel-danger-corner {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--bw-cell-attack-border);
+  box-shadow: 0 0 6px var(--bw-cell-attack-border);
+  pointer-events: none;
+  z-index: 6;
+}
+
+.bw-pixel-target-reticle {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.52rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  background: rgba(147, 51, 234, 0.94);
+  border: 1px solid #f3e8ff;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+  pointer-events: none;
+  white-space: nowrap;
+  animation: bwReticlePulse calc(1.1s * var(--bw-anim-scale, 1)) ease-in-out infinite;
+}
+
+.bw-pixel-ability-tag {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.5rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #ffffff;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.bw-pixel-pierce-tag {
+  background: rgba(220, 38, 38, 0.92);
+  border: 1px solid #fde68a;
+}
+
+.bw-pixel-shot-tag {
+  background: rgba(14, 165, 233, 0.92);
+  border: 1px solid #e0f2fe;
+}
+
+.bw-pixel-lock-burst {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(168, 85, 247, 0.36);
+  border: 2px solid #f3e8ff;
+  color: #ffffff;
+  font-size: 0.56rem;
+  font-weight: 900;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  animation: bwLockBurstAnim calc(0.55s * var(--bw-anim-scale, 1)) ease-out both;
+}
+
+@keyframes bwReticlePulse {
+  0%,
+  100% {
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    transform: translateX(-50%) scale(1.07);
+  }
+}
+
+@keyframes bwLockBurstAnim {
+  0% {
+    opacity: 0;
+    transform: scale(1.22);
+  }
+  40% {
+    opacity: 1;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 4. Panneau Historique des Coups à gauche de l'échiquier (§4) */
+.bw-left-move-history-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  padding: 0.52rem 0.62rem;
+  flex-shrink: 0;
+  border: 1px solid var(--bw-border-bright);
+}
+
+.bw-left-move-history-panel.open {
+  max-height: 220px;
+}
+
+.bw-left-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.bw-left-history-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.bw-left-history-title {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--bw-text-primary);
+  white-space: nowrap;
+}
+
+.bw-left-history-turn-pill {
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 0.06rem 0.36rem;
+  border-radius: 4px;
+  background: var(--bw-accent-soft);
+  color: var(--bw-accent-badge-text);
+  border: 1px solid var(--bw-border-bright);
+}
+
+.bw-left-history-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+
+.bw-left-history-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.bw-left-history-col-headers {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.28rem;
+  padding: 0.16rem 0.25rem;
+  border-radius: 4px;
+  background: var(--bw-bg-panel-alt);
+  font-size: 0.64rem;
+  font-weight: 800;
+  color: var(--bw-text-muted);
+  text-transform: uppercase;
+}
+
+.bw-left-history-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  max-height: 118px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.bw-left-history-empty {
+  margin: 0.25rem 0;
+  font-size: 0.72rem;
+}
+
+.bw-left-turn-row {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.28rem;
+  align-items: center;
+  padding: 0.18rem 0.24rem;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  font-size: 0.72rem;
+}
+
+.bw-left-turn-row-latest {
+  background: var(--bw-accent-soft);
+  border-color: var(--bw-border-bright);
+}
+
+.bw-left-turn-num {
+  font-weight: 800;
+  color: var(--bw-text-muted);
+  font-size: 0.68rem;
+}
+
+.bw-left-turn-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.bw-lh-dash {
+  color: var(--bw-text-muted);
+  font-size: 0.68rem;
+  padding-left: 0.25rem;
+}
+
+.bw-lh-move-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  width: 100%;
+  padding: 0.14rem 0.28rem;
+  border-radius: 4px;
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border);
+  color: var(--bw-text-primary);
+  font-size: 0.67rem;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.bw-lh-move-chip:hover {
+  border-color: var(--bw-border-bright);
+}
+
+.bw-lh-move-latest {
+  border-color: var(--bw-gold);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.35);
+}
+
+.bw-lh-move-inspected {
+  border-color: var(--bw-cyan);
+  background: rgba(6, 182, 212, 0.16);
+}
+
+.bw-lh-piece-tag {
+  color: var(--bw-text-secondary);
+  font-size: 0.62rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bw-lh-move-not {
+  font-weight: 800;
+  color: var(--bw-text-primary);
+  margin-left: auto;
+}
+
+.bw-lh-badge {
+  font-size: 0.56rem;
+  font-weight: 800;
+  padding: 0.04rem 0.22rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.bw-lh-badge-capture {
+  background: rgba(220, 38, 38, 0.28);
+  color: #fecaca;
+  border: 1px solid rgba(239, 68, 68, 0.55);
+}
+
+.bw-lh-badge-info {
+  background: rgba(245, 158, 11, 0.22);
+  color: #fde68a;
+  border: 1px solid rgba(245, 158, 11, 0.45);
+}
+
+.bw-left-history-inspector {
+  padding: 0.32rem 0.45rem;
+  border-radius: 5px;
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-cyan);
+  font-size: 0.7rem;
+}
+
+.bw-lh-inspector-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  margin-bottom: 0.15rem;
+}
+
+.bw-lh-inspector-text {
+  margin: 0;
+  color: var(--bw-text-secondary);
+  font-size: 0.69rem;
+  line-height: 1.35;
+}
+
+/* 5. Notifications Tactiques Discrètes & Bandeaux Entraînement/Spectateur (§8, §10) */
+.bw-tactical-toast {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  padding: 0.32rem 0.72rem;
+  margin: 0 0.75rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  background: var(--bw-notif-bg);
+  border: 1px solid var(--bw-notif-border);
+  color: var(--bw-text-primary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.bw-tactical-toast-capture {
+  border-color: var(--bw-danger-border);
+}
+
+.bw-tactical-toast-ability {
+  border-color: #a855f7;
+}
+
+.bw-toast-close {
+  background: transparent;
+  border: none;
+  color: var(--bw-text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0 0.2rem;
+}
+
+.bw-training-drill-banner,
+.bw-spectator-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.34rem 0.75rem;
+  margin: 0 0.75rem;
+  border-radius: 6px;
+  font-size: 0.76rem;
+  background: var(--bw-bg-panel-alt);
+  border: 1px solid var(--bw-border-bright);
+}
+
+.bw-spectator-controls,
+.bw-ai-difficulty-selector {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}

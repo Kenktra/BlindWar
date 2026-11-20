@@ -1,6 +1,7 @@
 import type { NewMechanicsStats } from './core.js';
 import {
   DEFAULT_THEME_ID,
+  THEME_ALIASES,
   isValidThemeId,
   type ThemeId,
 } from '../constants/themes.js';
@@ -14,6 +15,7 @@ export type ColorMode = 'dark' | 'light';
 export type BrightnessMode = 'standard' | 'bright' | 'dim';
 export type AnimationSpeedMode = 'normal' | 'fast' | 'reduced';
 export type TextScaleMode = 'normal' | 'large' | 'xlarge';
+export type BoardScaleMode = 'compact' | 'normal' | 'large';
 
 export interface UserPreferences {
   // Apparence
@@ -21,13 +23,17 @@ export interface UserPreferences {
   readonly siteThemeId: ThemeId;
   readonly boardThemeId: ThemeId | 'match_site';
   readonly brightness: BrightnessMode;
+  readonly boardScale?: BoardScaleMode;
+  readonly dynamicBoardScale?: boolean;
 
-  // Préférences de jeu
+  // Préférences de jeu & Audio
   readonly soundEnabled: boolean;
-  readonly soundVolume: number; // 0..100
+  readonly masterVolume?: number; // 0..100 (Volume général)
+  readonly soundVolume: number; // 0..100 (Volume des effets sonores)
   readonly animationSpeed: AnimationSpeedMode;
   readonly showCoordinates: boolean;
   readonly showReconZones: boolean;
+  readonly showMoveHistory?: boolean;
   readonly enableContextualTutorials: boolean;
   readonly confirmImportantActions: boolean;
 
@@ -51,11 +57,15 @@ export const DEFAULT_USER_PREFERENCES: UserPreferences = {
   siteThemeId: DEFAULT_THEME_ID,
   boardThemeId: 'match_site',
   brightness: 'standard',
+  boardScale: 'normal',
+  dynamicBoardScale: true,
   soundEnabled: true,
+  masterVolume: 85,
   soundVolume: 75,
   animationSpeed: 'normal',
   showCoordinates: true,
   showReconZones: true,
+  showMoveHistory: true,
   enableContextualTutorials: true,
   confirmImportantActions: true,
   notifyInvitations: true,
@@ -84,6 +94,16 @@ function asEnum<T extends string>(
     : fallback;
 }
 
+function sanitizeThemeIdOrFallback(val: unknown, fallback: ThemeId): ThemeId {
+  if (isValidThemeId(val)) {
+    return val;
+  }
+  if (typeof val === 'string' && val.trim().toLowerCase() in THEME_ALIASES) {
+    return THEME_ALIASES[val.trim().toLowerCase()]!;
+  }
+  return fallback;
+}
+
 /** Validate and normalize any partial or legacy preferences object safely. */
 export function sanitizeUserPreferences(
   raw?: Partial<UserPreferences> | Record<string, unknown> | null
@@ -94,6 +114,23 @@ export function sanitizeUserPreferences(
   const obj = raw as Record<string, unknown>;
   const rawVol = typeof obj.soundVolume === 'number' ? obj.soundVolume : DEFAULT_USER_PREFERENCES.soundVolume;
   const clampedVol = Number.isFinite(rawVol) ? Math.max(0, Math.min(100, Math.round(rawVol))) : 75;
+  const rawMaster =
+    typeof obj.masterVolume === 'number'
+      ? obj.masterVolume
+      : (DEFAULT_USER_PREFERENCES.masterVolume ?? 85);
+  const clampedMaster = Number.isFinite(rawMaster)
+    ? Math.max(0, Math.min(100, Math.round(rawMaster)))
+    : 85;
+
+  const resolvedBoardTheme: ThemeId | 'match_site' =
+    obj.boardThemeId === 'match_site'
+      ? 'match_site'
+      : isValidThemeId(obj.boardThemeId)
+        ? obj.boardThemeId
+        : typeof obj.boardThemeId === 'string' &&
+            obj.boardThemeId.trim().toLowerCase() in THEME_ALIASES
+          ? THEME_ALIASES[obj.boardThemeId.trim().toLowerCase()]!
+          : DEFAULT_USER_PREFERENCES.boardThemeId;
 
   return {
     colorMode: asEnum(
@@ -101,15 +138,20 @@ export function sanitizeUserPreferences(
       ['dark', 'light'] as const,
       DEFAULT_USER_PREFERENCES.colorMode
     ),
-    siteThemeId: isValidThemeId(obj.siteThemeId)
-      ? obj.siteThemeId
-      : DEFAULT_USER_PREFERENCES.siteThemeId,
-    boardThemeId:
-      obj.boardThemeId === 'match_site' || isValidThemeId(obj.boardThemeId)
-        ? (obj.boardThemeId as ThemeId | 'match_site')
-        : DEFAULT_USER_PREFERENCES.boardThemeId,
+    siteThemeId: sanitizeThemeIdOrFallback(obj.siteThemeId, DEFAULT_USER_PREFERENCES.siteThemeId),
+    boardThemeId: resolvedBoardTheme,
     brightness: asEnum(obj.brightness, ['standard', 'bright', 'dim'] as const, DEFAULT_USER_PREFERENCES.brightness),
+    boardScale: asEnum(
+      obj.boardScale,
+      ['compact', 'normal', 'large'] as const,
+      DEFAULT_USER_PREFERENCES.boardScale ?? 'normal'
+    ),
+    dynamicBoardScale: asBool(
+      obj.dynamicBoardScale,
+      DEFAULT_USER_PREFERENCES.dynamicBoardScale ?? true
+    ),
     soundEnabled: asBool(obj.soundEnabled, DEFAULT_USER_PREFERENCES.soundEnabled),
+    masterVolume: clampedMaster,
     soundVolume: clampedVol,
     animationSpeed: asEnum(
       obj.animationSpeed,
@@ -118,6 +160,10 @@ export function sanitizeUserPreferences(
     ),
     showCoordinates: asBool(obj.showCoordinates, DEFAULT_USER_PREFERENCES.showCoordinates),
     showReconZones: asBool(obj.showReconZones, DEFAULT_USER_PREFERENCES.showReconZones),
+    showMoveHistory: asBool(
+      obj.showMoveHistory,
+      DEFAULT_USER_PREFERENCES.showMoveHistory ?? true
+    ),
     enableContextualTutorials: asBool(
       obj.enableContextualTutorials,
       DEFAULT_USER_PREFERENCES.enableContextualTutorials
