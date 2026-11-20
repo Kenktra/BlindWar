@@ -461,7 +461,8 @@ export function buildPairedTurnHistory(
   const gameplayEntries = actionLog.filter(
     (entry) =>
       Boolean(entry.text && entry.text.trim().length > 0) &&
-      !/confirmé le placement/i.test(entry.text),
+      !/confirmé le placement/i.test(entry.text) &&
+      !/^Début de la partie/i.test(entry.text),
   );
 
   const rows: {
