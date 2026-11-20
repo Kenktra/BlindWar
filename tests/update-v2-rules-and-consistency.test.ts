@@ -201,17 +201,17 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
     });
   });
 
-  describe('2. Personnage nerfé : Le Traqueur (1-2 ortho, Marquage 0 action & Poursuite +1 = 3)', () => {
-    it('moves 1-2 orthogonal without jumping/diagonals, marks ONLY already-revealed ortho 1-2 clear-LoS enemy at 0 action cost, and activates Pursuit +1 (range 3) on next turn', () => {
+  describe('2. Personnage nerfé : Le Traqueur (1-2 ortho de base, Ciblage 0 action & Poursuite jusqu’à 4 cases sur cible traquée)', () => {
+    it('moves 1-2 orthogonal without jumping/diagonals by default, marks ONLY already-revealed ortho 1-4 clear-LoS enemy at 0 action cost, and extends range up to 4 cases toward the targeted pawn', () => {
       const redKing = makePiece('r-king', 'red', 'roi', { row: 8, col: 0 });
       const blackKing = makePiece('b-king', 'black', 'roi', { row: 0, col: 8 });
       const redTraq = makePiece('r-traq', 'red', 'traqueur', { row: 6, col: 4 });
-      const redGuetteur = makePiece('r-gh', 'red', 'guetteur_h', { row: 4, col: 3 }); // spots (4,4) orthogonally!
-      const bRevealedTarget = makePiece('b-rev', 'black', 'soldat', { row: 4, col: 4 }); // ortho dist 2 from Traqueur, spotted by r-gh!
+      const redGuetteur = makePiece('r-gh', 'red', 'guetteur_h', { row: 3, col: 3 }); // spots (3,4) orthogonally!
+      const bRevealedTarget = makePiece('b-rev', 'black', 'soldat', { row: 3, col: 4 }); // ortho dist 3 from Traqueur, spotted by r-gh!
       const bHiddenTarget = makePiece('b-hid', 'black', 'soldat', { row: 6, col: 2 }); // ortho dist 2 left, hidden
-      const bTooFarTarget = makePiece('b-far', 'black', 'soldat', { row: 6, col: 7 }, {
+      const bTooFarTarget = makePiece('b-far', 'black', 'soldat', { row: 1, col: 4 }, {
         permanentlyRevealedTo: { red: true, black: false },
-      }); // ortho dist 3 right (too far to move/mark at base range 2!)
+      }); // ortho dist 5 up (too far + behind b-rev!)
       const bDiagRevealed = makePiece('b-diag', 'black', 'soldat', { row: 5, col: 3 }, {
         permanentlyRevealedTo: { red: true, black: false },
       });
@@ -228,7 +228,7 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
       ];
       let state = makePlayingState(pieces, 'red');
 
-      // Movement range check: 1-2 ortho, no diag, no distance 3 yet without Pursuit
+      // Movement range check: 1-2 ortho by default, no diag, no distance 3 or 4 without targeting
       const initialCandidates = generateMoveCandidatesForPiece(
         redTraq,
         pieces,
@@ -236,15 +236,15 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
         false,
       );
       expect(initialCandidates.some((m) => m.to.row === 5 && m.to.col === 4)).toBe(true);
-      expect(initialCandidates.some((m) => m.to.row === 4 && m.to.col === 4 && m.kind === 'capture_move')).toBe(true);
-      expect(initialCandidates.some((m) => m.to.row === 6 && m.to.col === 7)).toBe(false); // dist 3 forbidden at base range 2!
-      expect(initialCandidates.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false); // dist 3 up forbidden
+      expect(initialCandidates.some((m) => m.to.row === 4 && m.to.col === 4 && m.kind === 'normal_move')).toBe(true);
+      expect(initialCandidates.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false); // dist 3 forbidden at base range 2!
+      expect(initialCandidates.some((m) => m.to.row === 2 && m.to.col === 4)).toBe(false); // dist 4 forbidden at base range 2!
       expect(initialCandidates.some((m) => m.to.row === 5 && m.to.col === 3)).toBe(false); // diagonal forbidden
 
-      // Mark candidates: ONLY bRevealedTarget at (4,4) (dist 2), NEVER hidden (6,2), NEVER dist-3 (6,7), NEVER diag (5,3)
+      // Mark candidates: ONLY bRevealedTarget at (3,4) (dist 3 <= 4), NEVER hidden (6,2), NEVER dist-5/blocked (1,4), NEVER diag (5,3)
       const redVis: VisibilityContext = {
         fogTurnsRemainingByOwner: { red: 0, black: 0 },
-        viewerGuetteurReconKeys: new Set(['4,3', '4,4', '3,3', '5,3', '4,2']),
+        viewerGuetteurReconKeys: new Set(['3,3', '3,4', '2,3', '4,3', '3,2']),
       };
       const markCandidates = generateTraqueurMarkCandidates(redTraq, pieces, redVis);
       expect(markCandidates.map((p) => p.id)).toEqual(['b-rev']);
@@ -252,10 +252,11 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
       expect(() => markTraqueurTarget(state, 'red', 'r-traq', 'b-far')).toThrow();
       expect(() => markTraqueurTarget(state, 'red', 'r-traq', 'b-diag')).toThrow();
 
-      // Mark b-rev at 0 action cost -> turn stays on Red with 1 action remaining!
+      // Mark b-rev at 0 action cost -> turn stays on Red with 1 action remaining and Pursuit is active!
       state = markTraqueurTarget(state, 'red', 'r-traq', 'b-rev');
       expect(state.turn.activePlayer).toBe('red');
       expect(state.turn.remainingActions).toBe(1);
+      expect(state.pieces.find((p) => p.id === 'r-traq')?.traqueurPursuitReady).toBe(true);
 
       // Anti-leak check: Black MUST NOT see the mark on board or in action log
       const blackView = projectMatchStateForViewer(state, 'black');
@@ -265,12 +266,12 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
       expect(blackView.pieces.find((p) => p.id === 'r-traq')?.traqueurHasActiveMarkVisible).toBeFalsy();
       expect(blackView.actionLog.some((e) => e.text.toLowerCase().includes('marqué'))).toBe(false);
 
-      // Turn N: Pursuit NOT ready yet. Traqueur steps back 1 square (6,4)->(7,4) so marked b-rev at (4,4) is distance 3!
+      // Traqueur steps back 1 square (6,4)->(7,4) (1-2 square move preserves the mark!) so marked b-rev at (3,4) is now at distance 4!
       state = executePieceMove(state, 'red', 'r-traq', { row: 7, col: 4 });
       expect(state.turn.activePlayer).toBe('black');
       state = executePieceMove(state, 'black', 'b-king', { row: 0, col: 7 });
 
-      // Turn N+1: From (7,4) to b-rev at (4,4) is orthogonal distance 3 -> Pursuit ACTIVE (+1 => 3)!
+      // Turn N+1: From (7,4) to b-rev at (3,4) is orthogonal distance 4 -> Pursuit ACTIVE (range up to 4)!
       const redTraqN1 = state.pieces.find((p) => p.id === 'r-traq')!;
       expect(redTraqN1.traqueurPursuitReady).toBe(true);
       const redVisN1: VisibilityContext = {
@@ -278,17 +279,18 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
         viewerGuetteurReconKeys: computeGuetteurReconZoneKeys(state.pieces, 'red'),
       };
       const pursuitMoves = generateMoveCandidatesForPiece(redTraqN1, state.pieces, redVisN1, false);
-      // Distance 3 capture directly onto marked target (4,4) IS legal!
-      expect(pursuitMoves.some((m) => m.to.row === 4 && m.to.col === 4 && m.kind === 'capture_move')).toBe(true);
-      // Distance 4 is NEVER reachable even with Pursuit!
-      expect(pursuitMoves.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false);
-      // Sideways dist 3 (7,1) is NOT closer to (4,4) -> NOT legal
+      // Distance 3 approach (4,4) and Distance 4 capture directly onto marked target (3,4) ARE legal!
+      expect(pursuitMoves.some((m) => m.to.row === 4 && m.to.col === 4 && m.kind === 'normal_move')).toBe(true);
+      expect(pursuitMoves.some((m) => m.to.row === 3 && m.to.col === 4 && m.kind === 'capture_move')).toBe(true);
+      // Distance 5 is NEVER reachable even with Pursuit!
+      expect(pursuitMoves.some((m) => m.to.row === 2 && m.to.col === 4)).toBe(false);
+      // Sideways dist 3 (7,1) is NOT closer to (3,4) -> NOT legal
       expect(pursuitMoves.some((m) => m.to.row === 7 && m.to.col === 1)).toBe(false);
 
-      // Execute dist-3 Pursuit capture onto b-rev at (4,4)!
-      state = executePieceMove(state, 'red', 'r-traq', { row: 4, col: 4 });
+      // Execute dist-4 Pursuit capture onto b-rev at (3,4)!
+      state = executePieceMove(state, 'red', 'r-traq', { row: 3, col: 4 });
       expect(state.pieces.find((p) => p.id === 'b-rev')?.alive).toBe(false);
-      expect(state.pieces.find((p) => p.id === 'r-traq')?.position).toEqual({ row: 4, col: 4 });
+      expect(state.pieces.find((p) => p.id === 'r-traq')?.position).toEqual({ row: 3, col: 4 });
       expect(state.pieces.find((p) => p.id === 'r-traq')?.traqueurMarkedTargetId).toBeNull();
     });
 
@@ -672,11 +674,11 @@ describe('Mise à jour V2 : Traqueur, Exécuteur, Arbalétrier, Colosse (2 Kamik
         ...traqScenario.coachingTips,
       ];
       for (const text of traqueurTexts) {
-        expect(text).not.toMatch(/4\s*cases|1[–-]3\s*cases/i);
+        expect(text).not.toMatch(/5\s*cases|1[–-]3\s*cases/i);
       }
       expect(traqDossier.movementSummary).toMatch(/2\s*cases/i);
-      expect(traqDossier.specialAbility).toMatch(/3\s*cases/i);
-      expect(traqTutorial.specialAbilities).toMatch(/3\s*cases/i);
+      expect(traqDossier.specialAbility).toMatch(/4\s*cases/i);
+      expect(traqTutorial.specialAbilities).toMatch(/4\s*cases/i);
     });
   });
 });

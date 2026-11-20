@@ -1270,7 +1270,7 @@ export function executePieceMove(
 
   // Case A: Simple movement onto an empty square
   if (chosen.kind === 'normal_move') {
-    const usedTraqueurPursuit = piece.character === 'traqueur' && orthogonalDist === 3;
+    const usedTraqueurPursuit = piece.character === 'traqueur' && orthogonalDist >= 3;
     let movedPiece: ServerPieceRecord = {
       ...piece,
       position: destination,
@@ -1384,7 +1384,7 @@ export function executePieceMove(
 
     const combat = resolveDirectCapture(piece, defender, ownerVis, opponentVis);
     const usedTraqueurPursuit =
-      combat.defenderEliminated && piece.character === 'traqueur' && orthogonalDist === 3;
+      combat.defenderEliminated && piece.character === 'traqueur' && orthogonalDist >= 3;
 
     let finalAttacker: ServerPieceRecord = usedTraqueurPursuit
       ? {
@@ -2213,9 +2213,9 @@ export function selectSoldierPromotion(
 /**
  * Capacité spéciale du Traqueur : Marquage de cible (§3.3 & clarification A2).
  * - Coût d'action nul (n'utilise aucune action et ne termine pas le tour).
- * - Uniquement sur une pièce ennemie DÉJÀ révélée à distance orthogonale 1..2 sans obstacle.
+ * - Uniquement sur une pièce ennemie DÉJÀ révélée à distance orthogonale 1..4 sans obstacle.
  * - Ne révèle jamais une pièce inconnue. Remplace l'éventuelle cible précédente.
- * - Le bonus Poursuite (+1 déplacement = 3 cases) s'active au prochain tour du joueur.
+ * - Dès que la cible est traquée, la portée du Traqueur vers elle passe de 2 à 4 cases.
  */
 export function markTraqueurTarget(
   state: ServerMatchState,
@@ -2254,7 +2254,7 @@ export function markTraqueurTarget(
   const target = candidates.find((c) => c.id === targetEnemyPieceId);
   if (!target || target.position === null) {
     throw new Error(
-      `Cible de marquage invalide : la pièce ennemie doit être déjà révélée, alignée à 1–2 cases orthogonales et sans obstacle.`,
+      `Cible de marquage invalide : la pièce ennemie doit être déjà révélée, alignée à 1–4 cases orthogonales et sans obstacle.`,
     );
   }
   if (traqueur.traqueurMarkedTargetId === target.id) {
@@ -2270,7 +2270,7 @@ export function markTraqueurTarget(
       ? {
           ...p,
           traqueurMarkedTargetId: target.id,
-          traqueurPursuitReady: false,
+          traqueurPursuitReady: true,
         }
       : p,
   );
@@ -2280,8 +2280,8 @@ export function markTraqueurTarget(
   });
 
   const ownerMsg = isReplacement
-    ? `Le Traqueur a changé de cible (${fromNotation} 🎯 ${targetNotation}) : bonus Poursuite actif au prochain tour.`
-    : `Le Traqueur a marqué une cible (${fromNotation} 🎯 ${targetNotation}) : bonus Poursuite actif au prochain tour.`;
+    ? `Le Traqueur a changé de cible (${fromNotation} 🎯 ${targetNotation}) : Poursuite 4 cases active !`
+    : `Le Traqueur a marqué une cible (${fromNotation} 🎯 ${targetNotation}) : Poursuite 4 cases active !`;
 
   return {
     ...state,

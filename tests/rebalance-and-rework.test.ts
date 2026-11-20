@@ -207,11 +207,11 @@ describe('Équilibrage & Refonte : Arbalétrier 1/3, Cavalier Bond en L, Traqueu
     });
   });
 
-  describe('3. Traqueur Nerfé & Clarté : Portée 2 (3 en Poursuite), Marquage 0 action sur cible révélée uniquement', () => {
-    it('keeps base range at 2, keeps pursuit locked on marking turn, enables +1 (range 3) capture exclusively on marked target next turn, and forbids empty or wrong 3rd square', () => {
+  describe('3. Traqueur Nerfé & Clarté : Portée 2 (jusqu’à 4 en Poursuite), Marquage 0 action sur cible révélée uniquement', () => {
+    it('keeps base range at 2, enables up to 4-square capture exclusively on marked target as soon as targeted, and forbids empty or wrong 3rd/4th square', () => {
       const redKing = makePiece('r-king', 'red', 'roi', { row: 8, col: 0 });
       const redTraq = makePiece('r-traq', 'red', 'traqueur', { row: 6, col: 4 });
-      const bMarked = makePiece('b-marked', 'black', 'roi', { row: 4, col: 4 }, {
+      const bMarked = makePiece('b-marked', 'black', 'roi', { row: 3, col: 4 }, {
         permanentlyRevealedTo: { red: true, black: false },
       });
       const bOther3 = makePiece('b-other', 'black', 'soldat', { row: 6, col: 7 }, {
@@ -219,31 +219,32 @@ describe('Équilibrage & Refonte : Arbalétrier 1/3, Cavalier Bond en L, Traqueu
       });
 
       let state = makePlayingState([redKing, redTraq, bMarked, bOther3], 'red');
-      // Base range is strictly 2: bOther3 at dist 3 right (6,7) MUST NOT be capturable before pursuit!
+      // Base range is strictly 2: bMarked at dist 3 up (3,4) and bOther3 at dist 3 right (6,7) MUST NOT be capturable before targeting!
       const baseMoves = generateMoveCandidatesForPiece(redTraq, state.pieces, CLEAR_VIS, false);
+      expect(baseMoves.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false);
       expect(baseMoves.some((m) => m.to.row === 6 && m.to.col === 7)).toBe(false);
 
-      // Mark bMarked at dist 2 (0 action)
+      // Mark bMarked at dist 3 (0 action) -> immediately activates Pursuit up to 4 cases toward bMarked!
       state = markTraqueurTarget(state, 'red', 'r-traq', 'b-marked');
       expect(state.turn.activePlayer).toBe('red');
       expect(state.turn.remainingActions).toBe(1);
-      expect(state.pieces.find((p) => p.id === 'r-traq')?.traqueurPursuitReady).toBe(false);
+      expect(state.pieces.find((p) => p.id === 'r-traq')?.traqueurPursuitReady).toBe(true);
 
-      // Same turn: step 1 square down (6,4) -> (7,4) so marked target at (4,4) is dist 3 away, end turn
+      // Step 1 square down (6,4) -> (7,4) so marked target at (3,4) is dist 4 away, end turn (1-2 step preserves mark)
       state = executePieceMove(state, 'red', 'r-traq', { row: 7, col: 4 });
       expect(state.turn.activePlayer).toBe('black');
 
-      // Black moves bOther3 1 step down (6,7)->(7,7), leaving marked b-marked at (4,4) (dist 3 from (7,4))!
+      // Black moves bOther3 1 step down (6,7)->(7,7), leaving marked b-marked at (3,4) (dist 4 from (7,4))!
       state = executePieceMove(state, 'black', 'b-other', { row: 7, col: 7 });
 
-      // Red next turn: Pursuit +1 (range 3) READY! Can capture bMarked at dist 3 (4,4), CANNOT hit bOther3 at sideways dist 3 (7,7) or empty dist-3 left (7,1) or dist-4 (3,4)
+      // Red next turn: Pursuit (up to range 4) READY! Can capture bMarked at dist 4 (3,4), CANNOT hit bOther3 at sideways dist 3 (7,7) or empty dist-3 left (7,1) or dist-5 (2,4)
       const traqNext = state.pieces.find((p) => p.id === 'r-traq')!;
       expect(traqNext.traqueurPursuitReady).toBe(true);
       const nextMoves = generateMoveCandidatesForPiece(traqNext, state.pieces, CLEAR_VIS, false);
       expect(
         nextMoves.some(
           (m) =>
-            m.to.row === 4 &&
+            m.to.row === 3 &&
             m.to.col === 4 &&
             m.kind === 'capture_move' &&
             m.targetEnemyPieceId === 'b-marked',
@@ -251,7 +252,7 @@ describe('Équilibrage & Refonte : Arbalétrier 1/3, Cavalier Bond en L, Traqueu
       ).toBe(true);
       expect(nextMoves.some((m) => m.to.row === 7 && m.to.col === 7)).toBe(false);
       expect(nextMoves.some((m) => m.to.row === 7 && m.to.col === 1)).toBe(false);
-      expect(nextMoves.some((m) => m.to.row === 3 && m.to.col === 4)).toBe(false);
+      expect(nextMoves.some((m) => m.to.row === 2 && m.to.col === 4)).toBe(false);
     });
   });
 

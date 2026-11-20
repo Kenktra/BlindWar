@@ -328,34 +328,38 @@ export const CHARACTER_DOSSIERS: Readonly<Record<CharacterType, CharacterDossier
     initialQuantity: ARMY_COMPOSITION.traqueur,
     maxBoardCapLabel: '1 maximum absolu (même via promotion/résurrection)',
     movementSummary:
-      'Déplacement standard de 1 à 2 cases horizontalement ou verticalement (ligne dégagée, sans diagonale ni saut). Lorsque la Poursuite est prête (à partir de votre tour suivant le marquage d’un ennemi révélé), sa portée passe à 3 cases H/V uniquement dans la direction qui s’en rapproche.',
+      'Déplacement standard de 1 à 2 cases horizontalement ou verticalement (ligne dégagée, sans diagonale ni saut). Dès qu’un ennemi révélé est ciblé (Marquage 0 PA), sa portée de Poursuite s’étend jusqu’à 4 cases H/V uniquement dans la direction qui s’en rapproche.',
     attackSummary:
-      'Élimine jusqu’à 1 ennemi à portée sur sa case d’arrivée (hors Colosse). À distance 3 (Poursuite), ne peut capturer QUE la cible marquée (impossible d’éliminer un pion caché ou une autre cible à 3 cases).',
+      'Élimine jusqu’à 1 ennemi à portée sur sa case d’arrivée (hors Colosse). À distance 3 ou 4 (Poursuite), ne peut capturer QUE la cible marquée (impossible d’éliminer un pion caché ou une autre cible à 3–4 cases).',
     specialAbility:
-      'Marquage (0 action) & Poursuite (+1 case = portée 3) : 1) Objectif : récompenser la détection d’une cible en étendant la portée de 2 à 3 cases. 2) Condition : ennemi DÉJÀ révélé (Guetteur, carte, Colosse révélé), aligné H/V à 1–2 cases sans obstacle. 3) Activation gratuite (0 action) sur le Traqueur sélectionné avant de jouer votre coup. 4) Durée : tant que la cible reste en vie et identifiable. 5) Effet : dès votre tour suivant, un trajet orthogonal vers elle monte à 3 cases ; l’utilisation d’un trajet de 3 cases consomme le marquage (un trajet de 1–2 cases le conserve). Exemple concret : Tour N, votre Guetteur révèle un ennemi à 2 cases du Traqueur → marquez-le (gratuit), puis bougez normalement. Tour N+1, l’ennemi recule à 3 cases → votre Traqueur fond sur lui en 3 cases !',
+      'Marquage / Ciblage sur l’échiquier (0 action) & Poursuite (jusqu’à 4 cases) : 1) Objectif : récompenser la détection d’une cible en étendant la portée de 2 à 4 cases. 2) Condition : ennemi DÉJÀ révélé (Guetteur, carte, Colosse révélé), aligné H/V à 1–4 cases sans obstacle. 3) Activation gratuite (0 action) en cliquant « Cibler » puis en cliquant directement sur le pion ennemi sur l’échiquier. 4) Durée : tant que la cible reste en vie et identifiable. 5) Effet : dès que la cible est traquée, un trajet orthogonal vers elle monte jusqu’à 4 cases ; un trajet de 3 ou 4 cases consomme le marquage (un trajet de 1–2 cases le conserve).',
     interactionsSummary: [
       'Visibilité & Fin d’effet : personne ne peut marquer une pièce inconnue (« ? ») ; le marquage est secret pour l’adversaire et disparaît aussitôt si la cible meurt ou redevient cachée (Brouillard, Contre-espionnage, sortie de zone d’un Guetteur ou expiration de Révélation temporaire).',
-      'Autres pions : peut marquer un Colosse révélé pour approcher plus vite à 3 cases, mais ne peut JAMAIS l’éliminer directement ; respecte Protection, Invincibilité et Kamikaze ; un seul Traqueur par camp.',
-      'Cartes : fonctionne avec Révélation temporaire/permanente et Espionnage pour marquer ; Téléportation ne consomme pas la Poursuite ; une seule cible marquée active à la fois (re-marquer remplace l’ancienne et réarme pour le tour suivant).',
+      'Autres pions : peut marquer un Colosse révélé pour approcher plus vite jusqu’à 4 cases, mais ne peut JAMAIS l’éliminer directement ; respecte Protection, Invincibilité et Kamikaze ; un seul Traqueur par camp.',
+      'Cartes : fonctionne avec Révélation temporaire/permanente et Espionnage pour marquer ; Téléportation ne consomme pas la Poursuite ; une seule cible marquée active à la fois.',
     ],
     restrictions: [
-      'Portée standard strictement limitée à 1–2 cases H/V ; impossible de marquer une pièce ennemie cachée (« ? ») ni à travers une autre pièce.',
-      'La Poursuite à 3 cases n’est jamais disponible au tour même du marquage (elle s’arme dès votre tour personnel suivant) et ne se déclenche que pour un trajet qui réduit la distance avec la cible.',
-      'À distance 3, impossible d’éliminer une autre pièce que la cible marquée.',
+      'Portée standard strictement limitée à 1–2 cases H/V tant qu’aucune cible n’est traquée ; impossible de marquer une pièce ennemie cachée (« ? ») ni à travers une autre pièce.',
+      'La Poursuite jusqu’à 4 cases ne se déclenche que pour un trajet qui réduit la distance avec la cible marquée.',
+      'À distance 3 ou 4, impossible d’éliminer une autre pièce que la cible marquée.',
     ],
     diagramMoves: [
       { dRow: -1, dCol: 0, kind: 'move_and_attack' },
       { dRow: -2, dCol: 0, kind: 'move_and_attack' },
       { dRow: -3, dCol: 0, kind: 'pursuit' },
+      { dRow: -4, dCol: 0, kind: 'pursuit' },
       { dRow: 1, dCol: 0, kind: 'move_and_attack' },
       { dRow: 2, dCol: 0, kind: 'move_and_attack' },
       { dRow: 3, dCol: 0, kind: 'pursuit' },
+      { dRow: 4, dCol: 0, kind: 'pursuit' },
       { dRow: 0, dCol: -1, kind: 'move_and_attack' },
       { dRow: 0, dCol: -2, kind: 'move_and_attack' },
       { dRow: 0, dCol: -3, kind: 'pursuit' },
+      { dRow: 0, dCol: -4, kind: 'pursuit' },
       { dRow: 0, dCol: 1, kind: 'move_and_attack' },
       { dRow: 0, dCol: 2, kind: 'move_and_attack' },
       { dRow: 0, dCol: 3, kind: 'pursuit' },
+      { dRow: 0, dCol: 4, kind: 'pursuit' },
     ],
   },
   executeur: {
@@ -549,7 +553,7 @@ export const CARD_DOSSIERS: Readonly<Record<CardType, CardDossier>> = {
     effectDescription: CARD_CATALOG.revelation_permanente.description,
     restrictions: [
       'Ne peut jamais être annulée par Brouillard ni Contre-espionnage.',
-      'Une pièce révélée définitivement reste éligible au Marquage du Traqueur (tant que la ligne orthogonale 1–2 est dégagée).',
+      'Une pièce révélée définitivement reste éligible au Marquage du Traqueur (tant que la ligne orthogonale 1–4 est dégagée).',
     ],
   },
   resurrection: {
@@ -696,7 +700,7 @@ export const RULE_SECTIONS: readonly RuleSection[] = [
       'Les positions sont publiques, mais l’identité des pièces adverses reste cachée par défaut et jamais divulguée indûment.',
     bullets: [
       'Guetteurs H (3/camp : bougent en diagonale, détectent H/V) et Guetteurs D (3/camp : bougent H/V, détectent en diagonale) révèlent temporairement les ennemis à 1 case ; s’ils détectent une cible sur la ligne de l’Arbalétrier, son identité devient visible sans augmenter portée ni cadence.',
-      'Traqueur & révélations : le Traqueur possède une portée standard de 1–2 cases et ne peut marquer qu’une pièce ennemie DÉJÀ révélée (Guetteur, Révélation temporaire/permanente, Espionnage, Colosse révélé) à 1–2 cases orthogonales dégagées pour étendre sa Poursuite à 3 cases. Si la cible redevient inconnue (Brouillard, Contre-espionnage, expiration), le marquage disparaît immédiatement.',
+      'Traqueur & révélations : le Traqueur possède une portée standard de 1–2 cases et ne peut marquer qu’une pièce ennemie DÉJÀ révélée (Guetteur, Révélation temporaire/permanente, Espionnage, Colosse révélé) à 1–4 cases orthogonales dégagées pour étendre sa Poursuite jusqu’à 4 cases. Si la cible redevient inconnue (Brouillard, Contre-espionnage, expiration), le marquage disparaît immédiatement.',
       'Arbalétrier & cibles inconnues : l’Arbalétrier peut tirer sur une pièce ennemie cachée, mais un tir bloqué (Colosse, Invincibilité, Protection) ne révèle jamais son identité ; si elle est éliminée inconnue, le cimetière affiche « Pièce éliminée ».',
       'L’Assassin révèle définitivement chaque pièce qu’il élimine (sauf s’il meurt simultanément par Kamikaze).',
     ],
@@ -795,16 +799,16 @@ export const MECHANIC_DOSSIERS: readonly MechanicDossier[] = [
     relatedCharacter: 'traqueur',
     category: 'Traqueur',
     summary:
-      'Portée de base réduite à 2 cases ; le Marquage (0 coût) prépare dès votre tour personnel suivant une Poursuite étendue à 3 cases vers une cible déjà identifiée.',
+      'Portée de base de 2 cases H/V ; cibler gratuitement (0 coût) un ennemi déjà révélé sur l’échiquier étend la Poursuite jusqu’à 4 cases vers cette cible.',
     rules: [
-      'Objectif & Conditions : ciblez une pièce ennemie DÉJÀ révélée (Guetteur H/D, Espionnage, Révélation temporaire/permanente, Colosse révélé) située à 1–2 cases orthogonales en ligne dégagée (aucune pièce inconnue « ? »).',
-      'Activation & Portée : sélectionnez le Traqueur → cliquez sur « Marquer une cible (0 action) » → cliquez sur l’ennemi révélé (alignement H/V, 1–2 cases). Vous pouvez ensuite jouer votre véritable coup du tour.',
-      'Déplacements & Bonus Poursuite : normalement 1–2 cases H/V. À partir de votre tour suivant (et tant que la marque reste valide), vous gagnez +1 case (jusqu’à 3 cases H/V) uniquement dans la direction qui vous rapproche de la cible marquée.',
-      'Exemple concret : Tour 1, votre Guetteur révèle un Assassin adverse en E5 à 2 cases de votre Traqueur en E3. Vous marquez E5 gratuitement (0 action) puis jouez votre tour. Tour 2, l’Assassin recule en E6 (3 cases de E3) : votre Traqueur fonce jusqu’à E6 et l’élimine !',
+      'Objectif & Conditions : ciblez une pièce ennemie DÉJÀ révélée (Guetteur H/D, Espionnage, Révélation temporaire/permanente, Colosse révélé) située à 1–4 cases orthogonales en ligne dégagée (aucune pièce inconnue « ? »).',
+      'Activation sur l’échiquier : sélectionnez le Traqueur → cliquez sur « Cibler (0 PA) » → cliquez directement sur l’ennemi révélé sur l’échiquier (alignement H/V, 1–4 cases).',
+      'Déplacements & Bonus Poursuite : normalement 1–2 cases H/V. Dès que la cible est traquée (et tant que la marque reste valide), votre portée vers elle monte jusqu’à 4 cases H/V.',
+      'Exemple concret : votre Guetteur révèle un Assassin adverse à 4 cases de votre Traqueur en ligne dégagée. Vous cliquez « Cibler » puis cliquez l’Assassin sur l’échiquier (0 action) : votre Traqueur peut maintenant bondir jusqu’à 4 cases pour l’éliminer !',
     ],
     edgeCases: [
-      'Limites strictes : une seule cible marquée maximum (re-marquer remplace l’ancienne et réarme la Poursuite pour le tour suivant) ; à distance 3, impossible d’éliminer une autre pièce que la cible marquée.',
-      'Durée & Fin d’effet : persiste tant que la cible est en vie et identifiable ; consomme le bonus quand vous effectuez un déplacement de 3 cases (un déplacement de 1–2 cases conserve le marquage).',
+      'Limites strictes : une seule cible marquée maximum ; à distance 3 ou 4, impossible d’éliminer une autre pièce que la cible marquée.',
+      'Durée & Fin d’effet : persiste tant que la cible est en vie et identifiable ; consomme le bonus quand vous effectuez un déplacement de 3 ou 4 cases (un déplacement de 1–2 cases conserve le marquage).',
       'Disparition immédiate : si la cible meurt ou redevient cachée (expiration de Révélation temporaire/Espionnage, sortie d’un Guetteur, Brouillard, Contre-espionnage), le marquage disparaît.',
       'Colosse & Cartes : le Colosse révélé peut être marqué pour se rapprocher rapidement, mais la Poursuite ne l’élimine jamais ; respecte Protection, Invincibilité et Kamikaze ; Téléportation n’annule pas le marquage.',
     ],

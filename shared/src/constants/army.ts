@@ -134,7 +134,7 @@ export const CHARACTER_CATALOG: Readonly<Record<CharacterType, CharacterConfig>>
   traqueur: {
     id: 'traqueur',
     name: 'Traqueur',
-    roleSummary: 'Portée 2 H/V (3 avec Marquage)',
+    roleSummary: 'Portée 2 H/V (jusqu’à 4 sur cible traquée)',
     initialCount: ARMY_COMPOSITION.traqueur,
     absoluteMaxCount: ABSOLUTE_MAX_BY_CHARACTER.traqueur,
     maxRange: 2,

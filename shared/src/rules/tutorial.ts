@@ -351,22 +351,22 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     stepNumber: 9,
     isNewUpdate: true,
     relatedCharacterIds: ['traqueur'],
-    title: 'Leçon 8A : Le Traqueur (Portée 2 → Poursuite 3 Cases)',
-    subtitle: 'Marquez gratuitement un ennemi révélé à portée 2 au Tour 1, puis bondissez à 3 cases vers lui au Tour 2.',
+    title: 'Leçon 8A : Le Traqueur (Portée 2 → Poursuite 4 Cases)',
+    subtitle: 'Ciblez gratuitement un ennemi révélé sur l’échiquier pour étendre votre portée de 2 à 4 cases.',
     objectiveDescription:
-      '1) Sélectionnez le Traqueur (E2) → cliquez « Marquer une cible (0 action) » → cliquez l’ennemi déjà révélé en E4 (jamais l’ennemi caché en G2). 2) Déplacez votre Soldat (A3→A4) : la cible recule alors en E5. 3) Votre Poursuite est maintenant prête : traversez 3 cases (E2→E5) pour l’éliminer !',
+      '1) Sélectionnez le Traqueur (E2) → cliquez « Cibler (0 PA) » (ou cliquez directement l’ennemi révélé en E6 sur l’échiquier). 2) Dès qu’il est ciblé, votre Poursuite s’étend jusqu’à 4 cases : bondissez de E2 à E6 pour l’éliminer !',
     coachingTips: [
       'Portée standard : 1 à 2 cases H/V (ligne dégagée, sans diagonale).',
-      'Condition stricte : la cible doit DÉJÀ être révélée (Guetteur, Espionnage, Révélation) et alignée H/V à 1–2 cases sans obstacle.',
-      'Activation sans coût (0 action) : marquer ne consomme pas votre tour ; la Poursuite (+1 case = 3 cases vers la cible) démarre dès votre tour suivant.',
-      'Fin d’effet : le marquage disparaît si la cible meurt ou redevient cachée (Brouillard, Contre-espionnage, expiration).',
+      'Condition stricte : la cible doit DÉJÀ être révélée (Guetteur, Espionnage, Révélation) et alignée H/V à 1–4 cases sans obstacle.',
+      'Activation sans coût (0 action) : cibler sur l’échiquier ne consomme pas votre tour et débloque immédiatement la Poursuite jusqu’à 4 cases vers cette cible.',
+      'Fin d’effet : le marquage disparaît après un trajet de 3–4 cases, ou si la cible meurt / redevient cachée (Brouillard, Contre-espionnage, expiration).',
     ],
     createInitialState: () =>
       buildPlayingState('traqueur-marquage-poursuite', [
         makeTutorialPiece('r-king', 'red', 'roi', { row: 8, col: 4 }),
         makeTutorialPiece('r-traq', 'red', 'traqueur', { row: 7, col: 4 }),
         makeTutorialPiece('r-sol', 'red', 'soldat', { row: 6, col: 0 }),
-        makeTutorialPiece('b-known', 'black', 'reine', { row: 5, col: 4 }, {
+        makeTutorialPiece('b-known', 'black', 'reine', { row: 3, col: 4 }, {
           permanentlyRevealedTo: { red: true, black: false },
         }),
         makeTutorialPiece('b-unknown', 'black', 'soldat', { row: 7, col: 6 }),

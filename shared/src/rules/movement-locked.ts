@@ -396,40 +396,50 @@ export function generateMoveCandidatesForPiece(
           break;
         }
 
-        // Poursuite (+1 case = jusqu'à 3 cases) au tour suivant, strictement pour se rapprocher / éliminer la cible marquée révélée
+        // Poursuite (jusqu'à 4 cases H/V) dès qu'une cible révélée est traquée, strictement pour se rapprocher / éliminer la cible marquée
         if (rayClearUpToTwo && markedTarget && markedTarget.position !== null) {
-          const dest3: Coord = {
-            row: origin.row + dir.row * 3,
-            col: origin.col + dir.col * 3,
-          };
-          if (isWithinBoard(dest3)) {
-            const targetPos = markedTarget.position;
-            const manhattanBefore =
-              Math.abs(origin.row - targetPos.row) + Math.abs(origin.col - targetPos.col);
-            const manhattanAfter =
-              Math.abs(dest3.row - targetPos.row) + Math.abs(dest3.col - targetPos.col);
-            const dirDot =
-              dir.row * (targetPos.row - origin.row) + dir.col * (targetPos.col - origin.col);
-            if (manhattanAfter < manhattanBefore && dirDot > 0) {
-              const occ3 = boardMap.get(coordKey(dest3));
-              if (!occ3) {
+          const targetPos = markedTarget.position;
+          const manhattanBefore =
+            Math.abs(origin.row - targetPos.row) + Math.abs(origin.col - targetPos.col);
+          const dirDot =
+            dir.row * (targetPos.row - origin.row) + dir.col * (targetPos.col - origin.col);
+          if (dirDot > 0) {
+            for (let step = 3; step <= 4; step += 1) {
+              const destPursuit: Coord = {
+                row: origin.row + dir.row * step,
+                col: origin.col + dir.col * step,
+              };
+              if (!isWithinBoard(destPursuit)) {
+                break;
+              }
+              const manhattanAfter =
+                Math.abs(destPursuit.row - targetPos.row) +
+                Math.abs(destPursuit.col - targetPos.col);
+              if (manhattanAfter >= manhattanBefore) {
+                break;
+              }
+              const occPursuit = boardMap.get(coordKey(destPursuit));
+              if (!occPursuit) {
                 candidates.push({
                   from: origin,
-                  to: dest3,
+                  to: destPursuit,
                   kind: 'normal_move',
                   targetEnemyPieceId: null,
                 });
-              } else if (
-                occ3.id === markedTarget.id &&
-                canSelectEnemyForDirectAttack(piece, occ3, visibilityContextForOwner)
+                continue;
+              }
+              if (
+                occPursuit.id === markedTarget.id &&
+                canSelectEnemyForDirectAttack(piece, occPursuit, visibilityContextForOwner)
               ) {
                 candidates.push({
                   from: origin,
-                  to: dest3,
+                  to: destPursuit,
                   kind: 'capture_move',
-                  targetEnemyPieceId: occ3.id,
+                  targetEnemyPieceId: occPursuit.id,
                 });
               }
+              break;
             }
           }
         }
@@ -686,7 +696,7 @@ export function generateTeleportCandidatesForPiece(
 /**
  * Generate all legal enemy pieces that a Traqueur may mark right now (§3.3):
  * - Target must be an enemy piece already revealed to the Traqueur's owner
- * - Orthogonal alignment at distance 1 to 2
+ * - Orthogonal alignment at distance 1 to 4
  * - Clear line of sight (no piece in between)
  */
 export function generateTraqueurMarkCandidates(
@@ -714,7 +724,7 @@ export function generateTraqueurMarkCandidates(
   const targets: ServerPieceRecord[] = [];
 
   for (const dir of ORTHOGONAL_DIRECTIONS) {
-    for (let step = 1; step <= 2; step += 1) {
+    for (let step = 1; step <= 4; step += 1) {
       const sq: Coord = {
         row: origin.row + dir.row * step,
         col: origin.col + dir.col * step,
