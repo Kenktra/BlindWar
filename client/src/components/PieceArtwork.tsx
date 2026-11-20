@@ -192,8 +192,9 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
         height={px}
         viewBox="0 0 64 64"
         preserveAspectRatio="xMidYMid meet"
+        shapeRendering="crispEdges"
         className="bw-piece-artwork-svg"
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', imageRendering: 'pixelated' }}
         data-transparent-bg="true"
         focusable="false"
       >
