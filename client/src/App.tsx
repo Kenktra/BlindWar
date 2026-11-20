@@ -15,6 +15,7 @@ import {
   PREP_DURATION_PRESETS_SECONDS,
   RULE_SECTIONS,
   SETTINGS_HELP_ITEMS,
+  THEME_LIST,
   TRAINING_SITUATIONS,
   TUTORIAL_SCENARIOS,
   computeEloUpdate,
@@ -40,6 +41,7 @@ import {
   type ProfileBannerId,
   type ProfileTitleId,
   type ServerMatchState,
+  type ThemeId,
   type TrainingSituationSpec,
   type UserPreferences,
 } from '../../shared/src/index.js';
@@ -704,6 +706,29 @@ export const App: React.FC = () => {
       </div>
 
       <div className="bw-nav-auth">
+        <label className="bw-nav-theme-picker" title="Changer de thème Pixel Art en 1 clic">
+          <span className="bw-nav-theme-icon" aria-hidden="true">👾</span>
+          <select
+            className="bw-nav-theme-select"
+            aria-label="Choisir le thème Pixel Art"
+            value={settings.siteThemeId}
+            onChange={(e) => {
+              const nextThemeId = e.target.value as ThemeId;
+              void handleUpdateSettings({
+                ...settings,
+                siteThemeId: nextThemeId,
+              });
+              playTacticalSfx('menu');
+            }}
+          >
+            {THEME_LIST.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <button
           type="button"
           className="bw-btn bw-btn-ghost bw-btn-sm"
@@ -871,6 +896,13 @@ export const App: React.FC = () => {
         tutorialScenario={boardSessionKind === 'tutorial' ? activeTutorial : null}
         playersMeta={playersMeta}
         settings={settings}
+        onChangeTheme={(themeId) => {
+          void handleUpdateSettings({
+            ...settings,
+            siteThemeId: themeId,
+          });
+          playTacticalSfx('menu');
+        }}
         onOnlineAction={
           boardSessionKind === 'online' && activeOnlineRoomId
             ? {

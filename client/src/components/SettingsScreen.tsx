@@ -259,12 +259,23 @@ export const SettingsScreen: React.FC<SettingsScreenProps> = ({
                     key={t.id}
                     type="button"
                     className={`bw-theme-card ${selected ? 'selected' : ''}`}
-                    onClick={() =>
-                      setDraftAppearance((prev) => ({
-                        ...prev,
+                    onClick={() => {
+                      const next: UserPreferences = {
+                        ...preferences,
+                        colorMode: draftAppearance.colorMode,
                         siteThemeId: t.id,
-                      }))
-                    }
+                        boardThemeId: draftAppearance.boardThemeId,
+                        brightness: draftAppearance.brightness,
+                        boardScale: draftAppearance.boardScale ?? 'normal',
+                        dynamicBoardScale: draftAppearance.dynamicBoardScale ?? true,
+                      };
+                      setDraftAppearance(next);
+                      void commitPreferences(
+                        next,
+                        `Thème Pixel Art « ${t.name} » appliqué immédiatement !`,
+                      );
+                      playTacticalSfx('menu');
+                    }}
                   >
                     <div className="bw-theme-card-top">
                       <span className="bw-theme-card-name">{t.name}</span>

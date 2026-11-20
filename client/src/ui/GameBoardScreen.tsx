@@ -9,6 +9,7 @@ import {
   CHARACTER_TYPES,
   PIECE_TUTORIALS,
   SPECIAL_RULE_TUTORIALS,
+  THEME_LIST,
   TOTAL_PIECES_PER_PLAYER,
   autoCompletePlacement,
   canPlayerPlayCard,
@@ -62,6 +63,7 @@ import {
   type PlayerColor,
   type ServerMatchState,
   type ServerPieceRecord,
+  type ThemeId,
   type TutorialScenarioSpec,
   type VisibilityContext,
 } from '../../../shared/src/index.js';
@@ -511,6 +513,7 @@ export interface GameBoardScreenProps {
   readonly tutorialScenario?: TutorialScenarioSpec | null;
   readonly playersMeta?: MatchPlayersMeta;
   readonly settings: UserSettings;
+  readonly onChangeTheme?: (themeId: ThemeId) => void;
   readonly onOnlineAction?: {
     readonly submitPlacement: (entries: readonly PlacementEntry[]) => void;
     readonly movePiece: (
@@ -556,6 +559,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
   tutorialScenario,
   playersMeta,
   settings,
+  onChangeTheme,
   onOnlineAction,
   onMatchConcluded,
   onExitToMenu,
@@ -2200,6 +2204,23 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         </div>
 
         <div className="bw-topbar-right">
+          {onChangeTheme && (
+            <label className="bw-nav-theme-picker bw-ingame-theme-picker" title="Changer le thème Pixel Art en direct">
+              <span className="bw-nav-theme-icon" aria-hidden="true">👾</span>
+              <select
+                className="bw-nav-theme-select bw-ingame-theme-select"
+                aria-label="Choisir le thème Pixel Art en partie"
+                value={settings.siteThemeId}
+                onChange={(e) => onChangeTheme(e.target.value as ThemeId)}
+              >
+                {THEME_LIST.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {view.cardNotifications.length > 0 && (
             <button
               type="button"

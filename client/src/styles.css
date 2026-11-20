@@ -6592,3 +6592,148 @@ html.bw-a11y-pattern-markers .bw-pattern-marker {
   flex-wrap: wrap;
   gap: 0.35rem;
 }
+
+/* ============================================================================
+ * 6. DIRECTION ARTISTIQUE PIXEL ART INTÉGRALE (SITE, ÉCHIQUIER, BOUTONS & THÈMES)
+ * ============================================================================ */
+
+/* Rendu pixelisé net sur tous les sprites SVG / images */
+.bw-piece-artwork-svg,
+.bw-card-artwork-svg,
+.bw-piece-artwork-wrap,
+.bw-card-artwork-wrap,
+.bw-pixel-board-grid {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Sélecteur rapide de thème Pixel Art en 1 clic (Barre de navigation & En partie) */
+.bw-nav-theme-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.48rem;
+  background: var(--bw-bg-panel-alt);
+  border: 2px solid var(--bw-border-bright);
+  border-radius: 2px;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.55);
+  cursor: pointer;
+}
+
+.bw-nav-theme-picker:hover {
+  border-color: var(--bw-accent-bright);
+}
+
+.bw-nav-theme-icon {
+  font-size: 0.86rem;
+  line-height: 1;
+}
+
+.bw-nav-theme-select {
+  background: transparent;
+  border: none;
+  color: var(--bw-text-primary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  outline: none;
+  max-width: 175px;
+  text-overflow: ellipsis;
+}
+
+.bw-nav-theme-select option {
+  background: var(--bw-bg-panel);
+  color: var(--bw-text-primary);
+}
+
+.bw-ingame-theme-picker {
+  padding: 0.16rem 0.42rem;
+}
+
+.bw-ingame-theme-select {
+  max-width: 150px;
+  font-size: 0.72rem;
+}
+
+/* Habillage Pixel Art 16-bit de l'ensemble du site (panneaux, boutons, cartes, modales) */
+.bw-panel,
+.bw-modal-card,
+.bw-theme-card,
+.bw-hand-card,
+.bw-left-move-history-panel,
+.bw-piece-dossier-panel,
+.bw-right-hub-panel,
+.bw-tutorial-banner,
+.bw-unit-ability-bar,
+.bw-contextual-tip-bar {
+  border-radius: 3px !important;
+  border-width: 2px !important;
+  box-shadow:
+    3px 3px 0 rgba(0, 0, 0, 0.58),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.bw-btn,
+.bw-nav-link,
+.bw-right-tab-btn,
+.bw-settings-tab-btn,
+.bw-learn-cat-btn {
+  border-radius: 2px !important;
+  border-width: 2px !important;
+  box-shadow:
+    2px 2px 0 rgba(0, 0, 0, 0.55),
+    inset 1px 1px 0 rgba(255, 255, 255, 0.12);
+  letter-spacing: 0.03em;
+}
+
+.bw-btn:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.65);
+}
+
+/* Sprite de tuile Pixel Art sur chacune des 81 cases de l'échiquier 9×9 */
+.bw-board-wrapper {
+  border-radius: 4px !important;
+  border-width: 3px !important;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.82),
+    5px 5px 0 rgba(0, 0, 0, 0.62);
+}
+
+.bw-board-cell {
+  border-radius: 0 !important;
+}
+
+.bw-pixel-tile-sprite {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.11),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.28);
+  background-image:
+    radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 0),
+    radial-gradient(rgba(0, 0, 0, 0.12) 1px, transparent 0);
+  background-size: 8px 8px;
+  background-position: 0 0, 4px 4px;
+}
+
+.bw-cell-square-b .bw-pixel-tile-sprite {
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, 0.06),
+    inset -2px -2px 0 rgba(0, 0, 0, 0.42);
+}
+
+/* Badges et étiquettes de pions en style Pixel Art franc */
+.bw-badge,
+.bw-piece-label,
+.bw-lastmove-tag,
+.bw-coord-rank,
+.bw-coord-file {
+  border-radius: 2px !important;
+  font-family: 'Courier New', Consolas, monospace, system-ui;
+  letter-spacing: 0.04em;
+}
+
