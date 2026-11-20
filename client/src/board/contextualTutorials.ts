@@ -13,13 +13,6 @@ export interface ContextualTipSpec {
 }
 
 const CONTEXTUAL_TIPS: Readonly<Record<string, ContextualTipSpec>> = {
-  ctx_placement: {
-    id: 'ctx_placement',
-    badge: 'Phase de Placement',
-    title: 'Déploiement secret de votre armée (27 pions)',
-    message:
-      'Disposez vos 27 pions dans vos 3 rangées arrière. Toutes vos identités sont cachées à l’adversaire tant qu’aucune reconnaissance ou capacité ne les dévoile.',
-  },
   ctx_bonus_turn: {
     id: 'ctx_bonus_turn',
     badge: 'Tour Bonus Débloqué',
@@ -37,18 +30,18 @@ const CONTEXTUAL_TIPS: Readonly<Record<string, ContextualTipSpec>> = {
   },
   ctx_traqueur_guide: {
     id: 'ctx_traqueur_guide',
-    badge: 'Traqueur • Marquage & Poursuite',
-    title: 'Marquage (0 action) + Poursuite +1 case au tour suivant',
+    badge: 'Traqueur • Ciblage & Poursuite',
+    title: 'Ciblage sur l’échiquier (0 action) + Poursuite jusqu’à 4 cases',
     message:
-      'Sélectionnez un ennemi révélé (1–2 cases H/V) avec « Marquer une cible » (gratuit : ne consomme pas votre tour). Vous pouvez encore jouer normalement ce tour-ci, et dès votre TOUR SUIVANT le Traqueur étend sa portée de 2 à 3 cases en Poursuite uniquement pour se rapprocher ou éliminer cette cible.',
+      'Portée de base : 1–2 cases H/V. Cliquez sur « 🎯 Cibler » puis cliquez directement sur un ennemi révélé (1–4 cases H/V) sur l’échiquier (gratuit : 0 PA) pour étendre votre portée jusqu’à 4 cases vers cette cible !',
     relatedCharacter: 'traqueur',
   },
   ctx_cavalier_rework: {
     id: 'ctx_cavalier_rework',
-    badge: 'Cavalier • Rework',
+    badge: 'Cavalier • Mobilité',
     title: '1 case H/V, Bond en « L » par-dessus tout, ou Percée en chaîne',
     message:
-      'Le Cavalier dispose désormais du Bond en « L » (2+1 cases) : il saute au-dessus de n’importe quel pion ou piège intermédiaire sans déclencher les pièges survolés ! Il conserve 1 case H/V et ses sauts Percée en chaîne style dames. 0 élimination n’entraîne plus aucune pénalité.',
+      'Le Cavalier dispose du Bond en « L » (2+1 cases) : il saute au-dessus de n’importe quel pion ou piège intermédiaire sans déclencher les pièges survolés ! Il conserve 1 case H/V et ses sauts Percée en chaîne style dames.',
     relatedCharacter: 'cavalier',
   },
   ctx_executeur_pierce: {
@@ -56,30 +49,16 @@ const CONTEXTUAL_TIPS: Readonly<Record<string, ContextualTipSpec>> = {
     badge: 'Exécuteur • Frappe Traversante',
     title: 'Percer le bouclier frontal pour abattre la pièce derrière',
     message:
-      'Lorsque l’Exécuteur avance de 1 case H/V contre un ennemi dont la case juste derrière est occupée par un autre ennemi, il élimine uniquement la cible arrière (même si la pièce frontale est un Colosse !) et reste sur sa case.',
+      'Lorsque l’Exécuteur fait face à un ennemi (non-Colosse) dont la case juste derrière est occupée par un second ennemi, il élimine uniquement la cible arrière (y compris un Colosse !) et reste sur sa case.',
     relatedCharacter: 'executeur',
   },
   ctx_colossus_selected: {
     id: 'ctx_colossus_selected',
     badge: 'Colosse • Unité Blindée',
-    title: 'Force frontale et vulnérabilités spécifiques',
+    title: 'Force frontale et règle des 2 Kamikazes',
     message:
-      'Le Colosse se déplace jusqu’à 2 cases et résiste aux attaques ordinaires. Il ne peut être vaincu que par le Roi, la Reine, une Bombe, un Piège, Trahison, Sacrifice, la Frappe Traversante arrière de l’Exécuteur ou 2 cartes Kamikaze cumulées.',
+      'Le Colosse avance dans 5 directions, bascule de sens au bout du plateau et résiste aux attaques ordinaires. Seuls le Roi, la Reine, un autre Colosse, la Frappe Traversante arrière de l’Exécuteur ou 2 déclenchements Kamikaze qu’il provoque peuvent l’abattre.',
     relatedCharacter: 'colosse',
-  },
-  ctx_cards_secret: {
-    id: 'ctx_cards_secret',
-    badge: 'Cartes Tactiques',
-    title: 'Nouvelle carte en main (pioche toutes les 3 éliminations)',
-    message:
-      'Vous avez une carte tactique ! Jouez-la AVANT votre déplacement durant un tour normal (jamais pendant un Tour Bonus). Limite stricte : 3 cartes en main maximum.',
-  },
-  ctx_turn_rules: {
-    id: 'ctx_turn_rules',
-    badge: 'Gestion des Tours',
-    title: 'Cadence standard : 0 ou 1 élimination = 1 action',
-    message:
-      'À votre tour, vous jouez 1 action (éventuellement précédée de cartes). Terminer avec 0 ou 1 élimination passe normalement la main à l’adversaire ; atteindre 2+ éliminations dans le tour déclenche 1 Tour Bonus.',
   },
 };
 
@@ -88,8 +67,8 @@ export function getAllContextualTips(): readonly ContextualTipSpec[] {
 }
 
 /**
- * Selects AT MOST ONE contextual tip matching the exact situation in play.
- * Never stacks multiple overlays and respects dismissed IDs strictly.
+ * Selects AT MOST ONE contextual tip introducing a concrete special mechanic in play.
+ * Never shows generic turn/placement noise and respects dismissed IDs strictly.
  */
 export function selectContextualTip(params: {
   readonly view: ClientMatchView;
@@ -98,7 +77,7 @@ export function selectContextualTip(params: {
   readonly enabled: boolean;
 }): ContextualTipSpec | null {
   const { view, selectedPiece, dismissedIds, enabled } = params;
-  if (!enabled || view.phase === 'finished') {
+  if (!enabled || view.phase !== 'playing') {
     return null;
   }
 
@@ -106,11 +85,7 @@ export function selectContextualTip(params: {
   const pick = (id: string): ContextualTipSpec | null =>
     dismissed.has(id) ? null : CONTEXTUAL_TIPS[id] ?? null;
 
-  if (view.phase === 'placement') {
-    return pick('ctx_placement');
-  }
-
-  // Playing phase: prioritize active/selected contextual events, strictly 1 window.
+  // Prioritize active/selected special mechanics, strictly 1 window.
   if (view.turn.isBonusTurn) {
     const bonusTip = pick('ctx_bonus_turn');
     if (bonusTip) return bonusTip;
@@ -146,16 +121,6 @@ export function selectContextualTip(params: {
       default:
         break;
     }
-  }
-
-  if (view.ownHand.length > 0 && view.turn.activePlayer === view.viewerColor) {
-    const cardTip = pick('ctx_cards_secret');
-    if (cardTip) return cardTip;
-  }
-
-  if (view.turn.turnNumber >= 1 && view.turn.activePlayer === view.viewerColor) {
-    const turnTip = pick('ctx_turn_rules');
-    if (turnTip) return turnTip;
   }
 
   return null;

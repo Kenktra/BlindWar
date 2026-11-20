@@ -384,7 +384,7 @@ describe('Équilibrage & Refonte : Arbalétrier 1/3, Cavalier Bond en L, Traqueu
         dismissedIds: ['ctx_arbaletrier_cooldown'],
         enabled: true,
       });
-      expect(tipAfterDismiss?.id).toBe('ctx_turn_rules');
+      expect(tipAfterDismiss).toBeNull();
 
       const tipDisabled = selectContextualTip({
         view,

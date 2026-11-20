@@ -28,7 +28,7 @@ describe('Tutoriels complets des règles spéciales, Section Apprendre à jouer 
       'Exemples de parties',
     ]);
 
-    expect(SPECIAL_RULE_TUTORIALS.length).toBeGreaterThanOrEqual(10);
+    expect(SPECIAL_RULE_TUTORIALS.length).toBeGreaterThanOrEqual(8);
     const scenarioIds = new Set(TUTORIAL_SCENARIOS.map((s) => s.id));
     for (const rule of SPECIAL_RULE_TUTORIALS) {
       expect(rule.howItWorksSteps.length).toBeGreaterThanOrEqual(3);
@@ -68,7 +68,7 @@ describe('Tutoriels complets des règles spéciales, Section Apprendre à jouer 
   it('renders LearnToPlayHub with all 8 categories, search input, 12 piece guides, special mechanics and interactive demos', () => {
     const html = renderToStaticMarkup(
       React.createElement(LearnToPlayHub, {
-        completedTutorialIds: ['intro-plateau-roi'],
+        completedTutorialIds: ['pions-et-promotion'],
         dismissedContextualCount: 2,
         enableContextualTutorials: true,
         onToggleContextualTutorials: noop,
@@ -82,7 +82,7 @@ describe('Tutoriels complets des règles spéciales, Section Apprendre à jouer 
       expect(html).toContain(cat.label);
     }
     expect(html).toContain('type="search"');
-    expect(html).toContain('1/12');
+    expect(html).toContain(`1/${TUTORIAL_SCENARIOS.length}`);
     expect(html).toContain('bw-idiagram-board-wrap');
     expect(html).toContain('Frappe traversante de l’Exécuteur');
   });

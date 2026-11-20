@@ -112,43 +112,17 @@ export function runDefaultTutorialOpponentStep(state: ServerMatchState): ServerM
 }
 
 export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
-  // THÈME 1 : Présentation du jeu et du plateau
-  {
-    id: 'intro-plateau-roi',
-    themeNumber: 1,
-    themeTitle: '1. Présentation du jeu et du plateau',
-    stepNumber: 1,
-    relatedCharacterIds: ['roi', 'reine'],
-    title: 'Leçon 1 : Plateau 9×9 & Objectif Royal',
-    subtitle: 'Comprenez le plateau 9×9 et capturez le Roi adverse pour remporter la victoire.',
-    objectiveDescription:
-      'BLIND WAR se joue sur 9×9 cases (A1 à I9). Chaque camp dispose de 27 pions : les positions sont publiques, mais l’identité adverse est secrète. Sélectionnez votre Reine (E4) et éliminez le Roi adverse (E6) pour gagner.',
-    coachingTips: [
-      'Victoire immédiate dès que le Roi adverse est éliminé (même par capacité spéciale).',
-      'Rouge joue toujours en premier après la phase de placement sur vos 3 premières rangées.',
-    ],
-    createInitialState: () =>
-      buildPlayingState('intro-plateau-roi', [
-        makeTutorialPiece('r-king', 'red', 'roi', { row: 8, col: 4 }),
-        makeTutorialPiece('r-queen', 'red', 'reine', { row: 5, col: 4 }),
-        makeTutorialPiece('b-king', 'black', 'roi', { row: 3, col: 4 }, {
-          permanentlyRevealedTo: { red: true, black: false },
-        }),
-      ]),
-    checkCompleted: (state) => state.phase === 'finished' && state.winner === 'red',
-  },
-
-  // THÈME 2 : Les pions
+  // THÈME 1 : Soldat & Promotion
   {
     id: 'pions-et-promotion',
-    themeNumber: 2,
-    themeTitle: '2. Les pions',
-    stepNumber: 2,
+    themeNumber: 1,
+    themeTitle: '1. Soldat : Attaque Diagonale & Promotion',
+    stepNumber: 1,
     relatedCharacterIds: ['soldat'],
-    title: 'Leçon 2 : L’Armée de 27 Pions, Soldat & Promotion',
+    title: 'Mécanique 1 : Attaque Diagonale du Soldat & Promotion',
     subtitle: 'Faites progresser votre Soldat jusqu’à la dernière rangée et choisissez sa promotion.',
     objectiveDescription:
-      `Votre armée réunit 12 rôles distincts (dont 10 Soldats). Le Soldat avance d’1 case (tout droit ou diagonale avant) mais élimine uniquement en diagonale avant : capturez en (F9) puis choisissez votre nouveau rôle.`,
+      `Votre armée réunit 12 rôles distincts (dont 9 Soldats). Le Soldat avance d’1 case (tout droit ou diagonale avant) mais élimine uniquement en diagonale avant : capturez en (F9) puis choisissez votre nouveau rôle.`,
     coachingTips: [
       'Un Soldat ne peut jamais capturer tout droit devant lui ni reculer (hors carte Retreat).',
       `Reine, Colosse, Traqueur, Exécuteur et Arbalétrier sont plafonnés à 1 exemplaire en vie ; Guetteurs H (${ARMY_COMPOSITION.guetteur_h}), D (${ARMY_COMPOSITION.guetteur_d}), Assassin, Cavalier et Berserker peuvent dépasser leur dotation.`,
@@ -167,21 +141,21 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     },
   },
 
-  // THÈME 3 : Les déplacements (Rework Cavalier)
+  // THÈME 2 : Bond en « L » du Cavalier
   {
     id: 'cavalier-bond-et-percee',
-    themeNumber: 3,
-    themeTitle: '3. Les déplacements',
-    stepNumber: 3,
+    themeNumber: 2,
+    themeTitle: '2. Cavalier : Bond en « L » par-dessus obstacles',
+    stepNumber: 2,
     isNewUpdate: true,
     relatedCharacterIds: ['cavalier'],
-    title: 'Leçon 3 (Rework) : Déplacements & Bond en « L » du Cavalier',
-    subtitle: 'Franchissez vos lignes en « L » avec le nouveau Cavalier sans aucune pénalité.',
+    title: 'Mécanique 2 : Bond en « L » du Cavalier',
+    subtitle: 'Franchissez vos lignes en « L » avec le Cavalier sans déclencher les obstacles ni pénalité.',
     objectiveDescription:
       'Votre Cavalier (C3) est bloqué par vos propres Soldats devant lui ! Sélectionnez-le pour effectuer un Bond en « L » (2 cases + 1 case) par-dessus vos pièces et éliminer l’ennemi en D5 (ou repositionnez-vous sur la ligne arrière adverse).',
     coachingTips: [
-      'Nouveau Cavalier : pas orthogonal d’1 case (H/V), Bond en « L » sautant toute pièce ou piège intermédiaire, et Saut Percée style dames par-dessus un ennemi adjacent.',
-      'Aucune pénalité en cas de 0 élimination : vous pouvez manœuvrer librement sans jamais offrir de tour supplémentaire gratuit !',
+      'Cavalier : pas orthogonal d’1 case (H/V), Bond en « L » sautant toute pièce ou piège intermédiaire, et Saut Percée style dames par-dessus un ennemi adjacent.',
+      'Aucune pénalité en cas de 0 élimination : vous pouvez manœuvrer librement.',
     ],
     createInitialState: () =>
       buildPlayingState('cavalier-bond-et-percee', [
@@ -200,17 +174,17 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     },
   },
 
-  // THÈME 4 : Les éliminations
+  // THÈME 3 : Rage du Berserker
   {
     id: 'eliminations-berserker-rage',
-    themeNumber: 4,
-    themeTitle: '4. Les éliminations',
-    stepNumber: 4,
+    themeNumber: 3,
+    themeTitle: '3. Berserker : Repositionnement Rage',
+    stepNumber: 3,
     relatedCharacterIds: ['berserker'],
-    title: 'Leçon 4 : Éliminations Directes & Rage du Berserker',
+    title: 'Mécanique 3 : Élimination & Rage du Berserker',
     subtitle: 'Capturez une pièce avec votre Berserker puis profitez de son 2e déplacement gratuit (Rage).',
     objectiveDescription:
-      `En BLIND WAR, attaquer revient à déplacer son pion sur une case ennemie (ou exécuter une capacité). Éliminez l’ennemi en E5 avec votre Berserker (${ARMY_COMPOSITION.berserker}/camp) puis utilisez sa Rage pour vous repositionner.`,
+      `Éliminez l’ennemi en E5 avec votre Berserker (${ARMY_COMPOSITION.berserker}/camp) puis utilisez immédiatement sa Rage pour vous repositionner de 1 à 2 cases H/V.`,
     coachingTips: [
       'Berserker : se déplace et élimine sur 1 à 2 cases horizontalement ou verticalement.',
       'Rage : après 1 élimination, offre immédiatement 1 déplacement gratuit (1–2 cases H/V) sans nouvelle capture possible.',
@@ -228,16 +202,16 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     },
   },
 
-  // THÈME 5 : La gestion des tours
+  // THÈME 4 : Saut Percée en chaîne & Tour Bonus (2+ éliminations)
   {
     id: 'gestion-tours-bonus',
-    themeNumber: 5,
-    themeTitle: '5. La gestion des tours',
-    stepNumber: 5,
+    themeNumber: 4,
+    themeTitle: '4. Saut Percée & Tour Bonus (2+ Éliminations)',
+    stepNumber: 4,
     isNewUpdate: true,
     relatedCharacterIds: ['cavalier'],
-    title: 'Leçon 5 (Nouvelle Règle) : Rythme des Tours & Tour Bonus (2+ Éliminations)',
-    subtitle: '0 ou 1 élimination = 1 action adverse. Réalisez 2+ éliminations en un tour pour gagner un Tour Bonus.',
+    title: 'Mécanique 4 : Saut Percée en Chaîne & Tour Bonus',
+    subtitle: 'Réalisez 2+ éliminations en un tour pour débloquer un Tour Bonus immédiat.',
     objectiveDescription:
       'Sélectionnez votre Cavalier en C3 : sautez par-dessus l’ennemi en C4 vers C5, puis enchaînez sur C6 vers C7 ! Dès votre 2e élimination réelle dans ce tour, vous obtenez immédiatement un Tour Bonus d’1 déplacement (sans carte).',
     coachingTips: [
@@ -256,17 +230,17 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     checkCompleted: (state) => state.turn.isBonusTurn,
   },
 
-  // THÈME 6 : Les cartes
+  // THÈME 5 : Cartes Stratégiques Secrètes
   {
     id: 'cartes-tactiques-effet',
-    themeNumber: 6,
-    themeTitle: '6. Les cartes',
-    stepNumber: 6,
-    relatedCharacterIds: ['reine'],
-    title: 'Leçon 6 : Cartes Stratégiques, Pioche & Confidentialité',
-    subtitle: 'Activez une carte tactique de votre main puis déclenchez votre offensive.',
+    themeNumber: 5,
+    themeTitle: '5. Cartes Stratégiques & Confidentialité',
+    stepNumber: 5,
+    relatedCharacterIds: ['reine', 'roi'],
+    title: 'Mécanique 5 : Cartes Tactiques Secrètes & Double Action',
+    subtitle: 'Activez une carte tactique de votre main puis déclenchez votre offensive royale.',
     objectiveDescription:
-      'Vous piochez 1 carte aléatoire toutes les 3 éliminations (3 cartes max en main). Activez « Double action » (⏩) ou « Espionnage » (📡) puis passez à l’attaque sur la droite ou sur le Roi adverse.',
+      'Vous piochez 1 carte aléatoire toutes les 3 éliminations (3 cartes max en main). Activez « Double action » (⏩) ou « Espionnage » (📡) puis éliminez le Roi adverse en E6.',
     coachingTips: [
       'L’adversaire est averti de la carte jouée, mais ignore sur quel pion secret s’applique son effet (Kamikaze, Protection, Invincibilité, Espionnage, Révélation, Piège).',
       'Impossible de jouer 2 cartes sous Double Action, ni aucune carte pendant un Tour Bonus.',
@@ -285,14 +259,14 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     checkCompleted: (state) => state.phase === 'finished' && state.winner === 'red',
   },
 
-  // THÈME 7 : Informations cachées et révélations (Guetteurs + Assassin)
+  // THÈME 6 : Reconnaissance des Guetteurs H et D
   {
     id: 'recon-guetteurs',
-    themeNumber: 7,
-    themeTitle: '7. Les informations cachées et révélations',
-    stepNumber: 7,
+    themeNumber: 6,
+    themeTitle: '6. Reconnaissance des Guetteurs (H et D)',
+    stepNumber: 6,
     relatedCharacterIds: ['guetteur_h', 'guetteur_d'],
-    title: 'Leçon 7A : Identités Cachées & Guetteurs (H et D)',
+    title: 'Mécanique 6 : Identités Cachées & Zones de Reconnaissance',
     subtitle: 'Approchez un Guetteur pour percer temporairement le brouillard d’identité adverse.',
     objectiveDescription:
       'Approchez votre Guetteur H (diagonale) en E4 ou déplacez horizontalement votre Guetteur D (G4 → F4) pour révéler l’identité de la pièce inconnue en E5.',
@@ -318,13 +292,15 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
       );
     },
   },
+
+  // THÈME 7 : Assassin & Cimetière Confidentiel
   {
     id: 'assassin-cimetiere',
     themeNumber: 7,
-    themeTitle: '7. Les informations cachées et révélations',
-    stepNumber: 8,
+    themeTitle: '7. Assassin & Cimetière Confidentiel',
+    stepNumber: 7,
     relatedCharacterIds: ['assassin'],
-    title: 'Leçon 7B : L’Assassin & le Cimetière Confidentiel',
+    title: 'Mécanique 7 : L’Assassin & Révélation au Cimetière',
     subtitle: 'Éliminez un ennemi inconnu avec l’Assassin pour révéler définitivement sa véritable nature.',
     objectiveDescription:
       'Normalement, éliminer une pièce inconnue affiche « Pièce éliminée ». Éliminez la pièce secrète en E5 avec votre Assassin en E4 pour dévoiler son identité au cimetière.',
@@ -343,15 +319,15 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
       state.graveyard.some((g) => g.pieceId === 'b-target' && g.knownToOpponentAtDeath),
   },
 
-  // THÈME 8 : Les capacités spéciales (Traqueur + Exécuteur)
+  // THÈME 8 : Traqueur (Ciblage sur l'échiquier & Poursuite 4 cases) & Exécuteur (Frappe traversante)
   {
     id: 'traqueur-marquage-poursuite',
     themeNumber: 8,
-    themeTitle: '8. Les capacités spéciales',
-    stepNumber: 9,
+    themeTitle: '8. Capacités Spéciales : Traqueur & Exécuteur',
+    stepNumber: 8,
     isNewUpdate: true,
     relatedCharacterIds: ['traqueur'],
-    title: 'Leçon 8A : Le Traqueur (Portée 2 → Poursuite 4 Cases)',
+    title: 'Mécanique 8A : Le Traqueur (Portée 2 → Poursuite 4 Cases)',
     subtitle: 'Ciblez gratuitement un ennemi révélé sur l’échiquier pour étendre votre portée de 2 à 4 cases.',
     objectiveDescription:
       '1) Sélectionnez le Traqueur (E2) → cliquez « Cibler (0 PA) » (ou cliquez directement l’ennemi révélé en E6 sur l’échiquier). 2) Dès qu’il est ciblé, votre Poursuite s’étend jusqu’à 4 cases : bondissez de E2 à E6 pour l’éliminer !',
@@ -392,11 +368,11 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
   {
     id: 'executeur-frappe-traversante',
     themeNumber: 8,
-    themeTitle: '8. Les capacités spéciales',
-    stepNumber: 10,
+    themeTitle: '8. Capacités Spéciales : Traqueur & Exécuteur',
+    stepNumber: 9,
     isNewUpdate: true,
     relatedCharacterIds: ['executeur'],
-    title: 'Leçon 8B : L’Exécuteur & la Frappe Traversante',
+    title: 'Mécanique 8B : L’Exécuteur & la Frappe Traversante',
     subtitle: 'Abattez une cible protégée en 2e position (y compris le Colosse !) en épargnant l’ennemi devant elle.',
     objectiveDescription:
       'Votre Exécuteur (E4) fait face à un Soldat en E5 devant un Colosse en E6. Cliquez E4 puis frappez E6 : vous restez sur votre case, E5 reste intact et le Colosse en E6 est éliminé !',
@@ -428,15 +404,15 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     },
   },
 
-  // THÈME 9 : Les mécaniques avancées (Arbalétrier 1 tir / 3 tours)
+  // THÈME 9 : Arbalétrier (Tir à distance & Cadence 1 tir / 3 tours)
   {
     id: 'arbaletrier-tir-cadence',
     themeNumber: 9,
-    themeTitle: '9. Les mécaniques avancées',
-    stepNumber: 11,
+    themeTitle: '9. Arbalétrier : Tir à Distance & Cadence 1/3',
+    stepNumber: 10,
     isNewUpdate: true,
     relatedCharacterIds: ['arbaletrier'],
-    title: 'Leçon 9 (Équilibrage) : Arbalétrier & Cadence (1 Tir / 3 Tours Personnels)',
+    title: 'Mécanique 9 : Arbalétrier & Cadence (1 Tir / 3 Tours Personnels)',
     subtitle: 'Effectuez un tir à distance 1–3 cases, puis observez la recharge stricte pendant vos 2 tours suivants.',
     objectiveDescription:
       'Votre Arbalétrier (C3) est prêt : tirez sur la cible détectée en F6 (diagonale à 3 cases). Vous verrez la recharge démarrer (Tour 2 et Tour 3 indisponibles → Tour 4 prêt à nouveau), tandis que le déplacement d’1 case H/V reste possible.',
@@ -468,14 +444,14 @@ export const TUTORIAL_SCENARIOS: readonly TutorialScenarioSpec[] = [
     },
   },
 
-  // THÈME 10 : Les situations particulières (Colosse bascule + Kamikaze 2/2)
+  // THÈME 10 : Colosse (Bascule + Kamikaze 2/2)
   {
     id: 'kamikaze-colosse-v2',
     themeNumber: 10,
-    themeTitle: '10. Les situations particulières',
-    stepNumber: 12,
+    themeTitle: '10. Colosse : Bascule & Règle des 2 Kamikazes',
+    stepNumber: 11,
     relatedCharacterIds: ['colosse'],
-    title: 'Leçon 10 : Le Colosse (Bascule & Règle des 2 Kamikazes)',
+    title: 'Mécanique 10 : Le Colosse (Bascule & Règle des 2 Kamikazes)',
     subtitle: 'Vérifiez la survie du Colosse au 1er Kamikaze (1/2) et son élimination au 2e déclenchement (2/2).',
     objectiveDescription:
       'Activez Double Action (⏩), puis avec votre Colosse (E4) capturez le 1er ennemi Kamikaze en E5 (Colosse survit à 1/2), puis le 2e ennemi Kamikaze en E6 (Colosse éliminé à 2/2 !).',

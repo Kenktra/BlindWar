@@ -77,7 +77,7 @@ export const PIECE_TUTORIALS: Readonly<Record<CharacterType, PieceTutorialDossie
     name: 'Roi',
     initialQuantity: ARMY_COMPOSITION.roi,
     maxBoardCapLabel: '1 maximum absolu',
-    linkedScenarioId: 'intro-plateau-roi',
+    linkedScenarioId: 'cartes-tactiques-effet',
     role: 'Chef suprême de votre armée (1 exemplaire). Sa survie conditionne l’issue de toute la partie.',
     objective: 'Protéger votre propre Roi derrière vos lignes ou l’engager en fin de partie pour abattre des cibles critiques, y compris le Colosse.',
     movements: '1 case exactement dans chacune des 8 directions (horizontale, verticale ou diagonale).',
@@ -944,53 +944,6 @@ export interface SpecialRuleTutorial {
 
 export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
   {
-    id: 'rule-hidden-identity-and-placement',
-    category: 'regles_generales',
-    badge: '🕵️',
-    title: 'Identités cachées & Placement secret initial (27 pièces)',
-    summary: 'Les positions de chaque pion sur les 81 cases sont publiques, mais leur rôle ennemi reste masqué jusqu’à révélation.',
-    howItWorksSteps: [
-      '1. En début de partie, chaque joueur dispose secrètement ses 27 pièces sur ses 3 rangées arrière (90 secondes max, ou placement automatique à expiration).',
-      '2. Sur l’échiquier, votre adversaire voit vos emplacements comme des jetons « ? » voilés — et inversement.',
-      '3. Aucune identité non révélée n’est envoyée par le serveur aux joueurs avant une révélation réglementaire.',
-    ],
-    whenToUse: 'Dès la phase de préparation pour dissimuler votre Roi, excentrer l’Exécuteur ou piéger un axe avec un Soldat Kamikaze.',
-    conditions: [
-      'Les 27 pièces obligatoires (1 Roi, 1 Reine, 1 Colosse, 2 Cavaliers, 1 Berserker, 3 Assassins, 3 Guetteurs H, 3 Guetteurs D, 1 Traqueur, 1 Exécuteur, 1 Arbalétrier, 9 Soldats) doivent toutes être posées.',
-    ],
-    limits: [
-      'Impossible d’espionner avant le premier tour ou de voir si un pion inconnu porte Protection ou Kamikaze.',
-    ],
-    examples: [
-      'Placer un Guetteur D derrière deux Soldats en pointe pour démasquer le premier attaquant ennemi sans exposer votre Reine.',
-    ],
-    consequences: [
-      'Un adversaire attaquant à l’aveugle risque de rebondir sur votre Colosse (et de vous le révéler gratuitement) ou de tomber sur Kamikaze !',
-    ],
-    linkedScenarioId: 'intro-plateau-roi',
-    demoSteps: [
-      {
-        id: 'secret-demo-1',
-        stepTitle: 'Vue asymétrique : vous voyez vos rôles, l’adversaire reste voilé « ? »',
-        verdictBadge: 'EXEMPLE',
-        explanation: 'Les pions adverses non révélés affichent le sceau « ? ». Déduisez ou révélez avec vos Guetteurs avant de frapper.',
-        rows: 5,
-        cols: 5,
-        pieces: [
-          { row: 0, col: 1, kind: 'secret', owner: 'black' },
-          { row: 0, col: 3, kind: 'secret', owner: 'black' },
-          { row: 3, col: 1, kind: 'guetteur_d', owner: 'red' },
-          { row: 4, col: 2, kind: 'roi', owner: 'red' },
-        ],
-        highlights: [
-          { row: 0, col: 1, kind: 'mark', tag: 'Caché' },
-          { row: 0, col: 3, kind: 'mark', tag: 'Caché' },
-          { row: 3, col: 1, kind: 'selected' },
-        ],
-      },
-    ],
-  },
-  {
     id: 'rule-visibility-hierarchy',
     category: 'regles_speciales',
     badge: '👁️',
@@ -1373,54 +1326,6 @@ export const SPECIAL_RULE_TUTORIALS: readonly SpecialRuleTutorial[] = [
           { from: { row: 3, col: 1 }, to: { row: 1, col: 3 }, kind: 'move' },
           { from: { row: 1, col: 3 }, to: { row: 0, col: 1 }, kind: 'leap' },
         ],
-      },
-    ],
-  },
-  {
-    id: 'rule-strategy-duo-scouts',
-    category: 'strategies_conseils',
-    badge: '🧠',
-    title: 'Synergies gagnantes : Duo Guetteurs, Appât Colosse & Cadence',
-    summary: 'Conseils tactiques avancés pour dominer l’information cachée et contrôler le plateau sans gaspiller vos cadres uniques.',
-    howItWorksSteps: [
-      '1. Associez Guetteur H et Guetteur D côte à côte : à eux deux, ils surveillent simultanément croix H/V et coins diagonaux tout en couvrant mutuellement leurs déplacements.',
-      '2. Utilisez vos cartes Espionnage puis marquez avec le Traqueur le même tour : la Poursuite étend alors sa portée de 2 à 3 cases dès le tour suivant.',
-      '3. Gardez toujours un œil sur les alignements H/V pour éviter une Frappe traversante fatale de l’Exécuteur sur votre Roi ou votre Colosse.',
-    ],
-    whenToUse: 'Pendant tout le milieu de partie pour prendre l’avantage informationnel avant les échanges directs.',
-    conditions: [
-      'Conservez au moins 1 Soldat en réserve arrière pour convertir une promotion en Reine ou Arbalétrier si votre exemplaire chute.',
-    ],
-    limits: [
-      'Un adversaire averti sous Brouillard neutralise vos Guetteurs et Espionnages pendant 3 tours — gardez alors vos Assassins et Cavaliers en « L » actifs.',
-    ],
-    examples: [
-      'Si l’adversaire pousse son Colosse très vite sans hésiter, posez Kamikaze sur deux défenseurs alignés sur sa trajectoire probable pour atteindre 2/2.',
-    ],
-    consequences: [
-      'Un avantage d’information (3+ ennemis identifiés) vaut souvent plus qu’un échange de Soldat isolé.',
-    ],
-    demoSteps: [
-      {
-        id: 'strat-demo-1',
-        stepTitle: 'Verrouillage combiné : Guetteur H + Guetteur D + Exécuteur',
-        verdictBadge: 'EXEMPLE',
-        explanation: 'Les Guetteurs identifient le duo ennemi aligné ; l’Exécuteur frappe la cible prioritaire derrière sans risquer sa case.',
-        rows: 5,
-        cols: 5,
-        pieces: [
-          { row: 2, col: 1, kind: 'guetteur_h', owner: 'red' },
-          { row: 2, col: 2, kind: 'soldat', owner: 'black' },
-          { row: 1, col: 2, kind: 'colosse', owner: 'black' },
-          { row: 4, col: 2, kind: 'executeur', owner: 'red' },
-        ],
-        highlights: [
-          { row: 2, col: 1, kind: 'recon' },
-          { row: 4, col: 2, kind: 'selected' },
-          { row: 2, col: 2, kind: 'recon', tag: 'Écran vu' },
-          { row: 1, col: 2, kind: 'attack', tag: 'Cible Colosse!' },
-        ],
-        arrows: [{ from: { row: 4, col: 2 }, to: { row: 1, col: 2 }, kind: 'pierce' }],
       },
     ],
   },
