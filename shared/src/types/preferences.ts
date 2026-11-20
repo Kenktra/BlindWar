@@ -12,6 +12,7 @@ import {
  */
 
 export type ColorMode = 'dark' | 'light';
+export type VisualStyleMode = 'classic' | 'pixel_art';
 export type BrightnessMode = 'standard' | 'bright' | 'dim';
 export type AnimationSpeedMode = 'normal' | 'fast' | 'reduced';
 export type TextScaleMode = 'normal' | 'large' | 'xlarge';
@@ -19,6 +20,7 @@ export type BoardScaleMode = 'compact' | 'normal' | 'large';
 
 export interface UserPreferences {
   // Apparence
+  readonly visualStyle?: VisualStyleMode;
   readonly colorMode: ColorMode;
   readonly siteThemeId: ThemeId;
   readonly boardThemeId: ThemeId | 'match_site';
@@ -53,6 +55,7 @@ export interface UserPreferences {
 }
 
 export const DEFAULT_USER_PREFERENCES: UserPreferences = {
+  visualStyle: 'classic',
   colorMode: 'dark',
   siteThemeId: DEFAULT_THEME_ID,
   boardThemeId: 'match_site',
@@ -133,6 +136,11 @@ export function sanitizeUserPreferences(
           : DEFAULT_USER_PREFERENCES.boardThemeId;
 
   return {
+    visualStyle: asEnum(
+      obj.visualStyle,
+      ['classic', 'pixel_art'] as const,
+      DEFAULT_USER_PREFERENCES.visualStyle ?? 'classic'
+    ),
     colorMode: asEnum(
       obj.colorMode,
       ['dark', 'light'] as const,

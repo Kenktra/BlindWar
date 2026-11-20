@@ -11,6 +11,7 @@ import {
   type Coord,
   type PieceMedallionPalette,
   type PlayerColor,
+  type VisualStyleMode,
 } from '../../../shared/src/index.js';
 import { useOptionalBlindWarTheme } from '../themes/themeManager.js';
 import {
@@ -90,6 +91,7 @@ export interface PieceArtworkProps {
   readonly contrastVariant?: 'light' | 'dark' | 'neutral';
   readonly theme?: BlindWarThemeDefinition;
   readonly palette?: PieceMedallionPalette;
+  readonly visualStyle?: VisualStyleMode;
   readonly className?: string;
   readonly title?: string;
 }
@@ -136,6 +138,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
   contrastVariant,
   theme,
   palette: explicitPalette,
+  visualStyle,
   className = '',
   title,
 }) => {
@@ -145,6 +148,8 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
   const themeCtx = useOptionalBlindWarTheme();
   const effectiveTheme =
     theme ?? themeCtx?.boardTheme ?? getThemeDefinition(DEFAULT_THEME_ID);
+  const effectiveVisualStyle: VisualStyleMode =
+    visualStyle ?? themeCtx?.preferences.visualStyle ?? 'classic';
 
   const safeKind = normalizePieceArtKind(character);
   const assetDescriptor = resolvePieceThemeAsset(effectiveTheme, safeKind);
@@ -167,7 +172,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
 
   return (
     <span
-      className={`bw-piece-artwork-wrap bw-art-owner-${owner} bw-art-size-${size} bw-art-style-${assetDescriptor.styleVariant}${
+      className={`bw-piece-artwork-wrap bw-art-owner-${owner} bw-art-size-${size} bw-art-style-${assetDescriptor.styleVariant} bw-art-visual-${effectiveVisualStyle}${
         resolvedSlot ? ` bw-art-slot-${resolvedSlot}` : ''
       }${
         resolvedSquareHex
@@ -180,6 +185,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
       data-piece-camp={owner}
       data-piece-theme={effectiveTheme.id}
       data-asset-style={assetDescriptor.styleVariant}
+      data-visual-style={effectiveVisualStyle}
       data-asset-id={assetDescriptor.assetId}
       data-transparent-bg={assetDescriptor.transparentBackground ? 'true' : undefined}
       title={title}
@@ -192,9 +198,12 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
         height={px}
         viewBox="0 0 64 64"
         preserveAspectRatio="xMidYMid meet"
-        shapeRendering="crispEdges"
+        shapeRendering={effectiveVisualStyle === 'pixel_art' ? 'crispEdges' : undefined}
         className="bw-piece-artwork-svg"
-        style={{ background: 'transparent', imageRendering: 'pixelated' }}
+        style={{
+          background: 'transparent',
+          imageRendering: effectiveVisualStyle === 'pixel_art' ? 'pixelated' : undefined,
+        }}
         data-transparent-bg="true"
         focusable="false"
       >
@@ -208,6 +217,7 @@ export const PieceArtwork: React.FC<PieceArtworkProps> = ({
           styleVariant: assetDescriptor.styleVariant,
           bodyGradId: gradId,
           outlineWidth: assetDescriptor.outlineWidth,
+          visualStyle: effectiveVisualStyle,
         })}
       </svg>
     </span>

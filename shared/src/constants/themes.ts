@@ -1015,6 +1015,147 @@ export const THEME_LIST: readonly BlindWarThemeDefinition[] = [
   BLIND_WAR_THEMES.purple_night,
 ];
 
+export interface ThemeStyleCategoryPreset {
+  readonly themeId: ThemeId;
+  readonly styleCategory: 'classic' | 'pixel_art';
+  readonly displayName: string;
+  readonly displaySubtitle: string;
+  readonly swatchA: string;
+  readonly swatchB: string;
+  readonly isDefault?: boolean;
+}
+
+/** Category A: Preserved original Classic Themes (vector pieces, classic board & UI). */
+export const CLASSIC_THEMES_CATALOG: readonly ThemeStyleCategoryPreset[] = [
+  {
+    themeId: 'rouge_et_noir',
+    styleCategory: 'classic',
+    displayName: 'Rouge et noir (Classique)',
+    displaySubtitle: 'Thème original BLIND WAR (noir profond & rouge)',
+    swatchA: '#B51F2B',
+    swatchB: '#171717',
+    isDefault: true,
+  },
+  {
+    themeId: 'classique',
+    styleCategory: 'classic',
+    displayName: 'Classique — Ivoire et noyer',
+    displaySubtitle: 'Échiquier traditionnel ivoire & noyer chaleureux',
+    swatchA: '#F0D9B5',
+    swatchB: '#B58863',
+  },
+  {
+    themeId: 'vert_et_beige',
+    styleCategory: 'classic',
+    displayName: 'Vert et beige (Style Chess.com)',
+    displaySubtitle: 'Inspiré des échiquiers classiques (vert & beige)',
+    swatchA: '#769656',
+    swatchB: '#EEEED2',
+  },
+  {
+    themeId: 'noir_et_blanc',
+    styleCategory: 'classic',
+    displayName: 'Noir et blanc (Monochrome)',
+    displaySubtitle: 'Minimalisme tactique noir, blanc et gris',
+    swatchA: '#F5F5F5',
+    swatchB: '#202020',
+  },
+  {
+    themeId: 'bleu_et_argent',
+    styleCategory: 'classic',
+    displayName: 'Bleu et argent',
+    displaySubtitle: 'Ambiance océanique bleu foncé et bleu clair',
+    swatchA: '#2864A5',
+    swatchB: '#C8D0D9',
+  },
+  {
+    themeId: 'ambre_et_ebene',
+    styleCategory: 'classic',
+    displayName: 'Ambre et ébène',
+    displaySubtitle: 'Boiserie noble or et ébène',
+    swatchA: '#A8742A',
+    swatchB: '#1E1815',
+  },
+];
+
+/** Category B: Dedicated Pixel Art Themes (16×16 pixel sprites, 8-bit board tiles & Pixel Art UI). */
+export const PIXEL_ART_THEMES_CATALOG: readonly ThemeStyleCategoryPreset[] = [
+  {
+    themeId: 'rouge_et_noir',
+    styleCategory: 'pixel_art',
+    displayName: 'Pixel Red — Rouge et noir',
+    displaySubtitle: 'Thème Pixel Art par défaut (noir profond & rouge arcade)',
+    swatchA: '#B51F2B',
+    swatchB: '#171717',
+    isDefault: true,
+  },
+  {
+    themeId: 'purple_night',
+    styleCategory: 'pixel_art',
+    displayName: 'Purple Night — Violet et noir',
+    displaySubtitle: 'Nuit tactique Pixel Art néon violet & noir profond',
+    swatchA: '#6D28D9',
+    swatchB: '#120C1C',
+  },
+  {
+    themeId: 'vert_et_beige',
+    styleCategory: 'pixel_art',
+    displayName: 'Classic Chess — Vert et beige Pixel Art',
+    displaySubtitle: 'Damier tactique Pixel Art vert émeraude & beige',
+    swatchA: '#769656',
+    swatchB: '#EEEED2',
+  },
+  {
+    themeId: 'noir_et_blanc',
+    styleCategory: 'pixel_art',
+    displayName: 'Monochrome — Noir et blanc Pixel Art',
+    displaySubtitle: 'Pixel Art rétro 1-bit noir, blanc et ardoise',
+    swatchA: '#F5F5F5',
+    swatchB: '#202020',
+  },
+  {
+    themeId: 'bleu_et_argent',
+    styleCategory: 'pixel_art',
+    displayName: 'Ocean — Bleu et argent Pixel Art',
+    displaySubtitle: 'Pixel Art abyssal bleu profond & cristal argenté',
+    swatchA: '#2864A5',
+    swatchB: '#C8D0D9',
+  },
+  {
+    themeId: 'classique',
+    styleCategory: 'pixel_art',
+    displayName: 'Pixel Wood — Ivoire et noyer',
+    displaySubtitle: 'Échiquier Pixel Art 16-bit ivoire & noyer chaleureux',
+    swatchA: '#F0D9B5',
+    swatchB: '#B58863',
+  },
+  {
+    themeId: 'ambre_et_ebene',
+    styleCategory: 'pixel_art',
+    displayName: 'Pixel Amber — Ambre et ébène',
+    displaySubtitle: 'Pixel Art donjon doré ambre & ébène',
+    swatchA: '#A8742A',
+    swatchB: '#1E1815',
+  },
+];
+
+/** Return only the themes belonging to the requested visual style category (`'classic'` vs `'pixel_art'`). */
+export function getThemesForVisualStyle(
+  style: 'classic' | 'pixel_art' = 'classic',
+): readonly ThemeStyleCategoryPreset[] {
+  return style === 'pixel_art' ? PIXEL_ART_THEMES_CATALOG : CLASSIC_THEMES_CATALOG;
+}
+
+/** Resolve the display preset for any theme ID under `'classic'` or `'pixel_art'`, with safe fallback. */
+export function getThemePresetForVisualStyle(
+  themeId: string | null | undefined,
+  style: 'classic' | 'pixel_art' = 'classic',
+): ThemeStyleCategoryPreset {
+  const catalog = getThemesForVisualStyle(style);
+  const resolvedId = resolveThemeIdAlias(themeId);
+  return catalog.find((p) => p.themeId === resolvedId) ?? catalog[0]!;
+}
+
 const THEME_ID_SET: ReadonlySet<string> = new Set<string>(Object.keys(BLIND_WAR_THEMES));
 
 /** Check whether a value is one of the registered theme IDs. */
