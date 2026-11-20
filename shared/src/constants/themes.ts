@@ -19,6 +19,8 @@ export type ThemeId =
   | 'purple_night';
 
 export const THEME_ALIASES: Readonly<Record<string, ThemeId>> = {
+  pixel_art: 'rouge_et_noir',
+  pixel: 'rouge_et_noir',
   pixel_red: 'rouge_et_noir',
   classic_chess: 'vert_et_beige',
   monochrome: 'noir_et_blanc',
@@ -258,8 +260,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   classique: {
     id: 'classique',
-    name: 'Classique',
-    subtitle: 'Échiquier traditionnel ivoire & noyer chaleureux',
+    name: 'Pixel Wood — Classique',
+    subtitle: 'Échiquier Pixel Art 16-bit ivoire & noyer chaleureux',
     swatchA: '#F0D9B5',
     swatchB: '#B58863',
     ui: {
@@ -383,8 +385,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   vert_et_beige: {
     id: 'vert_et_beige',
-    name: 'Classic Chess — Vert et beige',
-    subtitle: 'Inspiré des échiquiers classiques (vert & beige)',
+    name: 'Pixel Forest — Classic Chess (Vert et beige)',
+    subtitle: 'Damier tactique Pixel Art vert émeraude & beige',
     swatchA: '#769656',
     swatchB: '#EEEED2',
     ui: {
@@ -508,8 +510,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   noir_et_blanc: {
     id: 'noir_et_blanc',
-    name: 'Monochrome — Noir et blanc',
-    subtitle: 'Minimalisme tactique noir, blanc et gris',
+    name: 'Pixel Mono — Monochrome (Noir et blanc)',
+    subtitle: 'Pixel Art rétro 1-bit noir, blanc et ardoise',
     swatchA: '#F5F5F5',
     swatchB: '#202020',
     ui: {
@@ -633,8 +635,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   bleu_et_argent: {
     id: 'bleu_et_argent',
-    name: 'Ocean — Bleu et argent',
-    subtitle: 'Ambiance océanique bleu foncé et bleu clair',
+    name: 'Pixel Ocean — Bleu et argent',
+    subtitle: 'Pixel Art abyssal bleu profond & cristal argenté',
     swatchA: '#2864A5',
     swatchB: '#C8D0D9',
     ui: {
@@ -758,8 +760,8 @@ export const BLIND_WAR_THEMES: Readonly<Record<ThemeId, BlindWarThemeDefinition>
 
   ambre_et_ebene: {
     id: 'ambre_et_ebene',
-    name: 'Ambre et ébène',
-    subtitle: 'Boiserie noble or et ébène',
+    name: 'Pixel Amber — Ambre et ébène',
+    subtitle: 'Pixel Art donjon doré ambre & ébène',
     swatchA: '#A8742A',
     swatchB: '#1E1815',
     ui: {

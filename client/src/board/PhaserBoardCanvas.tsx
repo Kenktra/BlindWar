@@ -308,7 +308,12 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
           )}
         </div>
         <div ref={phaserHostRef} className="bw-phaser-backdrop" aria-hidden="true" />
-        <div className="bw-board-grid" role="grid" aria-label="Plateau BLIND WAR 9x9">
+        <div
+          className="bw-board-grid bw-pixel-board-grid"
+          role="grid"
+          aria-label="Plateau BLIND WAR 9x9"
+          data-pixel-board="true"
+        >
         {rows.map((row) =>
           Array.from({ length: BOARD_COLS }, (_, col) => {
             const coord: Coord = { row, col };
@@ -396,6 +401,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                 onContextMenu={(e) => e.preventDefault()}
                 title={`Case ${notation}`}
               >
+                <span className="bw-pixel-tile-sprite" aria-hidden="true" />
                 {annoColor && (
                   <span
                     className={`bw-anno-square-mark bw-anno-mark-${annoColor}`}
