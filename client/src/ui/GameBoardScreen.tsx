@@ -1701,7 +1701,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
         return;
       }
       setStatusError(
-        `Sélectionnez une cible ennemie déjà révélée à 1–2 cases orthogonales sans obstacle (ou annulez le marquage).`,
+        `Sélectionnez sur l’échiquier une cible ennemie déjà révélée à 1–4 cases orthogonales sans obstacle (ou annulez le ciblage).`,
       );
       playTacticalSfx('alert');
       return;
@@ -3199,25 +3199,49 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
                   <>
                     <div className="bw-unit-ability-info">
                       <strong>Traqueur — Ciblage Direct sur l’Échiquier (0 action) :</strong>{' '}
-                      {traqueurMarkTargets.length > 0 ? (
+                      {traqueurMarkModePieceId === selectedOwnPieceView.id ? (
                         <span className="bw-ability-accent">
-                          🎯 {traqueurMarkTargets.length} cible(s) révélée(s) en surbrillance — cliquez directement sur le pion ennemi sur l’échiquier pour le viser (0 PA) !
+                          🎯 MODE CIBLAGE ACTIF — Cliquez directement sur un ennemi révélé en surbrillance violette sur l’échiquier (1–4 cases H/V) !
+                        </span>
+                      ) : traqueurMarkTargets.length > 0 ? (
+                        <span className="bw-ability-accent">
+                          🎯 {traqueurMarkTargets.length} cible(s) révélée(s) à portée (1–4 cases H/V) — cliquez sur « 🎯 Cibler » puis sur le pion ennemi sur l’échiquier (ou cliquez-le directement) pour étendre votre portée à 4 cases !
                         </span>
                       ) : selectedOwnPieceView.traqueurHasActiveMarkVisible ? (
                         <span>
-                          Cible marquée — Poursuite +1 case (portée 3 cases pour l’éliminer) :{' '}
-                          <strong>
-                            {selectedOwnPieceView.traqueurPursuitReadyVisible
-                              ? 'ACTIVE ce tour !'
-                              : 'active dès votre prochain tour'}
-                          </strong>
+                          Cible traquée — Poursuite jusqu’à 4 cases pour l’éliminer :{' '}
+                          <strong>ACTIVE !</strong>
                         </span>
                       ) : (
                         <span>
-                          Aucune cible révélée à portée (1–2 cases H/V sans obstacle). Dès qu’un ennemi est révélé à portée, cliquez directement dessus sur l’échiquier.
+                          Aucune cible révélée à portée (1–4 cases H/V sans obstacle). Dès qu’un ennemi est révélé à portée, ciblez-le sur l’échiquier pour passer de 2 à 4 cases.
                         </span>
                       )}
                     </div>
+                    {traqueurMarkTargets.length > 0 && (
+                      <div className="bw-unit-ability-actions" style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          className={`bw-btn bw-btn-xs ${
+                            traqueurMarkModePieceId === selectedOwnPieceView.id
+                              ? 'bw-btn-secondary'
+                              : 'bw-btn-primary'
+                          }`}
+                          onClick={() => {
+                            const nextMode =
+                              traqueurMarkModePieceId === selectedOwnPieceView.id
+                                ? null
+                                : selectedOwnPieceView.id;
+                            setTraqueurMarkModePieceId(nextMode);
+                            playTacticalSfx('select');
+                          }}
+                        >
+                          {traqueurMarkModePieceId === selectedOwnPieceView.id
+                            ? '✕ Annuler le ciblage'
+                            : '🎯 Cibler sur l’échiquier (0 PA)'}
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
 
@@ -3946,16 +3970,38 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             )
           ) : view.phase === 'playing' && view.turn.activePlayer === viewerColor ? (
             selectedOwnPieceView?.character === 'traqueur' ? (
-              <span className="bw-muted-small">
-                <strong>Traqueur :</strong>{' '}
-                {traqueurMarkTargets.length > 0
-                  ? `🎯 ${traqueurMarkTargets.length} cible(s) révélée(s) en surbrillance — cliquez directement sur le pion adverse pour marquer (0 PA)`
-                  : selectedOwnPieceView.traqueurHasActiveMarkVisible
-                    ? selectedOwnPieceView.traqueurPursuitReadyVisible
-                      ? 'Poursuite 3 cases PRÊTE'
-                      : 'Cible marquée (active au tour suivant)'
-                    : 'Aucune cible révélée à portée (1–2 cases H/V)'}
-              </span>
+              <>
+                <span className="bw-muted-small">
+                  <strong>Traqueur :</strong>{' '}
+                  {traqueurMarkModePieceId === selectedOwnPieceView.id
+                    ? '🎯 Cliquez directement sur l’ennemi révélé sur l’échiquier pour le cibler (0 PA)'
+                    : traqueurMarkTargets.length > 0
+                      ? `🎯 ${traqueurMarkTargets.length} cible(s) révélée(s) (1–4 cases H/V) — cliquez sur l’échiquier pour cibler (0 PA)`
+                      : selectedOwnPieceView.traqueurHasActiveMarkVisible
+                        ? 'Poursuite 4 cases ACTIVE'
+                        : 'Portée 2 cases H/V (aucune cible révélée à 1–4 cases)'}
+                </span>
+                {traqueurMarkTargets.length > 0 && (
+                  <button
+                    type="button"
+                    className={`bw-btn bw-btn-xs ${
+                      traqueurMarkModePieceId === selectedOwnPieceView.id
+                        ? 'bw-btn-secondary'
+                        : 'bw-btn-primary'
+                    }`}
+                    onClick={() => {
+                      setTraqueurMarkModePieceId((curr) =>
+                        curr === selectedOwnPieceView.id ? null : selectedOwnPieceView.id,
+                      );
+                      playTacticalSfx('select');
+                    }}
+                  >
+                    {traqueurMarkModePieceId === selectedOwnPieceView.id
+                      ? '✕ Annuler'
+                      : '🎯 Cibler (0 PA)'}
+                  </button>
+                )}
+              </>
             ) : selectedOwnPieceView?.character === 'arbaletrier' ? (
               <span className="bw-muted-small">
                 <strong>Arbalétrier :</strong>{' '}
