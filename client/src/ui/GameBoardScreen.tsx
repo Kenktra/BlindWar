@@ -1520,7 +1520,7 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       setTacticalToast({
         id: `mark-${Date.now()}`,
         kind: 'ability',
-        text: `🎯 Cible marquée par le Traqueur (0 PA)${targetCoord ? ` en ${coordToNotation(targetCoord)}` : ''} — Poursuite (+1 case) active au prochain tour !`,
+        text: `🎯 Cible marquée par le Traqueur (0 PA)${targetCoord ? ` en ${coordToNotation(targetCoord)}` : ''} — Poursuite (jusqu’à 4 cases) active !`,
       });
     } catch (err) {
       setStatusError(err instanceof Error ? err.message : 'Marquage impossible');
@@ -1738,7 +1738,12 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       }
     }
 
-    // 2.5. Direct Traqueur Target Selection on the Board (§5 — automatic on Traqueur selection, no extra button needed)
+    // 2.5. Direct Traqueur Target Selection on the Board (§5)
+    // - If explicit targeting mode ("🎯 Cibler") is active, clicking any markable enemy on the board marks it (0 PA).
+    // - If the clicked revealed enemy is not yet capturable (e.g. distance 3–4 before being marked, or a revealed Colossus),
+    //   clicking it on the board immediately marks it (0 PA) and unlocks 4-square Pursuit so a second click captures it!
+    // - If the clicked enemy IS already capturable at distance 1–2 (and "🎯 Cibler" mode is not active),
+    //   normal capture proceeds below without hijacking the capture or overwriting an existing mark!
     if (
       selectedOwnPieceView &&
       selectedOwnPieceView.character === 'traqueur' &&
@@ -1748,12 +1753,8 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
       const matchingCaptureCandidates = highlightedMoves.filter(
         (m) => m.to.row === coord.row && m.to.col === coord.col,
       );
-      // Direct click on a markable revealed enemy pawn immediately marks it (0 PA) if it is not yet marked
-      // (or if explicit mark mode is toggled, or if it cannot be captured directly like a revealed Colossus).
-      // Clicking an already-marked enemy pawn a second time executes the capture!
       if (
         traqueurMarkModePieceId === selectedOwnPieceView.id ||
-        !clickedPiece.traqueurMarkedByViewer ||
         matchingCaptureCandidates.length === 0
       ) {
         handleExecuteTraqueurMark(selectedOwnPieceView.id, clickedPiece.id, coord);
@@ -3266,6 +3267,20 @@ export const GameBoardScreen: React.FC<GameBoardScreenProps> = ({
             showCoordinates={settings.showCoordinates}
             showReconZones={settings.showReconZones}
             onSquareClick={handleBoardSquareClick}
+            onTraqueurMarkTargetClick={(targetCoord) => {
+              if (!selectedOwnPieceView || selectedOwnPieceView.character !== 'traqueur') {
+                return;
+              }
+              const target = traqueurMarkTargets.find(
+                (t) =>
+                  t.position !== null &&
+                  t.position.row === targetCoord.row &&
+                  t.position.col === targetCoord.col,
+              );
+              if (target) {
+                handleExecuteTraqueurMark(selectedOwnPieceView.id, target.id, targetCoord);
+              }
+            }}
             onUpsertArrow={handleUpsertPersonalArrow}
             onToggleSquareMark={handleTogglePersonalSquareMark}
             onRemoveArrow={handleRemovePersonalArrow}

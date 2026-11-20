@@ -77,6 +77,7 @@ export interface PhaserBoardCanvasProps {
   readonly showCoordinates: boolean;
   readonly showReconZones: boolean;
   readonly onSquareClick: (coord: Coord) => void;
+  readonly onTraqueurMarkTargetClick?: (coord: Coord) => void;
   readonly onUpsertArrow?: (from: Coord, to: Coord) => void;
   readonly onToggleSquareMark?: (coord: Coord) => void;
   readonly onRemoveArrow?: (arrowId: string) => void;
@@ -109,6 +110,7 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
   showCoordinates,
   showReconZones,
   onSquareClick,
+  onTraqueurMarkTargetClick,
   onUpsertArrow,
   onToggleSquareMark,
   onRemoveArrow,
@@ -648,7 +650,16 @@ export const PhaserBoardCanvas: React.FC<PhaserBoardCanvasProps> = ({
                     <span className="bw-move-marker bw-move-marker-mark" aria-hidden="true" />
                     <span
                       className="bw-pixel-target-reticle"
-                      title="Cliquez directement sur ce pion révélé pour le marquer avec votre Traqueur (0 action)"
+                      title="Cliquez directement sur ce réticule pour cibler ce pion révélé avec votre Traqueur (0 action)"
+                      style={onTraqueurMarkTargetClick ? { pointerEvents: 'auto', cursor: 'pointer' } : undefined}
+                      onClick={
+                        onTraqueurMarkTargetClick
+                          ? (e) => {
+                              e.stopPropagation();
+                              onTraqueurMarkTargetClick(coord);
+                            }
+                          : undefined
+                      }
                       aria-hidden="true"
                     >
                       🎯 VISER
