@@ -456,6 +456,12 @@ export function buildPairedTurnHistory(
     readonly character: CharacterType | null;
   }[] = [],
 ): readonly PairedTurnRow[] {
+  const gameplayEntries = actionLog.filter(
+    (entry) =>
+      Boolean(entry.text && entry.text.trim().length > 0) &&
+      !/confirmé le placement/i.test(entry.text),
+  );
+
   const rows: {
     turnNumber: number;
     red: CompactMoveItemMeta[];
@@ -464,8 +470,21 @@ export function buildPairedTurnHistory(
     hasCapture: boolean;
   }[] = [];
 
-  for (const entry of actionLog) {
-    const meta = extractCompactMoveMeta(entry, visiblePieces);
+  for (let i = 0; i < gameplayEntries.length; i += 1) {
+    const entry = gameplayEntries[i]!;
+    const coords = entry.text.match(/\b[A-I][1-9]\b/g) ?? [];
+    const destNot = coords.length > 0 ? coords[coords.length - 1]! : null;
+    const squareModifiedLater =
+      destNot !== null &&
+      gameplayEntries.slice(i + 1).some((later) => {
+        const laterCoords: readonly string[] = later.text.match(/\b[A-I][1-9]\b/g) ?? [];
+        return laterCoords.includes(destNot);
+      });
+
+    const meta = extractCompactMoveMeta(
+      entry,
+      squareModifiedLater ? [] : visiblePieces,
+    );
     let current = rows[rows.length - 1];
 
     if (
