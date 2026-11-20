@@ -90,8 +90,9 @@ export const CardArtwork: React.FC<CardArtworkProps> = ({
         height={px}
         viewBox="0 0 64 64"
         preserveAspectRatio="xMidYMid meet"
+        shapeRendering="crispEdges"
         className="bw-card-artwork-svg"
-        style={{ background: 'transparent' }}
+        style={{ background: 'transparent', imageRendering: 'pixelated' }}
         data-transparent-bg="true"
         focusable="false"
       >
